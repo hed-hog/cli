@@ -12,24 +12,30 @@ export class CreateCommand extends AbstractCommand {
       .description('Create the basic structure for a new Hedhog library.')
       .argument('<string>', 'library name')
       .option(
-        '--directory <directory>',
-        'Specify the destination directory',
-        '.',
+        '-r, --remove-default-deps',
+        'Remove default dependencies.',
+        false,
       )
-      .option('-s, --skip-install', 'Skip package installation.', false)
+      .option(
+        '-P, --package-manager [packageManager]',
+        'Specify package manager.',
+        'npm',
+      )
       .action(async (name, command) => {
         try {
           if (!name) {
             throw new Error('Library name is required');
           }
 
-          if (!validateDirectory(command.directory)) {
-            throw new Error('Directory is not valid');
-          }
-
           const options: Input[] = [];
-          options.push({ name: 'directory', value: command.directory });
-          options.push({ name: 'skip-install', value: command.skipInstall });
+          options.push({
+            name: 'remove-default-deps',
+            value: command.removeDefaultDeps,
+          });
+          options.push({
+            name: 'packageManager',
+            value: command.packageManager,
+          });
 
           const inputs: Input[] = [];
           inputs.push({ name: 'name', value: name });
