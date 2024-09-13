@@ -7,8 +7,7 @@ import { existsSync } from 'fs';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { MESSAGES } from '../lib/ui';
 import { join } from 'path';
-import * as ts from 'typescript';
-import * as fs from 'fs';
+import { Runner, RunnerFactory } from '../lib/runners';
 
 export class AddAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -21,7 +20,6 @@ export class AddAction extends AbstractAction {
     const appModulePath = `src/${appModuleName}`;
     const addModuleName = `${this.capitalizeFirstLetter(module)}Module`;
     const packageName = `@hedhog/${module}`;
-    const moduleImport = `import { ${addModuleName} } from '${packageName}';`;
     const directoryPath = process.cwd();
     const nodeModulePath = `node_modules/@hedhog/${module}`;
 
@@ -32,26 +30,17 @@ export class AddAction extends AbstractAction {
 
     await this.installPackage(packageName);
 
-    //await this.checkDependences(module, nodeModulePath);
+    await this.checkDependences(module, nodeModulePath);
 
-    //await this.checkIfModuleExists(module, nodeModulePath);
+    await this.checkIfModuleExists(module, nodeModulePath);
 
     await this.modifyAppModule(appModulePath, addModuleName, packageName);
-    return;
-    /*
-    const addedModule = await this.addModuleImportToAppModule(
-      module,
-      addModuleName,
-      moduleImport,
-      appModulePath,
-    );
 
-    if (addedModule) {
-      await this.copyMigrationsFiles(nodeModulePath);
-      if (!silentComplete) {
-        await this.complete(module);
-      }
-    }*/
+    await this.copyMigrationsFiles(nodeModulePath);
+
+    if (!silentComplete) {
+      await this.complete(module);
+    }
   }
 
   async add(module: string) {
@@ -168,13 +157,20 @@ export class AddAction extends AbstractAction {
     }
   }
 
+  async npx(args: string) {
+    const spinner = ora('Creating library directory').start();
+    const runner = RunnerFactory.create(Runner.NPX);
+    await runner?.run(args);
+    spinner.succeed();
+  }
+
   async modifyAppModule(
     filePath: string,
     newModule: string,
     newModulePath: string,
   ) {
     // Lê o conteúdo do arquivo
-    let fileContent = fs.readFileSync(filePath, 'utf-8');
+    let fileContent = await readFile(filePath, 'utf-8');
 
     // Verifica se a linha de import já existe
     const importStatement = `import { ${newModule} } from '${newModulePath}';`;
@@ -243,7 +239,9 @@ export class AddAction extends AbstractAction {
     );
 
     // Escreve o conteúdo atualizado de volta no arquivo
-    fs.writeFileSync(filePath, updatedFileContent, 'utf-8');
+    await writeFile(filePath, updatedFileContent, 'utf-8');
+
+    await this.npx(`prettier --write ${filePath}`);
   }
 
   async addModuleImportToAppModule(
