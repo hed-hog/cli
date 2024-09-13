@@ -1,13 +1,15 @@
 import * as chalk from 'chalk';
 import { Command } from '@commander-js/extra-typings';
-import { AddAction, InfoAction, NewAction } from '../actions';
+import { AddAction, CreateAction, InfoAction, NewAction } from '../actions';
 import { AddCommand } from './add.command';
 import { NewCommand } from './new.command';
 import { ERROR_PREFIX } from '../lib/ui';
 import { InfoCommand } from './info.command';
+import { CreateCommand } from './create.command';
 export class CommandLoader {
   public static async load(program: Command): Promise<void> {
     new NewCommand(new NewAction()).load(program);
+    new CreateCommand(new CreateAction()).load(program);
     new AddCommand(new AddAction()).load(program);
     new InfoCommand(new InfoAction()).load(program);
 
