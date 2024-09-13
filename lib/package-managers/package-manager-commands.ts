@@ -7,4 +7,5 @@ export interface PackageManagerCommands {
   saveDevFlag: string;
   silentFlag: string;
   legacyPeerDepsFlag: string;
+  run: string;
 }

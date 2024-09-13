@@ -181,6 +181,11 @@ export abstract class AbstractPackageManager {
     await this.runner.run(commandArguments, collect);
   }
 
+  public async runScript(scriptName: string, directory = process.cwd()) {
+    const commandArguments = `${this.cli.run} ${scriptName}`;
+    await this.runner.run(commandArguments, false, directory);
+  }
+
   public abstract get name(): string;
 
   public abstract get cli(): PackageManagerCommands;

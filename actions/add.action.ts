@@ -169,9 +169,6 @@ export class AddAction extends AbstractAction {
     moduleImport: string,
     appModulePath: string,
   ) {
-    console.log('addModuleImportToAppModule', {
-      module,
-    });
     const spinner = ora('Adding module to app module...').start();
     if (!['utils'].includes(module.toLowerCase())) {
       try {

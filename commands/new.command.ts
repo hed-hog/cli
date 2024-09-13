@@ -19,10 +19,19 @@ export class NewCommand extends AbstractCommand {
       .option('-g, --skip-git', 'Skip git repository initialization.', false)
       .option('-s, --skip-install', 'Skip package installation.', false)
       .option(
-        '-p, --package-manager [packageManager]',
+        '-P, --package-manager [packageManager]',
         'Specify package manager.',
         'npm',
       )
+      .option(
+        '-d, --database [database]',
+        'Specify database postgres or mysql.',
+      )
+      .option('-h, --dbhost [host]', 'Specify database host.')
+      .option('-p, --dbport [port]', 'Specify database port.')
+      .option('-u, --dbuser [user]', 'Specify database user.')
+      .option('-w, --dbpassword [password]', 'Specify database password.')
+      .option('-n, --dbname [database]', 'Specify database name.')
       .action(async (name, command) => {
         try {
           if (!name) {
@@ -35,6 +44,11 @@ export class NewCommand extends AbstractCommand {
 
           const options: Input[] = [];
 
+          options.push({ name: 'dbhost', value: command.dbhost ?? '' });
+          options.push({ name: 'dbport', value: command.dbport ?? '' });
+          options.push({ name: 'dbuser', value: command.dbuser ?? '' });
+          options.push({ name: 'dbpassword', value: command.dbpassword ?? '' });
+          options.push({ name: 'database', value: command.database ?? '' });
           options.push({ name: 'directory', value: command.directory });
           options.push({ name: 'skip-git', value: command.skipGit });
           options.push({ name: 'skip-install', value: command.skipInstall });
