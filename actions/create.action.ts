@@ -2,15 +2,29 @@ import chalk = require('chalk');
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ora from 'ora';
-import { exec } from 'child_process';
 import { AbstractAction } from './abstract.action';
 import { Input } from '../commands';
+import { Runner, RunnerFactory } from '../lib/runners';
+import {
+  AbstractPackageManager,
+  PackageManagerFactory,
+} from '../lib/package-managers';
+import { mkdir, writeFile } from 'fs/promises';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
     const libraryName = String(
-      inputs.find(({ name }) => name === 'name')?.value || 'default-library',
+      inputs.find(({ name }) => name === 'name')?.value,
     ).toLowerCase();
+
+    const removeDefaultDeps =
+      Boolean(options.find((i) => i.name === 'remove-default-deps')?.value) ??
+      false;
+
+    if (!libraryName.length) {
+      console.log(chalk.red('You must tell a name for the module.'));
+      process.exit(1);
+    }
 
     if (/\s/.test(libraryName)) {
       console.log(
@@ -19,27 +33,23 @@ export class CreateAction extends AbstractAction {
       process.exit(1);
     }
 
-    const libraryPath = path.join(process.cwd(), libraryName);
-    this.createDirectory(libraryPath);
+    const libraryPath = path.join(process.cwd(), 'libs', libraryName);
+    await this.createDirectory(libraryName);
     this.createGitignore(libraryPath);
-    this.createPackageJson(libraryPath, libraryName);
-    this.createTsconfigLib(libraryPath, libraryName);
+    this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
     this.createTsconfigProduction(libraryPath);
-    this.createSrcFiles(libraryPath, libraryName);
-    this.installDependencies(libraryPath);
+    this.installDependencies(libraryPath, options);
+    await this.createMigrationDirectory(libraryPath);
+    await this.createEmptyDTODirectory(libraryPath);
 
     console.log(chalk.green(`Library ${libraryName} created successfully!`));
   }
 
-  private createDirectory(libraryPath: string) {
+  private async createDirectory(libraryName: string) {
     const spinner = ora('Creating library directory').start();
-    if (!fs.existsSync(libraryPath)) {
-      fs.mkdirSync(libraryPath, { recursive: true });
-      spinner.succeed();
-    } else {
-      spinner.fail('Directory already exists.');
-      process.exit(1);
-    }
+    const runner = RunnerFactory.create(Runner.NPX);
+    await runner?.run(`@nestjs/cli generate library ${libraryName}`);
+    spinner.succeed();
   }
 
   private createGitignore(libraryPath: string) {
@@ -51,7 +61,11 @@ export class CreateAction extends AbstractAction {
     fs.writeFileSync(path.join(libraryPath, '.gitignore'), gitignoreContent);
   }
 
-  private createPackageJson(libraryPath: string, libraryName: string) {
+  private createPackageJson(
+    libraryPath: string,
+    libraryName: string,
+    removeDefaultDeps: boolean,
+  ) {
     const packageJsonContent = {
       name: `@hedhog/${libraryName}`,
       version: '0.0.0',
@@ -65,40 +79,24 @@ export class CreateAction extends AbstractAction {
       author: '',
       license: 'MIT',
       description: '',
-      peerDependencies: {
-        '@hedhog/auth': 'latest',
-        '@hedhog/pagination': 'latest',
-        '@hedhog/prisma': 'latest',
-      },
       devDependencies: {
-        '@hedhog/auth': 'latest',
-        '@hedhog/pagination': 'latest',
-        '@hedhog/prisma': 'latest',
         'ts-node': '^10.9.1',
         'typescript': '^5.1.3',
       },
     };
 
+    if (!removeDefaultDeps) {
+      const devDeps = ['@hedhog/auth', '@hedhog/pagination', '@hedhog/prisma'];
+
+      for (const devDep of devDeps) {
+        (packageJsonContent as any).peerDependencies[devDep] = 'latest';
+        (packageJsonContent.devDependencies as any)[devDep] = 'latest';
+      }
+    }
+
     fs.writeFileSync(
       path.join(libraryPath, 'package.json'),
       JSON.stringify(packageJsonContent, null, 2),
-    );
-  }
-
-  private createTsconfigLib(libraryPath: string, libraryName: string) {
-    const tsconfigLibContent = {
-      extends: '../../tsconfig.json',
-      compilerOptions: {
-        declaration: true,
-        outDir: `../../dist/libs/${libraryName}`,
-      },
-      include: ['src/**/*'],
-      exclude: ['node_modules', 'dist', 'test', '**/*spec.ts'],
-    };
-
-    fs.writeFileSync(
-      path.join(libraryPath, 'tsconfig.lib.json'),
-      JSON.stringify(tsconfigLibContent, null, 2),
     );
   }
 
@@ -130,87 +128,37 @@ export class CreateAction extends AbstractAction {
     );
   }
 
-  private createSrcFiles(libraryPath: string, libraryName: string) {
-    const srcPath = path.join(libraryPath, 'src');
-    if (!fs.existsSync(srcPath)) {
-      fs.mkdirSync(srcPath);
-    } else {
-      chalk.red('Error: Directory /src already exists.');
-      process.exit(1);
+  async installDependencies(libraryPath: string, options: Input[]) {
+    const inputPackageManager = options.find(
+      (option) => option.name === 'packageManager',
+    )!.value as string;
+
+    let packageManager: AbstractPackageManager;
+
+    try {
+      packageManager = PackageManagerFactory.create(inputPackageManager);
+      return packageManager.install(libraryPath, inputPackageManager);
+    } catch (error) {
+      if (error && error.message) {
+        console.error(chalk.red(error.message));
+      }
     }
-
-    const controllerContent = `
-import { Controller, Get } from '@nestjs/common';
-
-@Controller('${libraryName}')
-export class ${this.capitalize(libraryName)}Controller {
-  @Get()
-  findAll() {
-    return 'This action returns all ${libraryName}';
   }
-}
-    `.trim();
-    fs.writeFileSync(
-      path.join(srcPath, `${libraryName}.controller.ts`),
-      controllerContent,
+
+  async createMigrationDirectory(libraryPath: string) {
+    const migrationPath = path.join(libraryPath, 'src', 'migrations');
+    await mkdir(migrationPath);
+    writeFile(
+      path.join(migrationPath, 'index.ts'),
+      `import { MigrationInterface, QueryRunner } from 'typeorm';
+export class Migrate implements MigrationInterface {
+  public async up(queryRunner: QueryRunner): Promise<void> {}
+  public async down(queryRunner: QueryRunner): Promise<void> {}
+}`,
     );
-
-    const serviceContent = `
-import { Injectable } from '@nestjs/common';
-
-@Injectable()
-export class ${this.capitalize(libraryName)}Service {
-  findAll() {
-    return 'This action returns all ${libraryName}';
-  }
-}
-    `.trim();
-    fs.writeFileSync(
-      path.join(srcPath, `${libraryName}.service.ts`),
-      serviceContent,
-    );
-
-    const moduleContent = `
-import { Module } from '@nestjs/common';
-import { ${this.capitalize(libraryName)}Controller } from './${libraryName}.controller';
-import { ${this.capitalize(libraryName)}Service } from './${libraryName}.service';
-
-@Module({
-  controllers: [${this.capitalize(libraryName)}Controller],
-  providers: [${this.capitalize(libraryName)}Service],
-})
-export class ${this.capitalize(libraryName)}Module {}
-    `.trim();
-    fs.writeFileSync(
-      path.join(srcPath, `${libraryName}.module.ts`),
-      moduleContent,
-    );
-
-    const indexContent = `
-export * from './${libraryName}.controller';
-export * from './${libraryName}.service';
-export * from './${libraryName}.module';
-    `.trim();
-    fs.writeFileSync(path.join(srcPath, 'index.ts'), indexContent);
   }
 
-  installDependencies(libraryPath: string) {
-    console.log(chalk.blue(`\nInstalling dependencies in ${libraryPath}...`));
-
-    exec('npm install', { cwd: libraryPath }, (error, stdout, stderr) => {
-      if (error) {
-        console.log(chalk.red(`Error during npm install: ${error.message}`));
-        return;
-      }
-      if (stderr) {
-        console.log(chalk.red(`npm install stderr: ${stderr}`));
-      }
-      console.log(chalk.green(`\nDependencies installed successfully!\n`));
-      console.log(stdout);
-    });
-  }
-
-  private capitalize(str: string) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
+  async createEmptyDTODirectory(libraryPath: string) {
+    await mkdir(path.join(libraryPath, 'src', 'dto'));
   }
 }
