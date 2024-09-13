@@ -48,7 +48,8 @@ export class CreateAction extends AbstractAction {
   private async createDirectory(libraryName: string) {
     const spinner = ora('Creating library directory').start();
     const runner = RunnerFactory.create(Runner.NPX);
-    await runner?.run(`@nestjs/cli generate library ${libraryName}`);
+    await runner?.run(`yes '' | npx @nestjs/cli g library ${libraryName}`);
+
     spinner.succeed();
   }
 
