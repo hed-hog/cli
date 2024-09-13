@@ -3,10 +3,12 @@ import { Input } from '../commands';
 import { PackageManagerFactory } from '../lib/package-managers';
 import { AbstractAction } from './abstract.action';
 import * as ora from 'ora';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { MESSAGES } from '../lib/ui';
 import { join } from 'path';
+import * as ts from 'typescript';
+import * as fs from 'fs';
 
 export class AddAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -30,10 +32,13 @@ export class AddAction extends AbstractAction {
 
     await this.installPackage(packageName);
 
-    await this.checkDependences(module, nodeModulePath);
+    //await this.checkDependences(module, nodeModulePath);
 
-    await this.checkIfModuleExists(module, nodeModulePath);
+    //await this.checkIfModuleExists(module, nodeModulePath);
 
+    await this.modifyAppModule(appModulePath, addModuleName, packageName);
+    return;
+    /*
     const addedModule = await this.addModuleImportToAppModule(
       module,
       addModuleName,
@@ -46,7 +51,7 @@ export class AddAction extends AbstractAction {
       if (!silentComplete) {
         await this.complete(module);
       }
-    }
+    }*/
   }
 
   async add(module: string) {
@@ -163,6 +168,84 @@ export class AddAction extends AbstractAction {
     }
   }
 
+  async modifyAppModule(
+    filePath: string,
+    newModule: string,
+    newModulePath: string,
+  ) {
+    // Lê o conteúdo do arquivo
+    let fileContent = fs.readFileSync(filePath, 'utf-8');
+
+    // Verifica se a linha de import já existe
+    const importStatement = `import { ${newModule} } from '${newModulePath}';`;
+    if (!fileContent.includes(importStatement)) {
+      // Adiciona a linha de import no início do arquivo (após os outros imports)
+      const importRegex = /(import[\s\S]+?;)/g;
+      const importMatch = importRegex.exec(fileContent);
+      if (importMatch) {
+        const lastImport = importMatch[0];
+        fileContent = fileContent.replace(
+          lastImport,
+          `${lastImport}\n${importStatement}`,
+        );
+      } else {
+        // Se nenhum import estiver presente, adiciona no início do arquivo
+        fileContent = `${importStatement}\n\n${fileContent}`;
+      }
+    } else {
+      console.log(`A linha de import para "${newModule}" já está presente.`);
+    }
+
+    // Encontra o decorador @Module
+    const moduleRegex = /@Module\s*\(\s*{([\s\S]*?)}\s*\)/g;
+    const moduleMatch = moduleRegex.exec(fileContent);
+
+    if (!moduleMatch) {
+      console.error('Decorador @Module não encontrado.');
+      return;
+    }
+
+    // Pega o conteúdo do decorador @Module
+    let moduleContent = moduleMatch[1];
+
+    // Regex para encontrar o array de imports dentro do decorador
+    const importsRegex = /(imports\s*:\s*\[)([\s\S]*?)(\])/;
+    const importsMatch = importsRegex.exec(moduleContent);
+
+    if (!importsMatch) {
+      console.error('Propriedade "imports" não encontrada.');
+      return;
+    }
+
+    let importsList = importsMatch[2].split(',').map((imp) => imp.trim());
+
+    // Verifica se o módulo já foi importado
+    const alreadyImported = importsList.some((imp) => imp.includes(newModule));
+
+    if (alreadyImported) {
+      console.log(`O módulo "${newModule}" já está presente nos imports.`);
+      return;
+    }
+
+    // Adiciona o novo módulo no início da lista
+    importsList.unshift(newModule);
+
+    // Recria a seção de imports
+    const updatedImports = `imports: [${importsList.join(', ')}]`;
+
+    // Substitui o bloco original de imports pelo atualizado
+    moduleContent = moduleContent.replace(importsMatch[0], updatedImports);
+
+    // Substitui o decorador original pelo atualizado
+    const updatedFileContent = fileContent.replace(
+      moduleMatch[1],
+      moduleContent,
+    );
+
+    // Escreve o conteúdo atualizado de volta no arquivo
+    fs.writeFileSync(filePath, updatedFileContent, 'utf-8');
+  }
+
   async addModuleImportToAppModule(
     module: string,
     addModuleName: string,
@@ -172,7 +255,7 @@ export class AddAction extends AbstractAction {
     const spinner = ora('Adding module to app module...').start();
     if (!['utils'].includes(module.toLowerCase())) {
       try {
-        let appModuleContent = readFileSync(appModulePath, 'utf8');
+        let appModuleContent = await readFile(appModulePath, 'utf8');
 
         spinner.text = 'Checking if module already exists in app module...';
 
