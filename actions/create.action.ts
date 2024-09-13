@@ -10,7 +10,7 @@ export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
     const libraryName = String(
       inputs.find(({ name }) => name === 'name')?.value || 'default-library',
-    );
+    ).toLowerCase();
 
     if (/\s/.test(libraryName)) {
       console.log(
@@ -68,12 +68,12 @@ export class CreateAction extends AbstractAction {
       peerDependencies: {
         '@hedhog/auth': 'latest',
         '@hedhog/pagination': 'latest',
-        '@hedhog/prisma': '^latest',
+        '@hedhog/prisma': 'latest',
       },
       devDependencies: {
         '@hedhog/auth': 'latest',
         '@hedhog/pagination': 'latest',
-        '@hedhog/prisma': '^latest',
+        '@hedhog/prisma': 'latest',
         'ts-node': '^10.9.1',
         'typescript': '^5.1.3',
       },
