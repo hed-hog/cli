@@ -173,12 +173,13 @@ export class NewAction extends AbstractAction {
       case 'mysql':
         await this.installMySql(options);
         break;
+      
     }
 
     process.chdir('..');
 
     if (databaseConnection) {
-      this.runScript('migrate:up', join(process.cwd(), name));
+      await this.runScript('migrate:up', join(process.cwd(), name));
     }
 
     this.complete(name, packageManager ?? 'npm');
