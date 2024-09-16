@@ -12,6 +12,11 @@ import { createMigrationDirectory, parseFields } from '../lib/utils/migrations';
 import { createController } from '../lib/utils/create-controller';
 import { createModule } from '../lib/utils/create-module';
 import { createService } from '../lib/utils/create-service';
+import {
+  updateNestCliJson,
+  updatePackageJson,
+  updateTsconfigPaths,
+} from '../lib/utils/update-files';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -58,6 +63,10 @@ export class CreateAction extends AbstractAction {
       tableName,
       parseFields(fieldsInput),
     );
+
+    await updateNestCliJson(libraryName);
+    await updatePackageJson(libraryName);
+    await updateTsconfigPaths(libraryName);
 
     console.log(chalk.green(`Library ${libraryName} created successfully!`));
   }
