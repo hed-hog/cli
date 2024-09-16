@@ -68,6 +68,8 @@ export class CreateAction extends AbstractAction {
     await updatePackageJson(libraryName);
     await updateTsconfigPaths(libraryName);
 
+    await this.installDependencies(libraryPath, options);
+
     console.log(chalk.green(`Library ${libraryName} created successfully!`));
   }
 
@@ -152,20 +154,33 @@ export class CreateAction extends AbstractAction {
     );
   }
 
-  async installDependencies(libraryPath: string, options: Input[]) {
+  private async installDependencies(libraryPath: string, options: Input[]) {
     const inputPackageManager = options.find(
       (option) => option.name === 'packageManager',
     )!.value as string;
 
-    let packageManager: AbstractPackageManager;
+    const packageManager: AbstractPackageManager =
+      PackageManagerFactory.create(inputPackageManager);
 
     try {
-      packageManager = PackageManagerFactory.create(inputPackageManager);
-      return packageManager.install(libraryPath, inputPackageManager);
+      console.log(chalk.blue('Installing production dependencies...'));
+      const dependencies = [
+        '@hedhog/auth',
+        '@hedhog/pagination',
+        '@hedhog/prisma',
+        'ts-node',
+        'typescript',
+      ];
+
+      const currentDir = process.cwd();
+      process.chdir(libraryPath);
+      await packageManager.addProduction(dependencies, 'latest');
+      process.chdir(currentDir);
+
+      console.log(chalk.green('Dependencies installed successfully.'));
     } catch (error) {
-      if (error && error.message) {
-        console.error(chalk.red(error.message));
-      }
+      console.log(chalk.red('Error installing dependencies:', error));
+      process.exit(1);
     }
   }
 }
