@@ -1,6 +1,7 @@
 import chalk = require('chalk');
 import path = require('path');
 import * as fs from 'fs';
+import { prettier } from './formatting';
 
 export async function updateNestCliJson(libraryName: string) {
   const nestCliPath = path.join(process.cwd(), 'nest-cli.json');
@@ -31,6 +32,8 @@ export async function updateNestCliJson(libraryName: string) {
       nestCliPath,
       JSON.stringify(nestCliContent, null, 2),
     );
+
+    await prettier(nestCliPath);
 
     console.log(
       chalk.green(`Updated nest-cli.json with project: ${libraryName}`),
@@ -73,6 +76,8 @@ export async function updatePackageJson(libraryName: string) {
       JSON.stringify(packageJsonContent, null, 2),
     );
 
+    await prettier(packageJsonPath);
+
     console.log(
       chalk.green(
         `Updated package.json with moduleNameMapper for ${libraryName}`,
@@ -112,6 +117,8 @@ export async function updateTsconfigPaths(libraryName: string) {
       tsconfigPath,
       JSON.stringify(tsconfigContent, null, 2),
     );
+
+    await prettier(tsconfigPath);
 
     console.log(chalk.green(`Updated tsconfig.json paths for ${libraryName}`));
   } catch (error) {

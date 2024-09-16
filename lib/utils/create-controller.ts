@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { capitalize } from './formatting';
+import { capitalize, prettier } from './formatting';
 
 export async function createController(
   libraryPath: string,
@@ -30,6 +30,7 @@ import { DeleteDTO } from './dto/delete.dto';
 import { UpdateDTO } from './dto/update.dto';
 import { ${capitalize(libraryName)}Service } from './${libraryName}.service';
 
+@UseGuards(AuthGuard)
 @Controller('${libraryName}s')
 export class ${capitalize(libraryName)}Controller {
   constructor(
@@ -37,25 +38,21 @@ export class ${capitalize(libraryName)}Controller {
     private readonly ${libraryName}Service: ${capitalize(libraryName)}Service,
   ) {}
 
-  @UseGuards(AuthGuard)
   @Get()
   async get(@Pagination() paginationParams) {
     return this.${libraryName}Service.get(paginationParams);
   }
 
-  @UseGuards(AuthGuard)
   @Get(':id')
   async getById(@Param('id', ParseIntPipe) id: number) {
     return this.${libraryName}Service.getById(id);
   }
 
-  @UseGuards(AuthGuard)
   @Post()
   create(@Body() data: CreateDTO) {
     return this.${libraryName}Service.create(data);
   }
 
-  @UseGuards(AuthGuard)
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -67,7 +64,6 @@ export class ${capitalize(libraryName)}Controller {
     });
   }
 
-  @UseGuards(AuthGuard)
   @Delete()
   async delete(@Body() data: DeleteDTO) {
     return this.${libraryName}Service.delete(data);
@@ -75,8 +71,10 @@ export class ${capitalize(libraryName)}Controller {
 }
   `.trim();
 
-  await fs.writeFile(
-    path.join(controllerPath, `${libraryName}.controller.ts`),
-    controllerContent,
+  const controllerFilePath = path.join(
+    controllerPath,
+    `${libraryName}.controller.ts`,
   );
+  await fs.writeFile(controllerFilePath, controllerContent);
+  await prettier(controllerFilePath);
 }

@@ -22,7 +22,7 @@ export class CreateCommand extends AbstractCommand {
       )
       .option('-t, --table <string>', 'Specify the table name')
       .option(
-        '-f, --fields <fields>',
+        '-f, --fields <fields...>',
         'Fields for the migration in the format field:type:length or field:fk:table:column',
       )
       .action(async (name, command) => {

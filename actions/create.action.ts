@@ -17,6 +17,7 @@ import {
   updatePackageJson,
   updateTsconfigPaths,
 } from '../lib/utils/update-files';
+import { prettier } from '../lib/utils/formatting';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -50,8 +51,8 @@ export class CreateAction extends AbstractAction {
 
     const libraryPath = path.join(process.cwd(), 'libs', libraryName);
     this.createGitignore(libraryPath);
-    this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
-    this.createTsconfigProduction(libraryPath);
+    await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
+    await this.createTsconfigProduction(libraryPath);
 
     await createMigrationDirectory(libraryPath, tableName, fieldsInput);
     await createDTOs(libraryPath, fieldsInput);
@@ -63,6 +64,7 @@ export class CreateAction extends AbstractAction {
       tableName,
       parseFields(fieldsInput),
     );
+
     await this.createIndexFile(libraryPath, libraryName);
 
     await updateNestCliJson(libraryName);
@@ -87,7 +89,7 @@ export class CreateAction extends AbstractAction {
     fs.writeFileSync(path.join(libraryPath, '.gitignore'), gitignoreContent);
   }
 
-  private createPackageJson(
+  private async createPackageJson(
     libraryPath: string,
     libraryName: string,
     removeDefaultDeps: boolean,
@@ -121,13 +123,16 @@ export class CreateAction extends AbstractAction {
       }
     }
 
+    const packageFilePath = path.join(libraryPath, 'package.json');
     fs.writeFileSync(
-      path.join(libraryPath, 'package.json'),
+      packageFilePath,
       JSON.stringify(packageJsonContent, null, 2),
     );
+
+    await prettier(packageFilePath);
   }
 
-  private createTsconfigProduction(libraryPath: string) {
+  private async createTsconfigProduction(libraryPath: string) {
     const tsconfigProductionContent = {
       compilerOptions: {
         experimentalDecorators: true,
@@ -149,10 +154,14 @@ export class CreateAction extends AbstractAction {
       exclude: ['node_modules', 'dist'],
     };
 
+    const tsConfigFilePath = path.join(libraryPath, 'tsconfig.production.json');
+
     fs.writeFileSync(
-      path.join(libraryPath, 'tsconfig.production.json'),
+      tsConfigFilePath,
       JSON.stringify(tsconfigProductionContent, null, 2),
     );
+
+    await prettier(tsConfigFilePath);
   }
 
   private async installDependencies(libraryPath: string, options: Input[]) {
@@ -185,7 +194,7 @@ export class CreateAction extends AbstractAction {
     }
   }
 
-  private createIndexFile(libraryPath: string, libraryName: string) {
+  private async createIndexFile(libraryPath: string, libraryName: string) {
     const srcPath = path.join(libraryPath, 'src');
 
     if (!fs.existsSync(srcPath)) {
@@ -198,6 +207,8 @@ export class CreateAction extends AbstractAction {
   export * from './${libraryName}.controller';
     `.trim();
 
-    fs.writeFileSync(path.join(srcPath, 'index.ts'), indexContent);
+    const indexFilePath = path.join(srcPath, 'index.ts');
+    fs.writeFileSync(indexFilePath, indexContent);
+    await prettier(indexFilePath);
   }
 }

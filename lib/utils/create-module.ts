@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { capitalize } from './formatting';
+import { capitalize, prettier } from './formatting';
 
 export async function createModule(libraryPath: string, libraryName: string) {
   const modulePath = path.join(libraryPath, 'src');
@@ -27,8 +27,7 @@ import { ${capitalize(libraryName)}Controller } from './${libraryName}.controlle
 export class ${capitalize(libraryName)}Module {}
   `.trim();
 
-  await fs.writeFile(
-    path.join(modulePath, `${libraryName}.module.ts`),
-    moduleContent,
-  );
+  const moduleFilePath = path.join(modulePath, `${libraryName}.module.ts`);
+  await fs.writeFile(moduleFilePath, moduleContent);
+  await prettier(moduleFilePath);
 }

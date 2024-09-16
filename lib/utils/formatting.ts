@@ -1,3 +1,5 @@
+import { Runner, RunnerFactory } from '../runners';
+
 /**
  *
  * @param str
@@ -16,4 +18,9 @@ export function normalizeToKebabOrSnakeCase(str: string) {
 
 export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export async function prettier(path: string) {
+  const npx = RunnerFactory.create(Runner.NPX);
+  return npx?.run(`prettier --write ${path}`);
 }

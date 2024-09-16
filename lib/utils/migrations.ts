@@ -1,6 +1,8 @@
 import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import path = require('path');
+import { Runner, RunnerFactory } from '../runners';
+import { prettier } from './formatting';
 
 export async function createMigrationDirectory(
   libraryPath: string,
@@ -17,6 +19,7 @@ export async function createMigrationDirectory(
 
   const migrationContent = `
 import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import { idColumn, timestampColumn } from '@hedhog/utils';
 
 export class Migration implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -24,25 +27,10 @@ export class Migration implements MigrationInterface {
       new Table({
         name: '${tableName}',
         columns: [
-            {
-                name: 'id',
-                type: 'int',
-                isPrimary: true,
-                isGenerated: true,
-                generationStrategy: 'increment',
-                unsigned: true,
-            },
+            idColumn(),
             ${fields.map((field, index) => generateColumnDefinition(field, index))}
-            {
-                name: 'created_at',
-                type: 'timestamp',
-                default: 'CURRENT_TIMESTAMP',
-            },
-             {
-                name: 'updated_at',
-                type: 'timestamp',
-                default: 'CURRENT_TIMESTAMP',
-            },
+            timestampColumn(),
+            timestampColumn('updated_at'),
         ],
       })
     );
@@ -56,12 +44,14 @@ export class Migration implements MigrationInterface {
 }
     `.trim();
 
-  await writeFile(path.join(migrationPath, 'index.ts'), migrationContent);
+  const migrationFilePath = path.join(migrationPath, 'index.ts');
+
+  await writeFile(migrationFilePath, migrationContent);
+  await prettier(migrationFilePath);
 }
 
 function generateColumnDefinition(field: any, index: number) {
-  let column = `
-    {
+  let column = `{
       name: '${field.name}',
       type: '${field.type}',
       ${field.length ? `length: '${field.length}',` : ''}
@@ -72,7 +62,7 @@ function generateColumnDefinition(field: any, index: number) {
 }
 
 export function parseFields(fieldsInput: string) {
-  return fieldsInput.split('/').map((field) => {
+  return fieldsInput.split(',').map((field) => {
     const [name, type, lengthOrRef, foreignTable, foreignColumn] =
       field.split(':');
     const isOptional = name.endsWith('?');

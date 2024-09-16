@@ -1,5 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { prettier } from './formatting';
 
 export async function createDTOs(libraryPath: string, fields: string) {
   const dtoPath = path.join(libraryPath, 'src', 'dto');
@@ -22,11 +23,13 @@ export class DeleteDTO {
 }
     `.trim();
 
-  await fs.writeFile(path.join(dtoPath, 'delete.dto.ts'), deleteDTOContent);
+  const deleteDtoFilePath = path.join(dtoPath, 'delete.dto.ts');
+  await fs.writeFile(deleteDtoFilePath, deleteDTOContent);
+  await prettier(deleteDtoFilePath);
 }
 
 function parseFields(fields: string): any[] {
-  return fields.split('/').map((field) => {
+  return fields.split(',').map((field) => {
     const [name, type, length] = field.split(':');
     return { name, type, length };
   });
@@ -96,7 +99,9 @@ export class CreateDTO {
 }
     `.trim();
 
-  await fs.writeFile(path.join(dtoPath, 'create.dto.ts'), createDTOContent);
+  const createDtoFilePath = path.join(dtoPath, 'create.dto.ts');
+  await fs.writeFile(createDtoFilePath, createDTOContent);
+  await prettier(createDtoFilePath);
 }
 
 async function createUpdateDTO(dtoPath: string, fields: string) {
@@ -113,5 +118,7 @@ export class UpdateDTO {
 }
     `.trim();
 
-  await fs.writeFile(path.join(dtoPath, 'update.dto.ts'), updateDTOContent);
+  const updateDtoFilePath = path.join(dtoPath, 'update.dto.ts');
+  await fs.writeFile(updateDtoFilePath, updateDTOContent);
+  await prettier(updateDtoFilePath);
 }

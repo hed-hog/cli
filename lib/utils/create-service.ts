@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { capitalize } from './formatting';
+import { capitalize, prettier } from './formatting';
 
 export async function createService(
   libraryPath: string,
@@ -104,8 +104,7 @@ export class ${capitalize(libraryName)}Service {
 }
   `.trim();
 
-  await fs.writeFile(
-    path.join(servicePath, `${libraryName}.service.ts`),
-    serviceContent,
-  );
+  const serviceFilePath = path.join(servicePath, `${libraryName}.service.ts`);
+  await fs.writeFile(serviceFilePath, serviceContent);
+  await prettier(serviceFilePath);
 }
