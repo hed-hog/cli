@@ -1,21 +1,36 @@
 import chalk = require('chalk');
 import * as fs from 'fs';
 import * as path from 'path';
-import * as ora from 'ora';
 import { AbstractAction } from './abstract.action';
 import { Input } from '../commands';
-import { Runner, RunnerFactory } from '../lib/runners';
 import {
   AbstractPackageManager,
   PackageManagerFactory,
 } from '../lib/package-managers';
-import { mkdir, writeFile } from 'fs/promises';
+import { createDTOs } from '../lib/utils/create-dto';
+import { createMigrationDirectory, parseFields } from '../lib/utils/migrations';
+import { createController } from '../lib/utils/create-controller';
+import { createModule } from '../lib/utils/create-module';
+import { createService } from '../lib/utils/create-service';
+import {
+  updateNestCliJson,
+  updatePackageJson,
+  updateTsconfigPaths,
+} from '../lib/utils/update-files';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
     const libraryName = String(
       inputs.find(({ name }) => name === 'name')?.value,
     ).toLowerCase();
+
+    const tableName = String(
+      options.find(({ name }) => name === 'table')?.value,
+    ).toLowerCase();
+
+    const fieldsInput = String(
+      options.find(({ name }) => name === 'fields' || name === 'f')?.value,
+    );
 
     const removeDefaultDeps =
       Boolean(options.find((i) => i.name === 'remove-default-deps')?.value) ??
@@ -34,23 +49,29 @@ export class CreateAction extends AbstractAction {
     }
 
     const libraryPath = path.join(process.cwd(), 'libs', libraryName);
-    await this.createDirectory(libraryName);
     this.createGitignore(libraryPath);
     this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
     this.createTsconfigProduction(libraryPath);
-    this.installDependencies(libraryPath, options);
-    await this.createMigrationDirectory(libraryPath);
-    await this.createEmptyDTODirectory(libraryPath);
+
+    await createMigrationDirectory(libraryPath, tableName, fieldsInput);
+    await createDTOs(libraryPath, fieldsInput);
+    await createModule(libraryPath, libraryName);
+    await createController(libraryPath, libraryName);
+    await createService(
+      libraryPath,
+      libraryName,
+      tableName,
+      parseFields(fieldsInput),
+    );
+    await this.createIndexFile(libraryPath, libraryName);
+
+    await updateNestCliJson(libraryName);
+    await updatePackageJson(libraryName);
+    await updateTsconfigPaths(libraryName);
+
+    await this.installDependencies(libraryPath, options);
 
     console.log(chalk.green(`Library ${libraryName} created successfully!`));
-  }
-
-  private async createDirectory(libraryName: string) {
-    const spinner = ora('Creating library directory').start();
-    const runner = RunnerFactory.create(Runner.NPX);
-    await runner?.run(`yes '' | npx @nestjs/cli g library ${libraryName}`);
-
-    spinner.succeed();
   }
 
   private createGitignore(libraryPath: string) {
@@ -58,6 +79,10 @@ export class CreateAction extends AbstractAction {
 /dist
 /node_modules
     `.trim();
+
+    if (!fs.existsSync(libraryPath)) {
+      fs.mkdirSync(libraryPath, { recursive: true });
+    }
 
     fs.writeFileSync(path.join(libraryPath, '.gitignore'), gitignoreContent);
   }
@@ -84,6 +109,7 @@ export class CreateAction extends AbstractAction {
         'ts-node': '^10.9.1',
         'typescript': '^5.1.3',
       },
+      peerDependencies: {},
     };
 
     if (!removeDefaultDeps) {
@@ -129,37 +155,49 @@ export class CreateAction extends AbstractAction {
     );
   }
 
-  async installDependencies(libraryPath: string, options: Input[]) {
+  private async installDependencies(libraryPath: string, options: Input[]) {
     const inputPackageManager = options.find(
       (option) => option.name === 'packageManager',
     )!.value as string;
 
-    let packageManager: AbstractPackageManager;
+    const packageManager: AbstractPackageManager =
+      PackageManagerFactory.create(inputPackageManager);
 
     try {
-      packageManager = PackageManagerFactory.create(inputPackageManager);
-      return packageManager.install(libraryPath, inputPackageManager);
+      console.log(chalk.blue('Installing production dependencies...'));
+      const dependencies = [
+        '@hedhog/auth',
+        '@hedhog/pagination',
+        '@hedhog/prisma',
+        'ts-node',
+        'typescript',
+      ];
+
+      const currentDir = process.cwd();
+      process.chdir(libraryPath);
+      await packageManager.addProduction(dependencies, 'latest');
+      process.chdir(currentDir);
+
+      console.log(chalk.green('Dependencies installed successfully.'));
     } catch (error) {
-      if (error && error.message) {
-        console.error(chalk.red(error.message));
-      }
+      console.log(chalk.red('Error installing dependencies:', error));
+      process.exit(1);
     }
   }
 
-  async createMigrationDirectory(libraryPath: string) {
-    const migrationPath = path.join(libraryPath, 'src', 'migrations');
-    await mkdir(migrationPath);
-    writeFile(
-      path.join(migrationPath, 'index.ts'),
-      `import { MigrationInterface, QueryRunner } from 'typeorm';
-export class Migrate implements MigrationInterface {
-  public async up(queryRunner: QueryRunner): Promise<void> {}
-  public async down(queryRunner: QueryRunner): Promise<void> {}
-}`,
-    );
-  }
+  private createIndexFile(libraryPath: string, libraryName: string) {
+    const srcPath = path.join(libraryPath, 'src');
 
-  async createEmptyDTODirectory(libraryPath: string) {
-    await mkdir(path.join(libraryPath, 'src', 'dto'));
+    if (!fs.existsSync(srcPath)) {
+      fs.mkdirSync(srcPath, { recursive: true });
+    }
+
+    const indexContent = `
+  export * from './${libraryName}.module';
+  export * from './${libraryName}.service';
+  export * from './${libraryName}.controller';
+    `.trim();
+
+    fs.writeFileSync(path.join(srcPath, 'index.ts'), indexContent);
   }
 }
