@@ -63,6 +63,7 @@ export class CreateAction extends AbstractAction {
       tableName,
       parseFields(fieldsInput),
     );
+    await this.createIndexFile(libraryPath, libraryName);
 
     await updateNestCliJson(libraryName);
     await updatePackageJson(libraryName);
@@ -182,5 +183,21 @@ export class CreateAction extends AbstractAction {
       console.log(chalk.red('Error installing dependencies:', error));
       process.exit(1);
     }
+  }
+
+  private createIndexFile(libraryPath: string, libraryName: string) {
+    const srcPath = path.join(libraryPath, 'src');
+
+    if (!fs.existsSync(srcPath)) {
+      fs.mkdirSync(srcPath, { recursive: true });
+    }
+
+    const indexContent = `
+  export * from './${libraryName}.module';
+  export * from './${libraryName}.service';
+  export * from './${libraryName}.controller';
+    `.trim();
+
+    fs.writeFileSync(path.join(srcPath, 'index.ts'), indexContent);
   }
 }
