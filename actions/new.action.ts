@@ -22,8 +22,6 @@ export class NewAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
     const language = this.detectLanguage();
 
-    console.log({ language });
-
     const name = String(
       inputs.find(({ name }) => name === 'name')?.value || 'hedhog',
     );
