@@ -20,7 +20,7 @@ import { writeFile } from 'fs/promises';
 
 export class NewAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
-    const language = this.detectLanguage();
+    this.detectLanguage();
 
     const name = String(
       inputs.find(({ name }) => name === 'name')?.value || 'hedhog',
@@ -270,8 +270,6 @@ export class NewAction extends AbstractAction {
   }
 
   detectLanguage() {
-    console.log('detectLanguage');
-
     const language =
       process.env.LANG ||
       process.env.LANGUAGE ||
@@ -279,7 +277,6 @@ export class NewAction extends AbstractAction {
       process.env.LC_MESSAGES;
 
     if (!language) {
-      console.log('langauge not found', language);
       return 'en-us';
     }
 
