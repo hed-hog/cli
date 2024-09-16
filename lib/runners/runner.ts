@@ -4,4 +4,5 @@ export enum Runner {
   YARN,
   PNPM,
   NPX,
+  DOCKER,
 }

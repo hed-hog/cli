@@ -17,11 +17,11 @@ export class AddAction extends AbstractAction {
       inputs.find((input) => input.name === 'module')?.value || '',
     ).toLowerCase();
     const appModuleName = 'app.module.ts';
-    const appModulePath = `src/${appModuleName}`;
+    const appModulePath = `backend/src/${appModuleName}`;
     const addModuleName = `${this.capitalizeFirstLetter(module)}Module`;
     const packageName = `@hedhog/${module}`;
     const directoryPath = process.cwd();
-    const nodeModulePath = `node_modules/@hedhog/${module}`;
+    const nodeModulePath = `backend/node_modules/@hedhog/${module}`;
 
     if (!this.checkIfDirectoryIsPackage(directoryPath)) {
       console.error(chalk.red('This directory is not a package.'));

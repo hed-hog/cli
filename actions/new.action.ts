@@ -12,26 +12,65 @@ import {
 } from '../lib/package-managers';
 import chalk = require('chalk');
 import { AddAction } from './add.action';
-import { MESSAGES } from '../lib/ui';
+import { EMOJIS, MESSAGES } from '../lib/ui';
 import * as inquirer from 'inquirer';
 import { Runner, RunnerFactory } from '../lib/runners';
+import { createServer } from 'net';
+import { writeFile } from 'fs/promises';
 
 export class NewAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
+    const language = this.detectLanguage();
+
+    console.log({ language });
+
     const name = String(
       inputs.find(({ name }) => name === 'name')?.value || 'hedhog',
     );
+
     const directory = options.find(({ name }) => name === 'directory');
     const directoryPath = `${String(directory?.value) || '.'}/${name}`;
+    const backEndDirectoryPath = join(directoryPath, 'backend');
     let database = options.find(({ name }) => name === 'database')?.value;
     let dbhost = options.find(({ name }) => name === 'dbhost')?.value;
     let dbport = options.find(({ name }) => name === 'dbport')?.value;
     let dbuser = options.find(({ name }) => name === 'dbuser')?.value;
     let dbpassword = options.find(({ name }) => name === 'dbpassword')?.value;
     let dbname = options.find(({ name }) => name === 'dbname')?.value;
+    let docker = 'no';
+    let hasDocker = false;
+
+    if (!(await this.checkDirectoryIsNotExists(directoryPath))) {
+      const answerDirectory = await inquirer.createPromptModule({
+        output: process.stderr,
+        input: process.stdin,
+      })({
+        type: 'list',
+        name: 'clear',
+        message: `The directory ${name} is not empty. Do you want to overwrite it?`,
+        choices: ['yes', 'no'],
+      });
+
+      if (answerDirectory.clear === 'yes') {
+        this.removeDirectory(directoryPath);
+      } else {
+        return console.log(
+          chalk.yellow(
+            `${EMOJIS.WARNING}  Operation cancelled by user because the directory ${name} is not empty`,
+          ),
+        );
+      }
+    }
+
+    await this.cloneRepository(
+      'https://github.com/hed-hog/bootstrap.git',
+      directoryPath,
+    );
+
+    await this.configureGit(directoryPath);
 
     if (!database) {
-      const answer = await inquirer.createPromptModule({
+      const answerDatabase = await inquirer.createPromptModule({
         output: process.stderr,
         input: process.stdin,
       })({
@@ -41,7 +80,7 @@ export class NewAction extends AbstractAction {
         choices: ['postgres', 'mysql'],
       });
 
-      database = answer.database;
+      database = answerDatabase.database;
     }
 
     if (!dbhost) {
@@ -80,7 +119,7 @@ export class NewAction extends AbstractAction {
         type: 'input',
         name: 'dbuser',
         message: 'Enter database user',
-        default: database === 'postgres' ? 'postgres' : 'root',
+        default: `hedhog`,
       });
 
       dbuser = answer.dbuser;
@@ -94,7 +133,7 @@ export class NewAction extends AbstractAction {
         type: 'input',
         name: 'dbpassword',
         message: 'Enter database password',
-        default: database === 'postgres' ? 'postgres' : 'root',
+        default: `changeme`,
       });
 
       dbpassword = answer.dbpassword;
@@ -108,13 +147,13 @@ export class NewAction extends AbstractAction {
         type: 'input',
         name: 'dbname',
         message: 'Enter database name',
-        default: 'hedhog',
+        default: `hedhog`,
       });
 
       dbname = answer.dbname;
     }
 
-    const databaseConnection = await this.testDatabaConnection(
+    let databaseConnection = await this.testDatabaseConnection(
       database as 'postgres' | 'mysql',
       dbhost as string,
       Number(dbport),
@@ -123,27 +162,72 @@ export class NewAction extends AbstractAction {
       dbname as string,
     );
 
-    const migrationTableExists = await this.migrationtableExists(
-      database as 'postgres' | 'mysql',
-      dbhost as string,
-      Number(dbport),
-      dbuser as string,
-      dbpassword as string,
-      dbname as string,
-    );
+    if (!databaseConnection) {
+      hasDocker = await this.isDockerInstalled();
 
-    if (migrationTableExists) {
-      console.warn(chalk.yellow('Migration table already exists'));
+      if (hasDocker) {
+        const answerDocker = await inquirer.createPromptModule({
+          output: process.stderr,
+          input: process.stdin,
+        })({
+          type: 'list',
+          name: 'docker',
+          message: 'Would you like to use docker for create a database?',
+          choices: ['yes', 'no'],
+        });
+
+        docker = answerDocker.docker;
+      }
     }
 
-    await this.cloneRepository(
-      'https://github.com/hed-hog/bootstrap.git',
-      directoryPath,
-    );
+    if (docker === 'yes') {
+      dbport = String(
+        await this.findAvailablePort(database === 'postgres' ? 5432 : 3306),
+      );
 
-    await this.configureGit(directoryPath);
+      await this.createDockerCompose(
+        directoryPath,
+        database as 'postgres' | 'mysql',
+        String(dbuser),
+        String(dbpassword),
+        String(dbname),
+        Number(dbport),
+      );
 
-    await this.createEnvFile(directoryPath, {
+      await this.runDockerCompose(directoryPath);
+
+      databaseConnection = await this.retryTestDatabaseConnection(
+        database as 'postgres' | 'mysql',
+        dbhost as string,
+        Number(dbport),
+        dbuser as string,
+        dbpassword as string,
+        dbname as string,
+      );
+    }
+
+    console.log({
+      databaseConnection,
+    });
+
+    if (databaseConnection) {
+      const migrationTableExists = await this.migrationtableExists(
+        database as 'postgres' | 'mysql',
+        dbhost as string,
+        Number(dbport),
+        dbuser as string,
+        dbpassword as string,
+        dbname as string,
+      );
+
+      console.log({ migrationTableExists });
+
+      if (migrationTableExists) {
+        ora('').start().warn('Migration table already exists');
+      }
+    }
+
+    await this.createEnvFile(backEndDirectoryPath, {
       type: database as 'postgres' | 'mysql',
       host: dbhost as string,
       port: Number(dbport),
@@ -154,17 +238,20 @@ export class NewAction extends AbstractAction {
 
     await this.updatePrismaProvider(
       database as 'postgres' | 'mysql',
-      directoryPath,
+      backEndDirectoryPath,
     );
 
     await this.updateDatabaseProviderTypeORM(
       database as 'postgres' | 'mysql',
-      directoryPath,
+      backEndDirectoryPath,
     );
 
-    const packageManager = await this.installPackages(options, directoryPath);
+    const packageManager = await this.installPackages(
+      options,
+      backEndDirectoryPath,
+    );
 
-    process.chdir(name);
+    process.chdir(backEndDirectoryPath);
 
     switch (database) {
       case 'postgres':
@@ -173,27 +260,171 @@ export class NewAction extends AbstractAction {
       case 'mysql':
         await this.installMySql(options);
         break;
-      
     }
 
-    process.chdir('..');
+    process.chdir('../..');
+
+    console.log({ databaseConnection });
 
     if (databaseConnection) {
-      await this.runScript('migrate:up', join(process.cwd(), name));
+      const result = await this.runScript(
+        'migrate:up',
+        join(process.cwd(), backEndDirectoryPath),
+      );
+      console.log({ result });
     }
 
-    this.complete(name, packageManager ?? 'npm');
+    this.complete(name, packageManager ?? 'npm', databaseConnection, hasDocker);
   }
 
-  complete(directory: string, packageManager: string) {
+  detectLanguage() {
+    console.log('detectLanguage');
+
+    const language =
+      process.env.LANG ||
+      process.env.LANGUAGE ||
+      process.env.LC_ALL ||
+      process.env.LC_MESSAGES;
+
+    if (!language) {
+      console.log('langauge not found', language);
+      return 'en-us';
+    }
+
+    return language;
+  }
+
+  complete(
+    directory: string,
+    packageManager: string,
+    databaseConnection: boolean,
+    hasDocker: boolean,
+  ) {
     console.info();
     console.info(MESSAGES.PACKAGE_MANAGER_INSTALLATION_SUCCEED(directory));
     console.info(MESSAGES.CONFIG_DATABASE);
     console.info(MESSAGES.GET_STARTED_INFORMATION);
     console.info();
+
     console.info(chalk.gray(MESSAGES.CHANGE_DIR_COMMAND(directory)));
+
+    if (hasDocker && !databaseConnection) {
+      console.info(chalk.gray(`$ docker compose up -d --build`));
+    }
+
     console.info(chalk.gray(MESSAGES.START_COMMAND(packageManager)));
     console.info();
+  }
+
+  async removeDirectory(directory: string) {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+
+  async checkDirectoryIsNotExists(directory: string) {
+    return !fs.existsSync(directory);
+  }
+
+  async runDockerCompose(directory: string) {
+    const spinner = ora('Running docker-compose').start();
+    const docker = RunnerFactory.create(Runner.DOCKER);
+
+    try {
+      await docker?.run('compose up -d --build --quiet-pull', true, directory);
+      spinner.succeed(`Docker-compose up and running`);
+    } catch (error) {
+      spinner.fail('Error running docker-compose');
+    }
+  }
+
+  getDockerEnvironmentVariables(
+    type: 'postgres' | 'mysql',
+    username: string,
+    password: string,
+    databasename: string,
+  ) {
+    if (type === 'mysql') {
+      return `MYSQL_USER: ${username}
+      MYSQL_PASSWORD: ${password}
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${databasename}`;
+    } else {
+      return `POSTGRES_USER: ${username}
+      POSTGRES_PASSWORD: ${password}
+      POSTGRES_DB: ${databasename}`;
+    }
+  }
+
+  async createDockerCompose(
+    directory: string,
+    type: 'postgres' | 'mysql',
+    username: string,
+    password: string,
+    databasename: string,
+    databasePort: number,
+  ) {
+    const spinner = ora('Creating docker-compose file').start();
+
+    const dockerComposeContent = `services:
+  database:
+    image: ${type}
+    restart: always
+    environment:
+      ${this.getDockerEnvironmentVariables(type, username, password, databasename)}
+    ports:
+      - ${databasePort}:${type === 'mysql' ? 3306 : 5432}
+    volumes:
+      - ./data:${type === 'mysql' ? '/var/lib/mysql' : '/var/lib/postgresql/data'}
+    healthcheck:
+      test: ${type === 'mysql' ? 'mysqladmin ping -h	mysql' : 'pg_isready -U postgres'}
+      interval: 10s
+      timeout: 5s
+      retries: 5`;
+
+    await writeFile(
+      join(directory, 'docker-compose.yml'),
+      dockerComposeContent,
+      'utf-8',
+    );
+
+    spinner.succeed(`Docker-compose file created`);
+  }
+
+  async isPortAvailable(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const server = createServer();
+
+      server.once('error', () => {
+        resolve(false);
+      });
+
+      server.once('listening', () => {
+        server.close(() => {
+          resolve(true);
+        });
+      });
+
+      server.listen(port);
+    });
+  }
+
+  async findAvailablePort(port: number): Promise<number> {
+    return this.isPortAvailable(port).then((available) => {
+      if (available) {
+        return port;
+      } else {
+        return this.findAvailablePort(port + 1);
+      }
+    });
+  }
+
+  async isDockerInstalled() {
+    const docker = RunnerFactory.create(Runner.DOCKER);
+    try {
+      await docker?.run('--version');
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   async updatePrismaProvider(type: 'postgres' | 'mysql', directory: string) {
@@ -268,10 +499,11 @@ export class NewAction extends AbstractAction {
         case 'mysql':
           const mysql = await import('mysql2/promise');
           const connection = await mysql.createConnection({
-            host,
             user,
-            password,
+            host,
             database,
+            password,
+            port,
           });
           query = `SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = ? AND table_name = ?`;
           const result = await connection.query(query, [
@@ -287,24 +519,63 @@ export class NewAction extends AbstractAction {
     }
   }
 
-  async testDatabaConnection(
+  async retryTestDatabaseConnection(
     type: 'postgres' | 'mysql',
     host: string,
     port: number,
     user: string,
     password: string,
     database: string,
+    retries = 12,
+    interval = 5000,
   ) {
+    const spinner = ora('Testing database connection').start();
+    let retry = 0;
+
+    while (retry < retries) {
+      const result = await this.testDatabaseConnection(
+        type,
+        host,
+        port,
+        user,
+        password,
+        database,
+      );
+
+      if (result) {
+        spinner.succeed(
+          `Database connection successful after ${retry} retries`,
+        );
+        return true;
+      } else {
+        retry++;
+        await new Promise((resolve) => setTimeout(resolve, interval));
+      }
+    }
+
+    spinner.fail(`Database connection failed after ${retries} retries.`);
+
+    return false;
+  }
+
+  async testDatabaseConnection(
+    type: 'postgres' | 'mysql',
+    host: string,
+    port: number,
+    user: string,
+    password: string,
+    database: string,
+  ): Promise<boolean> {
     const spinner = ora('Testing database connection').start();
     let result: any;
     try {
       if (type === 'postgres') {
         const { Client } = await import('pg');
         const client = new Client({
-          user,
           host,
-          database,
+          user,
           password,
+          database,
           port,
         });
         await client.connect();
@@ -317,16 +588,16 @@ export class NewAction extends AbstractAction {
           user,
           password,
           database,
+          port,
         });
         result = await connection.query('SELECT NOW()');
         await connection.end();
       }
-      spinner.succeed();
+      spinner.succeed(`Database connection successful`);
     } catch (error) {
       spinner.fail('Database connection failed: ' + error.message);
       return false;
     }
-    spinner.succeed('Database connection successful');
     return true;
   }
 
