@@ -206,10 +206,6 @@ export class NewAction extends AbstractAction {
       );
     }
 
-    console.log({
-      databaseConnection,
-    });
-
     if (databaseConnection) {
       const migrationTableExists = await this.migrationtableExists(
         database as 'postgres' | 'mysql',
@@ -219,8 +215,6 @@ export class NewAction extends AbstractAction {
         dbpassword as string,
         dbname as string,
       );
-
-      console.log({ migrationTableExists });
 
       if (migrationTableExists) {
         ora('').start().warn('Migration table already exists');
