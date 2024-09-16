@@ -68,8 +68,14 @@ function getValidator(field: any, isOptional = false): string {
     case 'int':
       validations.push(`@IsInt()`);
       break;
+    case 'decimal':
+      validations.push(`@IsDecimal()`);
+      break;
     case 'date':
       validations.push(`@IsDate()`);
+      break;
+    case 'boolean':
+      validations.push(`@IsBoolean()`);
       break;
     case 'fk':
       validations.push(`@IsInt()`);
@@ -82,7 +88,7 @@ function getValidator(field: any, isOptional = false): string {
     validations.push('@IsOptional()');
   }
 
-  return `${validations.join('\n  ')}\n  ${name}${isOptional ? '?' : ''}: ${type === 'fk' ? 'number' : getPrimitiveType(type)};`;
+  return `${validations.join('\n  ')}\n  ${name}${isOptional && !field.name.includes('?') ? '?' : ''}: ${type === 'fk' ? 'number' : getPrimitiveType(type)};`;
 }
 
 async function createCreateDTO(dtoPath: string, fields: string) {
@@ -92,7 +98,7 @@ async function createCreateDTO(dtoPath: string, fields: string) {
     .join('\n\n  ');
 
   const createDTOContent = `
-import { IsString, IsInt, IsOptional, Length, IsDate } from 'class-validator';
+import { IsString, IsInt, IsOptional, Length, IsDate, IsDecimal, IsBoolean } from 'class-validator';
 
 export class CreateDTO {
   ${dtoFields}
@@ -111,7 +117,7 @@ async function createUpdateDTO(dtoPath: string, fields: string) {
     .join('\n\n  ');
 
   const updateDTOContent = `
-import { IsString, IsInt, IsOptional, Length, IsDate } from 'class-validator';
+import { IsString, IsInt, IsOptional, Length, IsDate, IsDecimal, IsBoolean } from 'class-validator';
 
 export class UpdateDTO {
   ${dtoFields}

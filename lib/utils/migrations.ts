@@ -28,7 +28,7 @@ export class Migration implements MigrationInterface {
         name: '${tableName}',
         columns: [
             idColumn(),
-            ${fields.map((field, index) => generateColumnDefinition(field, index))}
+            ${fields.map((field, index) => generateColumnDefinition(field, index))},
             timestampColumn(),
             timestampColumn('updated_at'),
         ],
@@ -51,12 +51,20 @@ export class Migration implements MigrationInterface {
 }
 
 function generateColumnDefinition(field: any, index: number) {
+  let columnParts: string[] = [
+    `name: '${field.name}'`,
+    `type: '${field.type}'`,
+  ];
+
+  if (field.length) {
+    columnParts.push(`length: '${field.length}'`);
+  }
+
+  columnParts.push(`isNullable: ${field.isNullable ? 'true' : 'false'}`);
+
   let column = `{
-      name: '${field.name}',
-      type: '${field.type}',
-      ${field.length ? `length: '${field.length}',` : ''}
-      ${field.isNullable ? 'isNullable: true,' : 'isNullable: false,'}
-    }${Boolean(index !== 0) ? ',' : ''}`;
+    ${columnParts.join(',\n    ')}
+  }`;
 
   return column;
 }
