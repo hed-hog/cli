@@ -305,6 +305,10 @@ export class AddAction extends AbstractAction {
       return;
     }
 
+    if (newModule === 'MailModule') {
+      newModule = `MailModule.register({ type: '' //Choose AWS, SMTP or GMAIL })`;
+    }
+
     // Adiciona o novo módulo no início da lista
     importsList.unshift(newModule);
 
