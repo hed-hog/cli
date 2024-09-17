@@ -5,7 +5,7 @@ import { AbstractAction } from './abstract.action';
 import * as ora from 'ora';
 import { existsSync } from 'fs';
 import { readdir, readFile, writeFile } from 'fs/promises';
-import { EMOJIS, MESSAGES } from '../lib/ui';
+import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { join } from 'path';
 import { Runner, RunnerFactory } from '../lib/runners';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
@@ -56,8 +56,6 @@ export class AddAction extends AbstractAction {
       join(directoryPath, 'backend', '.env'),
     );
 
-    console.log({ envVars });
-
     if (
       envVars.DATABASE_URL &&
       envVars.DB_HOST &&
@@ -68,8 +66,6 @@ export class AddAction extends AbstractAction {
     ) {
       const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
 
-      console.log({ type });
-
       const isDbConnected = await testDatabaseConnection(
         type,
         envVars.DB_HOST,
@@ -78,8 +74,6 @@ export class AddAction extends AbstractAction {
         envVars.DB_PASSWORD,
         envVars.DB_DATABASE,
       );
-
-      console.log({ isDbConnected });
 
       if (isDbConnected) {
         await runScript('migrate:up', join(directoryPath, 'backend'));
@@ -167,6 +161,8 @@ export class AddAction extends AbstractAction {
   }
 
   async complete(module: string) {
+    console.info();
+    console.info(chalk.red(BANNER));
     console.info();
     console.info(MESSAGES.PACKAGE_MANAGER_INSTALLATION_SUCCEED(module));
     console.info(MESSAGES.GET_STARTED_INFORMATION);
