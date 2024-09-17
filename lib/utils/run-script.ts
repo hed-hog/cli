@@ -9,12 +9,6 @@ export async function runScript(
   name: string,
   collect = false,
 ) {
-  console.log('runScript', {
-    scriptName,
-    name,
-    collect,
-  });
-
   let packageManager: AbstractPackageManager;
 
   try {

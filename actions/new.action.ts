@@ -278,11 +278,7 @@ export class NewAction extends AbstractAction {
     process.chdir('../..');
 
     if (databaseConnection) {
-      await runScript(
-        'migrate:up',
-        join(process.cwd(), backEndDirectoryPath),
-        true,
-      );
+      await runScript('migrate:up', join(process.cwd(), backEndDirectoryPath));
     }
 
     this.complete(name, packageManager ?? 'npm', databaseConnection, hasDocker);
