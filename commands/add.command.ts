@@ -12,6 +12,8 @@ export class AddCommand extends AbstractCommand {
       .description('Adds support for an external module to your project.')
       .usage('<module> [options] [module-specific-options]')
       .action(async (module, command) => {
+        console.log('add command called');
+
         const options: Input[] = [];
 
         options.push({ name: 'silentComplete', value: command.silentComplete });

@@ -14,6 +14,8 @@ import { getRootPath } from '../lib/utils/get-root-path';
 
 export class AddAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
+    console.log('AddAction', { inputs, options });
+
     let migrateRun = false;
     const silentComplete =
       options.find(({ name }) => name === 'silentComplete')?.value || false;
@@ -37,6 +39,16 @@ export class AddAction extends AbstractAction {
       `@hedhog`,
       `${module}`,
     );
+
+    console.log({
+      silentComplete,
+      module,
+      directoryPath,
+      appModulePath,
+      addModuleName,
+      packageName,
+      nodeModulePath,
+    });
 
     if (!this.checkIfDirectoryIsPackage(directoryPath)) {
       console.error(chalk.red('This directory is not a package.'));
@@ -98,6 +110,11 @@ export class AddAction extends AbstractAction {
   async getModuleDependencies(modulePath: string) {
     const packageJsonPath = join(modulePath, 'package.json');
 
+    console.log('getModuleDependencies', {
+      modulePath,
+      packageJsonPath,
+    });
+
     if (!existsSync(packageJsonPath)) {
       throw new Error('package.json not found.');
     }
@@ -156,6 +173,12 @@ export class AddAction extends AbstractAction {
       ([name]: [string, any]) =>
         !packageInstalledModules.find(([moduleName]) => moduleName === name),
     );
+
+    console.log({
+      moduleDependences,
+      packageInstalledModules,
+      missingDependences,
+    });
 
     for (const [name] of missingDependences) {
       await this.add(name);
@@ -345,27 +368,33 @@ export class AddAction extends AbstractAction {
   }
 
   checkIfDirectoryIsPackage(directory: string) {
+    console.log('checkIfDirectoryIsPackage', { directory });
     const spinner = ora('Checking directory...').start();
     try {
       const packageJson = require(`${directory}/package.json`);
+
+      console.log('checkIfDirectoryIsPackage', {
+        directory,
+        packageJson,
+      });
 
       if (!existsSync(join(directory, 'backend'))) {
         throw new Error(
           'Directory is not a hedhog project beacaue backend folder not found.',
         );
       }
-
+      /*
       if (!existsSync(join(directory, 'admin'))) {
         throw new Error(
           'Directory is not a hedhog project beacaue admin folder not found.',
         );
       }
-
+      */
       spinner.succeed('Directory is a package.');
       return packageJson;
     } catch (error) {
-      console.error(error.message);
-      spinner.fail('Directory is not a package.');
+      console.log({ error });
+      spinner.fail('Directory is not a package. ' + error.message);
       return false;
     }
   }
