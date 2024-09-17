@@ -24,4 +24,5 @@ export const EMOJIS = {
   FIRE: get('fire'),
   OK: get('ok'),
   CHECK: get('white_check_mark'),
+  ERROR: get('x'),
 };

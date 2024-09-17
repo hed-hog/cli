@@ -5,9 +5,12 @@ import { AbstractAction } from './abstract.action';
 import * as ora from 'ora';
 import { existsSync } from 'fs';
 import { readdir, readFile, writeFile } from 'fs/promises';
-import { MESSAGES } from '../lib/ui';
+import { EMOJIS, MESSAGES } from '../lib/ui';
 import { join } from 'path';
 import { Runner, RunnerFactory } from '../lib/runners';
+import { testDatabaseConnection } from '../lib/utils/test-database-connection';
+import { runScript } from '../lib/utils/run-script';
+import { getRootPath } from '../lib/utils/get-root-path';
 
 export class AddAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -16,12 +19,23 @@ export class AddAction extends AbstractAction {
     const module = String(
       inputs.find((input) => input.name === 'module')?.value || '',
     ).toLowerCase();
-    const appModuleName = 'app.module.ts';
-    const appModulePath = `backend/src/${appModuleName}`;
+
+    const directoryPath = await getRootPath();
+    const appModulePath = join(
+      directoryPath,
+      'backend',
+      'src',
+      'app.module.ts',
+    );
     const addModuleName = `${this.capitalizeFirstLetter(module)}Module`;
     const packageName = `@hedhog/${module}`;
-    const directoryPath = process.cwd();
-    const nodeModulePath = `backend/node_modules/@hedhog/${module}`;
+    const nodeModulePath = join(
+      directoryPath,
+      `backend`,
+      `node_modules`,
+      `@hedhog`,
+      `${module}`,
+    );
 
     if (!this.checkIfDirectoryIsPackage(directoryPath)) {
       console.error(chalk.red('This directory is not a package.'));
@@ -30,13 +44,47 @@ export class AddAction extends AbstractAction {
 
     await this.installPackage(packageName);
 
-    await this.checkDependences(module, nodeModulePath);
+    await this.checkDependences(directoryPath, module, nodeModulePath);
 
     await this.checkIfModuleExists(module, nodeModulePath);
 
     await this.modifyAppModule(appModulePath, addModuleName, packageName);
 
-    await this.copyMigrationsFiles(nodeModulePath);
+    await this.copyMigrationsFiles(directoryPath, nodeModulePath);
+
+    const envVars = await this.parseEnvFile(
+      join(directoryPath, 'backend', '.env'),
+    );
+
+    console.log({ envVars });
+
+    if (
+      envVars.DATABASE_URL &&
+      envVars.DB_HOST &&
+      envVars.DB_PORT &&
+      envVars.DB_USERNAME &&
+      envVars.DB_PASSWORD &&
+      envVars.DB_DATABASE
+    ) {
+      const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
+
+      console.log({ type });
+
+      const isDbConnected = await testDatabaseConnection(
+        type,
+        envVars.DB_HOST,
+        Number(envVars.DB_PORT),
+        envVars.DB_USERNAME,
+        envVars.DB_PASSWORD,
+        envVars.DB_DATABASE,
+      );
+
+      console.log({ isDbConnected });
+
+      if (isDbConnected) {
+        await runScript('migrate:up', join(directoryPath, 'backend'));
+      }
+    }
 
     if (!silentComplete) {
       await this.complete(module);
@@ -52,7 +100,7 @@ export class AddAction extends AbstractAction {
   }
 
   async getModuleDependencies(modulePath: string) {
-    const packageJsonPath = join(process.cwd(), modulePath, 'package.json');
+    const packageJsonPath = join(modulePath, 'package.json');
 
     if (!existsSync(packageJsonPath)) {
       throw new Error('package.json not found.');
@@ -76,8 +124,8 @@ export class AddAction extends AbstractAction {
     return hedhogDependencies;
   }
 
-  getPackageInstalledModules(moduleName: string) {
-    const packageJsonMainPath = join(process.cwd(), 'package.json');
+  getPackageInstalledModules(directoryPath: string, moduleName: string) {
+    const packageJsonMainPath = join(directoryPath, 'package.json');
 
     const packageJsonMain = require(packageJsonMainPath);
 
@@ -97,9 +145,16 @@ export class AddAction extends AbstractAction {
     return hedhogModules;
   }
 
-  async checkDependences(moduleName: string, modulePath: string) {
+  async checkDependences(
+    directoryPath: string,
+    moduleName: string,
+    modulePath: string,
+  ) {
     const moduleDependences = await this.getModuleDependencies(modulePath);
-    const packageInstalledModules = this.getPackageInstalledModules(moduleName);
+    const packageInstalledModules = this.getPackageInstalledModules(
+      directoryPath,
+      moduleName,
+    );
 
     const missingDependences = moduleDependences.filter(
       ([name]: [string, any]) =>
@@ -120,10 +175,10 @@ export class AddAction extends AbstractAction {
     console.info();
   }
 
-  async copyMigrationsFiles(nodeModulePath: string) {
+  async copyMigrationsFiles(directoryPath: string, nodeModulePath: string) {
     const spinner = ora('Copying migrations files...').start();
     try {
-      const migrationsPath = `${nodeModulePath}/src/migrations`;
+      const migrationsPath = join(`${nodeModulePath}`, `src`, `migrations`);
 
       if (existsSync(migrationsPath)) {
         let migrationsFiles = (await readdir(migrationsPath))
@@ -138,7 +193,14 @@ export class AddAction extends AbstractAction {
           );
 
           await writeFile(
-            `src/typeorm/migrations/${timestamp}-migrate.ts`,
+            join(
+              directoryPath,
+              `backend`,
+              `src`,
+              `typeorm`,
+              `migrations`,
+              `${timestamp}-migrate.ts`,
+            ),
             fileContent.replace(
               /export class Migrate implements/g,
               `export class Migrate${timestamp} implements`,
@@ -189,7 +251,11 @@ export class AddAction extends AbstractAction {
         fileContent = `${importStatement}\n\n${fileContent}`;
       }
     } else {
-      console.log(`A linha de import para "${newModule}" já está presente.`);
+      console.warn(
+        chalk.yellow(
+          `${EMOJIS.WARNING} The row for "${newModule}" module already exists.`,
+        ),
+      );
     }
 
     // Encontra o decorador @Module
@@ -209,7 +275,7 @@ export class AddAction extends AbstractAction {
     const importsMatch = importsRegex.exec(moduleContent);
 
     if (!importsMatch) {
-      console.error('Propriedade "imports" não encontrada.');
+      console.error('"imports" property not found in @Module decorator.');
       return;
     }
 
@@ -219,7 +285,11 @@ export class AddAction extends AbstractAction {
     const alreadyImported = importsList.some((imp) => imp.includes(newModule));
 
     if (alreadyImported) {
-      console.log(`O módulo "${newModule}" já está presente nos imports.`);
+      console.warn(
+        chalk.yellow(
+          `${EMOJIS.WARNING} The "${newModule}" module is already imported.`,
+        ),
+      );
       return;
     }
 
@@ -244,56 +314,9 @@ export class AddAction extends AbstractAction {
     await this.npx(`prettier --write ${filePath}`);
   }
 
-  async addModuleImportToAppModule(
-    module: string,
-    addModuleName: string,
-    moduleImport: string,
-    appModulePath: string,
-  ) {
-    const spinner = ora('Adding module to app module...').start();
-    if (!['utils'].includes(module.toLowerCase())) {
-      try {
-        let appModuleContent = await readFile(appModulePath, 'utf8');
-
-        spinner.text = 'Checking if module already exists in app module...';
-
-        if (appModuleContent.includes(moduleImport)) {
-          spinner.warn('Module already exists in app module.');
-          return false;
-        }
-
-        spinner.text = 'Adding module to app module...';
-
-        appModuleContent = `${moduleImport}
-${appModuleContent}
-      `;
-
-        appModuleContent = appModuleContent.replace(
-          /(\n\s*imports:\s*\[[\s\S]*?)(\n\s*\])/m,
-          `$1\n    ${addModuleName},$2`,
-        );
-
-        spinner.text = 'Writing changes to app module...';
-
-        await writeFile(appModulePath, appModuleContent);
-
-        spinner.succeed('Module added to app module.');
-
-        return true;
-      } catch (error) {
-        spinner.fail(error.message);
-
-        return false;
-      }
-    } else {
-      spinner.succeed('Module import skipped.');
-      return false;
-    }
-  }
-
   async checkIfModuleExists(module: string, nodeModulePath: string) {
     const spinner = ora('Checking module installed...').start();
-    const path = `${nodeModulePath}/dist/${module}.module.js`;
+    const path = join(nodeModulePath, 'dist', `${module}.module.js`);
 
     try {
       await readFile(path);
@@ -310,13 +333,22 @@ ${appModuleContent}
     try {
       const packageJson = require(`${directory}/package.json`);
 
-      if (!packageJson.dependencies['@nestjs/core']) {
-        throw new Error('Directory is not a package.');
+      if (!existsSync(join(directory, 'backend'))) {
+        throw new Error(
+          'Directory is not a hedhog project beacaue backend folder not found.',
+        );
+      }
+
+      if (!existsSync(join(directory, 'admin'))) {
+        throw new Error(
+          'Directory is not a hedhog project beacaue admin folder not found.',
+        );
       }
 
       spinner.succeed('Directory is a package.');
       return packageJson;
     } catch (error) {
+      console.error(error.message);
       spinner.fail('Directory is not a package.');
       return false;
     }
@@ -331,5 +363,25 @@ ${appModuleContent}
     const result = await packageManager.addProduction([module], 'latest');
 
     return result;
+  }
+
+  async parseEnvFile(envPath: string) {
+    if (existsSync(envPath)) {
+      const envFile = await readFile(envPath, 'utf-8');
+      const envLines = envFile.split('\n');
+
+      const env: any = {};
+
+      for (const line of envLines) {
+        const [key, value] = line.split('=');
+        if (key && value) {
+          env[key] = value.replaceAll(/['"]+/g, '');
+        }
+      }
+
+      return env;
+    } else {
+      console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
+    }
   }
 }

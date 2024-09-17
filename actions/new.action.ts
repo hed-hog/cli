@@ -17,6 +17,8 @@ import * as inquirer from 'inquirer';
 import { Runner, RunnerFactory } from '../lib/runners';
 import { createServer } from 'net';
 import { writeFile } from 'fs/promises';
+import { testDatabaseConnection } from '../lib/utils/test-database-connection';
+import { runScript } from '../lib/utils/run-script';
 
 export class NewAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -153,7 +155,7 @@ export class NewAction extends AbstractAction {
 
     const spinner = ora('Testing database connection').start();
 
-    let databaseConnection = await this.testDatabaseConnection(
+    let databaseConnection = await testDatabaseConnection(
       database as 'postgres' | 'mysql',
       dbhost as string,
       Number(dbport),
@@ -267,7 +269,7 @@ export class NewAction extends AbstractAction {
     process.chdir('../..');
 
     if (databaseConnection) {
-      await this.runScript(
+      await runScript(
         'migrate:up',
         join(process.cwd(), backEndDirectoryPath),
         true,
@@ -535,7 +537,7 @@ export class NewAction extends AbstractAction {
     let retry = 0;
 
     while (retry < retries) {
-      const result = await this.testDatabaseConnection(
+      const result = await testDatabaseConnection(
         type,
         host,
         port,
@@ -561,64 +563,12 @@ export class NewAction extends AbstractAction {
     return false;
   }
 
-  async testDatabaseConnection(
-    type: 'postgres' | 'mysql',
-    host: string,
-    port: number,
-    user: string,
-    password: string,
-    database: string,
-  ): Promise<boolean> {
-    try {
-      if (type === 'postgres') {
-        const { Client } = await import('pg');
-        const client = new Client({
-          host,
-          user,
-          password,
-          database,
-          port,
-        });
-        await client.connect();
-        await client.query('SELECT NOW()');
-        await client.end();
-      } else if (type === 'mysql') {
-        const mysql = await import('mysql2/promise');
-        const connection = await mysql.createConnection({
-          host,
-          user,
-          password,
-          database,
-          port,
-        });
-        await connection.query('SELECT NOW()');
-        await connection.end();
-      }
-    } catch (error) {
-      return false;
-    }
-    return true;
-  }
-
   async add(module: string) {
     const action = new AddAction();
     return action.handle(
       [{ name: 'module', value: module }],
       [{ name: 'silentComplete', value: true }],
     );
-  }
-
-  async runScript(scriptName: string, name: string, collect = false) {
-    let packageManager: AbstractPackageManager;
-
-    try {
-      packageManager = await PackageManagerFactory.find();
-      return packageManager.runScript(scriptName, name, collect);
-    } catch (error) {
-      if (error && error.message) {
-        console.error(chalk.red(error.message));
-      }
-    }
   }
 
   async installMySql(options: Input[]) {
