@@ -14,6 +14,7 @@ import { getRootPath } from '../lib/utils/get-root-path';
 
 export class AddAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
+    let migrateRun = false;
     const silentComplete =
       options.find(({ name }) => name === 'silentComplete')?.value || false;
     const module = String(
@@ -77,11 +78,12 @@ export class AddAction extends AbstractAction {
 
       if (isDbConnected) {
         await runScript('migrate:up', join(directoryPath, 'backend'));
+        migrateRun = true;
       }
     }
 
     if (!silentComplete) {
-      await this.complete(module);
+      await this.complete(module, migrateRun);
     }
   }
 
@@ -160,14 +162,16 @@ export class AddAction extends AbstractAction {
     }
   }
 
-  async complete(module: string) {
+  async complete(module: string, migrateRun = false) {
     console.info();
     console.info(chalk.red(BANNER));
     console.info();
     console.info(MESSAGES.PACKAGE_MANAGER_INSTALLATION_SUCCEED(module));
     console.info(MESSAGES.GET_STARTED_INFORMATION);
-    console.info();
-    console.info(chalk.gray(MESSAGES.RUN_MIGRATE_COMMAND));
+    if (!migrateRun) {
+      console.info();
+      console.info(chalk.gray(MESSAGES.RUN_MIGRATE_COMMAND));
+    }
     console.info();
   }
 
