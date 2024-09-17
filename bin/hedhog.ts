@@ -6,8 +6,11 @@ import {
   loadLocalBinCommandLoader,
   localBinExists,
 } from '../lib/utils/local-binaries';
+import { checkVersion } from '../lib/utils/checkVersion';
 
 const bootstrap = async () => {
+  await checkVersion();
+
   const program = new Command();
 
   program
