@@ -12,11 +12,11 @@ import {
 } from '../lib/package-managers';
 import chalk = require('chalk');
 import { AddAction } from './add.action';
-import { EMOJIS, MESSAGES } from '../lib/ui';
+import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import * as inquirer from 'inquirer';
 import { Runner, RunnerFactory } from '../lib/runners';
 import { createServer } from 'net';
-import { writeFile } from 'fs/promises';
+import { rm, writeFile } from 'fs/promises';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { runScript } from '../lib/utils/run-script';
 
@@ -61,7 +61,11 @@ export class NewAction extends AbstractAction {
       }
 
       if (force) {
-        this.removeDirectory(directoryPath);
+        try {
+          await this.removeDirectory(directoryPath);
+        } catch (error) {
+          process.exit(1);
+        }
       } else {
         return console.log(
           chalk.yellow(
@@ -305,6 +309,8 @@ export class NewAction extends AbstractAction {
     hasDocker: boolean,
   ) {
     console.info();
+    console.info(chalk.red(BANNER));
+    console.info();
     console.info(MESSAGES.PACKAGE_MANAGER_INSTALLATION_SUCCEED(directory));
     console.info(MESSAGES.CONFIG_DATABASE);
     console.info(MESSAGES.GET_STARTED_INFORMATION);
@@ -321,7 +327,24 @@ export class NewAction extends AbstractAction {
   }
 
   async removeDirectory(directory: string) {
-    fs.rmSync(directory, { recursive: true, force: true });
+    try {
+      await rm(directory, { recursive: true, force: true });
+    } catch (error) {
+      console.info();
+      console.info(
+        chalk.red(
+          `${EMOJIS.ERROR} Not possible to remove directory ${chalk.yellow(directory)}`,
+        ),
+      );
+      console.info();
+      console.info(
+        chalk.gray(
+          `${EMOJIS.FIND} Check if you have any application running in this directory as Docker, VSCode, Git or any other`,
+        ),
+      );
+      console.info();
+      throw new Error('Directory not empty');
+    }
   }
 
   async checkDirectoryIsNotExists(directory: string) {
