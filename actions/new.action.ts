@@ -239,8 +239,6 @@ export class NewAction extends AbstractAction {
         dbname as string,
       );
 
-      console.log({ migrationTableExists });
-
       if (migrationTableExists) {
         ora('').start().warn('Migration table already exists');
       }
