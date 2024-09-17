@@ -258,7 +258,7 @@ export class NewAction extends AbstractAction {
 
     if (databaseConnection) {
       await this.runScript(
-        'migrate:up',
+        'migrate:up --silent',
         join(process.cwd(), backEndDirectoryPath),
         true,
       );
