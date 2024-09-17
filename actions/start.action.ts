@@ -4,6 +4,7 @@ import chalk = require('chalk');
 import { spawn, SpawnOptions } from 'child_process';
 import { join } from 'path';
 import { EMOJIS } from '../lib/ui';
+import { existsSync } from 'fs';
 
 type Command = {
   command: string;
@@ -41,6 +42,8 @@ export class StartAction extends AbstractAction {
     ];
     commands.forEach(({ command, cwd, name, options = {} }, index) => {
       try {
+        options.cwd = cwd;
+        options.shell = true;
         let file = '/bin/sh';
         let args = ['-c', command];
         if (process.platform === 'win32') {
@@ -49,23 +52,31 @@ export class StartAction extends AbstractAction {
           options.windowsVerbatimArguments = true;
         }
 
-        const child_process = spawn(file, args, options);
+        if (existsSync(options.cwd)) {
+          const child_process = spawn(file, args, options);
 
-        if (child_process.stdout) {
-          child_process.stdout.on('data', (data) => {
-            console.log(colors[index % colors.length](`[${name}] ${data}`));
+          if (child_process.stdout) {
+            child_process.stdout.on('data', (data) => {
+              console.log(colors[index % colors.length](`[${name}] ${data}`));
+            });
+          }
+
+          if (child_process.stderr) {
+            child_process.stderr.on('data', (data) => {
+              console.error(chalk.red(`[${name} ERROR] ${data}`));
+            });
+          }
+
+          child_process.on('close', (code) => {
+            console.log(`[${name}] exited with code ${code}`);
           });
+        } else {
+          console.error(
+            chalk.red(
+              `[${name} ERROR] Directory ${options.cwd} does not exist`,
+            ),
+          );
         }
-
-        if (child_process.stderr) {
-          child_process.stderr.on('data', (data) => {
-            console.error(chalk.red(`[${name} ERROR] ${data}`));
-          });
-        }
-
-        child_process.on('close', (code) => {
-          console.log(`[${name}] exited with code ${code}`);
-        });
       } catch (error) {
         console.error(chalk.red(`[${name} ERROR] ${error}`));
       }
