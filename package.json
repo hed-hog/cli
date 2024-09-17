@@ -8,8 +8,7 @@
     "build": "tsc && npm version patch",
     "start": "node bin/hedhog.js",
     "dev": "tsc --watch",
-    "prod": "npm run build && npm publish --access public",
-    "posprod": "git push origin master"
+    "prod": "npm run build && npm publish --access public && git push origin master"
   },
   "keywords": [],
   "author": "",
