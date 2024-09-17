@@ -1,8 +1,6 @@
 import * as https from 'https';
 
 export const getNpmPackage = (packageName: string) => {
-  console.log('getNpmPackageNameVersion', packageName);
-
   return new Promise<any>((resolve, reject) => {
     https
       .get(`https://registry.npmjs.org/${packageName}`, (resp) => {
