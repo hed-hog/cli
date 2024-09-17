@@ -256,14 +256,12 @@ export class NewAction extends AbstractAction {
 
     process.chdir('../..');
 
-    console.log({ databaseConnection });
-
     if (databaseConnection) {
-      const result = await this.runScript(
+      await this.runScript(
         'migrate:up',
         join(process.cwd(), backEndDirectoryPath),
+        true,
       );
-      console.log({ result });
     }
 
     this.complete(name, packageManager ?? 'npm', databaseConnection, hasDocker);
@@ -598,12 +596,12 @@ export class NewAction extends AbstractAction {
     );
   }
 
-  async runScript(scriptName: string, name: string) {
+  async runScript(scriptName: string, name: string, collect = false) {
     let packageManager: AbstractPackageManager;
 
     try {
       packageManager = await PackageManagerFactory.find();
-      return packageManager.runScript(scriptName, name);
+      return packageManager.runScript(scriptName, name, collect);
     } catch (error) {
       if (error && error.message) {
         console.error(chalk.red(error.message));

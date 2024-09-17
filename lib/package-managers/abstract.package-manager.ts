@@ -181,9 +181,13 @@ export abstract class AbstractPackageManager {
     await this.runner.run(commandArguments, collect);
   }
 
-  public async runScript(scriptName: string, directory = process.cwd()) {
+  public async runScript(
+    scriptName: string,
+    directory = process.cwd(),
+    collect = false,
+  ) {
     const commandArguments = `${this.cli.run} ${scriptName}`;
-    return this.runner.run(commandArguments, false, directory);
+    return this.runner.run(commandArguments, collect, directory);
   }
 
   public abstract get name(): string;
