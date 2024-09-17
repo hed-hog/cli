@@ -9,6 +9,11 @@ export const checkVersion = async () => {
       'dist-tags': { latest: latestVersion },
     } = await getNpmPackage('@hedhog/cli');
 
+    console.log({
+      currentVersion,
+      latestVersion,
+    });
+
     if (currentVersion !== latestVersion) {
       console.info(
         chalk.yellow(
@@ -21,7 +26,5 @@ export const checkVersion = async () => {
       console.info(chalk.cyan('npm i -g @hedhog/cli'));
       console.info();
     }
-  } catch (error) {
-    console.error('Error checking version:', error);
-  }
+  } catch (_error) {}
 };
