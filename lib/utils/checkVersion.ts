@@ -44,7 +44,18 @@ export const checkVersion = async () => {
       'utf-8',
     );
 
-    if (currentVersion !== latestVersion) {
+    const currentVersionParts = currentVersion.split('.');
+    const latestVersionParts = latestVersion.split('.');
+    let isLatest = true;
+
+    for (let i = 0; i < currentVersionParts.length; i++) {
+      if (parseInt(currentVersionParts[i]) < parseInt(latestVersionParts[i])) {
+        isLatest = false;
+        break;
+      }
+    }
+
+    if (!isLatest) {
       console.info();
       console.info(
         chalk.yellow(
