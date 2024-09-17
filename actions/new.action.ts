@@ -151,6 +151,8 @@ export class NewAction extends AbstractAction {
       dbname = answer.dbname;
     }
 
+    const spinner = ora('Testing database connection').start();
+
     let databaseConnection = await this.testDatabaseConnection(
       database as 'postgres' | 'mysql',
       dbhost as string,
@@ -159,6 +161,12 @@ export class NewAction extends AbstractAction {
       dbpassword as string,
       dbname as string,
     );
+
+    if (databaseConnection) {
+      spinner.succeed('Database connection successful');
+    } else {
+      spinner.fail('Database connection failed');
+    }
 
     if (!databaseConnection) {
       hasDocker = await this.isDockerInstalled();
@@ -179,9 +187,11 @@ export class NewAction extends AbstractAction {
     }
 
     if (docker === 'yes') {
-      dbport = String(
-        await this.findAvailablePort(database === 'postgres' ? 5432 : 3306),
-      );
+      if (!dbport) {
+        dbport = database === 'postgres' ? '5432' : '3306';
+      }
+
+      dbport = String(await this.findAvailablePort(Number(dbport)));
 
       await this.createDockerCompose(
         directoryPath,
@@ -399,6 +409,11 @@ export class NewAction extends AbstractAction {
       if (available) {
         return port;
       } else {
+        console.log(
+          chalk.yellow(
+            `${EMOJIS.WARNING}Port ${port} is not available, trying next port ${port + 1}...`,
+          ),
+        );
         return this.findAvailablePort(port + 1);
       }
     });
@@ -407,7 +422,7 @@ export class NewAction extends AbstractAction {
   async isDockerInstalled() {
     const docker = RunnerFactory.create(Runner.DOCKER);
     try {
-      await docker?.run('--version');
+      await docker?.run('--version', true);
       return true;
     } catch (error) {
       return false;
@@ -536,6 +551,7 @@ export class NewAction extends AbstractAction {
         return true;
       } else {
         retry++;
+        spinner.start(`Testing database connection. Retry ${retry}/${retries}`);
         await new Promise((resolve) => setTimeout(resolve, interval));
       }
     }
@@ -553,8 +569,6 @@ export class NewAction extends AbstractAction {
     password: string,
     database: string,
   ): Promise<boolean> {
-    const spinner = ora('Testing database connection').start();
-    let result: any;
     try {
       if (type === 'postgres') {
         const { Client } = await import('pg');
@@ -566,7 +580,7 @@ export class NewAction extends AbstractAction {
           port,
         });
         await client.connect();
-        result = await client.query('SELECT NOW()');
+        await client.query('SELECT NOW()');
         await client.end();
       } else if (type === 'mysql') {
         const mysql = await import('mysql2/promise');
@@ -577,12 +591,10 @@ export class NewAction extends AbstractAction {
           database,
           port,
         });
-        result = await connection.query('SELECT NOW()');
+        await connection.query('SELECT NOW()');
         await connection.end();
       }
-      spinner.succeed(`Database connection successful`);
     } catch (error) {
-      spinner.fail('Database connection failed: ' + error.message);
       return false;
     }
     return true;
