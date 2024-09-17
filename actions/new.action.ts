@@ -37,7 +37,9 @@ export class NewAction extends AbstractAction {
     let dbuser = options.find(({ name }) => name === 'dbuser')?.value;
     let dbpassword = options.find(({ name }) => name === 'dbpassword')?.value;
     let dbname = options.find(({ name }) => name === 'dbname')?.value;
-    let docker = 'no';
+    let dockerCompose =
+      options.find(({ name }) => name === 'docker-compose')?.value ?? false;
+    let docker = !dockerCompose ? 'no' : 'yes';
     let hasDocker = false;
 
     if (!(await this.checkDirectoryIsNotExists(directoryPath))) {
@@ -173,7 +175,7 @@ export class NewAction extends AbstractAction {
     if (!databaseConnection) {
       hasDocker = await this.isDockerInstalled();
 
-      if (hasDocker) {
+      if (hasDocker && !dockerCompose) {
         const answerDocker = await inquirer.createPromptModule({
           output: process.stderr,
           input: process.stdin,

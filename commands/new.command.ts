@@ -32,6 +32,11 @@ export class NewCommand extends AbstractCommand {
       .option('-u, --dbuser [user]', 'Specify database user.')
       .option('-w, --dbpassword [password]', 'Specify database password.')
       .option('-n, --dbname [database]', 'Specify database name.')
+      .option(
+        '-c, --docker-compose',
+        'Create a docker-compose file if connection failed.',
+        false,
+      )
       .action(async (name, command) => {
         try {
           if (!name) {
@@ -48,10 +53,15 @@ export class NewCommand extends AbstractCommand {
           options.push({ name: 'dbport', value: command.dbport ?? '' });
           options.push({ name: 'dbuser', value: command.dbuser ?? '' });
           options.push({ name: 'dbpassword', value: command.dbpassword ?? '' });
+          options.push({ name: 'dbname', value: command.dbname ?? '' });
           options.push({ name: 'database', value: command.database ?? '' });
           options.push({ name: 'directory', value: command.directory });
           options.push({ name: 'skip-git', value: command.skipGit });
           options.push({ name: 'skip-install', value: command.skipInstall });
+          options.push({
+            name: 'docker-compose',
+            value: command.dockerCompose,
+          });
           options.push({
             name: 'packageManager',
             value: command.packageManager,
