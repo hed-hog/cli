@@ -6,12 +6,15 @@ import { NewCommand } from './new.command';
 import { ERROR_PREFIX } from '../lib/ui';
 import { InfoCommand } from './info.command';
 import { CreateCommand } from './create.command';
+import { StartCommand } from './start.command';
+import { StartAction } from '../actions/start.action';
 export class CommandLoader {
   public static async load(program: Command): Promise<void> {
     new NewCommand(new NewAction()).load(program);
     new CreateCommand(new CreateAction()).load(program);
     new AddCommand(new AddAction()).load(program);
     new InfoCommand(new InfoAction()).load(program);
+    new StartCommand(new StartAction()).load(program);
 
     this.handleInvalidCommand(program);
   }
