@@ -5,6 +5,7 @@ import { SchematicRunner } from './schematic.runner';
 import { YarnRunner } from './yarn.runner';
 import { PnpmRunner } from './pnpm.runner';
 import { NpxRunner } from './npx.runner';
+import { DockerRunner } from './docker.runner';
 
 export class RunnerFactory {
   public static create(runner: Runner) {
@@ -23,6 +24,9 @@ export class RunnerFactory {
 
       case Runner.NPX:
         return new NpxRunner();
+
+      case Runner.DOCKER:
+        return new DockerRunner();
 
       default:
         console.info(chalk.yellow(`[WARN] Unsupported runner: ${runner}`));

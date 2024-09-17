@@ -1,3 +1,5 @@
+import { Runner, RunnerFactory } from '../runners';
+
 /**
  *
  * @param str
@@ -12,4 +14,13 @@ export function normalizeToKebabOrSnakeCase(str: string) {
     .replace(STRING_DECAMELIZE_REGEXP, '$1-$2')
     .toLowerCase()
     .replace(STRING_DASHERIZE_REGEXP, '-');
+}
+
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export async function prettier(path: string) {
+  const npx = RunnerFactory.create(Runner.NPX);
+  return npx?.run(`prettier --write ${path}`);
 }
