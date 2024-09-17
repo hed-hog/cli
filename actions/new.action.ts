@@ -239,6 +239,8 @@ export class NewAction extends AbstractAction {
         dbname as string,
       );
 
+      console.log({ migrationTableExists });
+
       if (migrationTableExists) {
         ora('').start().warn('Migration table already exists');
       }
@@ -520,11 +522,7 @@ export class NewAction extends AbstractAction {
             port,
           });
           await client.connect();
-          query = `SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = $1
-        );`;
+          query = `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1`;
           const res = await client.query(query, ['migrations']);
           await client.end();
           return res.rowCount === 1;
@@ -537,7 +535,7 @@ export class NewAction extends AbstractAction {
             password,
             port,
           });
-          query = `SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = ? AND table_name = ?`;
+          query = `SELECT table_name AS count FROM information_schema.tables WHERE table_schema = ? AND table_name = ?`;
           const result = await connection.query(query, [
             database,
             'migrations',
