@@ -37,9 +37,22 @@ export class NewAction extends AbstractAction {
     let dbuser = options.find(({ name }) => name === 'dbuser')?.value;
     let dbpassword = options.find(({ name }) => name === 'dbpassword')?.value;
     let dbname = options.find(({ name }) => name === 'dbname')?.value;
-    let dockerCompose =
-      options.find(({ name }) => name === 'docker-compose')?.value ?? false;
-    let force = options.find(({ name }) => name === 'force')?.value ?? false;
+
+    let dockerCompose = options.some(
+      (option) => option.name === 'docker-compose' && option.value === true,
+    );
+    let force = options.some(
+      (option) => option.name === 'force' && option.value === true,
+    );
+
+    const packageManager =
+      String(options.find(({ name }) => name === 'packageManager')?.value) ??
+      'npm';
+    const skipGit =
+      Boolean(options.find(({ name }) => name === 'skip-git')?.value) ?? false;
+    const skipInstall =
+      Boolean(options.find(({ name }) => name === 'skip-install')?.value) ??
+      false;
     let docker = !dockerCompose ? 'no' : 'yes';
     let hasDocker = false;
 
@@ -80,7 +93,7 @@ export class NewAction extends AbstractAction {
       directoryPath,
     );
 
-    await this.configureGit(directoryPath);
+    await this.configureGit(directoryPath, skipGit);
 
     if (!database) {
       const answerDatabase = await inquirer.createPromptModule({
@@ -263,25 +276,23 @@ export class NewAction extends AbstractAction {
       backEndDirectoryPath,
     );
 
-    const packageManager = await this.installPackages(
-      options,
-      backEndDirectoryPath,
-    );
+    if (!skipInstall) {
+      await this.installPackages(options, backEndDirectoryPath);
 
-    process.chdir(backEndDirectoryPath);
+      process.chdir(backEndDirectoryPath);
 
-    switch (database) {
-      case 'postgres':
-        await this.installPostgres(options);
-        break;
-      case 'mysql':
-        await this.installMySql(options);
-        break;
+      switch (database) {
+        case 'postgres':
+          await this.installPostgres(options);
+          break;
+        case 'mysql':
+          await this.installMySql(options);
+          break;
+      }
+      process.chdir('../..');
     }
 
-    process.chdir('../..');
-
-    if (databaseConnection) {
+    if (databaseConnection && !skipInstall) {
       await runScript('migrate:up', join(process.cwd(), backEndDirectoryPath));
     }
 
@@ -658,13 +669,15 @@ export class NewAction extends AbstractAction {
     return result;
   }
 
-  async configureGit(directory: string) {
+  async configureGit(directory: string, skipGit = false) {
     const results = [];
     const spinner = ora('Configure git in project folder').start();
     results.push(
       await fs.promises.rm(`${directory}/.git`, { recursive: true }),
     );
-    results.push(await init({ dir: directory, fs }));
+    if (!skipGit) {
+      results.push(await init({ dir: directory, fs }));
+    }
     spinner.succeed();
     return results;
   }
