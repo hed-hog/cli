@@ -15,7 +15,7 @@ type Command = {
 
 export class StartAction extends AbstractAction {
   public async handle() {
-    console.log(chalk.white(`Starting HedHog ${EMOJIS.HEDGEHOG}...`));
+    console.info(chalk.white(`Starting HedHog ${EMOJIS.HEDGEHOG}...`));
     this.runConcurrently([
       {
         command: 'npm run dev',
@@ -57,7 +57,7 @@ export class StartAction extends AbstractAction {
 
           if (child_process.stdout) {
             child_process.stdout.on('data', (data) => {
-              console.log(colors[index % colors.length](`[${name}] ${data}`));
+              console.info(colors[index % colors.length](`[${name}] ${data}`));
             });
           }
 
@@ -68,7 +68,7 @@ export class StartAction extends AbstractAction {
           }
 
           child_process.on('close', (code) => {
-            console.log(`[${name}] exited with code ${code}`);
+            console.info(`[${name}] exited with code ${code}`);
           });
         } else {
           console.error(
@@ -88,7 +88,7 @@ export class StartAction extends AbstractAction {
     let frontendReady = false;
 
     while (!apiReady || !frontendReady) {
-      console.log('Waiting for ports to be available...');
+      console.info('Waiting for ports to be available...');
       apiReady = await this.checkPort(3000);
       frontendReady = await this.checkPort(3100);
 
@@ -102,10 +102,11 @@ export class StartAction extends AbstractAction {
 
   complete() {
     console.clear();
-    console.log(chalk.white('===================================='));
-    console.log(chalk.green(`${EMOJIS.HEDGEHOG} HedHog is ready!`));
-    console.log(chalk.blue('API is running on http://localhost:3000'));
-    console.log(chalk.red('Admin is running on http://localhost:3100'));
+    console.info(chalk.white('===================================='));
+    console.info(chalk.green(`${EMOJIS.HEDGEHOG} HedHog is ready!`));
+    console.info(chalk.blue('API is running on http://localhost:3000'));
+    console.info(chalk.red('Admin is running on http://localhost:3100'));
+    console.clear();
   }
 
   async checkPort(port: number, host = 'localhost') {

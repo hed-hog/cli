@@ -9,7 +9,7 @@ export async function updateNestCliJson(libraryName: string) {
   try {
     const nestCliExists = fs.existsSync(nestCliPath);
     if (!nestCliExists) {
-      console.log(chalk.red('Error: nest-cli.json not found!'));
+      console.info(chalk.red('Error: nest-cli.json not found!'));
       process.exit(1);
     }
 
@@ -35,7 +35,7 @@ export async function updateNestCliJson(libraryName: string) {
 
     await prettier(nestCliPath);
 
-    console.log(
+    console.info(
       chalk.green(`Updated nest-cli.json with project: ${libraryName}`),
     );
   } catch (error) {
@@ -52,7 +52,7 @@ export async function updatePackageJson(libraryName: string) {
   try {
     const packageJsonExists = fs.existsSync(packageJsonPath);
     if (!packageJsonExists) {
-      console.log(chalk.red('Error: package.json not found!'));
+      console.info(chalk.red('Error: package.json not found!'));
       process.exit(1);
     }
 
@@ -78,7 +78,7 @@ export async function updatePackageJson(libraryName: string) {
 
     await prettier(packageJsonPath);
 
-    console.log(
+    console.info(
       chalk.green(
         `Updated package.json with moduleNameMapper for ${libraryName}`,
       ),
@@ -95,7 +95,7 @@ export async function updateTsconfigPaths(libraryName: string) {
   try {
     const tsconfigExists = fs.existsSync(tsconfigPath);
     if (!tsconfigExists) {
-      console.log(chalk.red('Error: tsconfig.json not found!'));
+      console.info(chalk.red('Error: tsconfig.json not found!'));
       process.exit(1);
     }
 
@@ -120,7 +120,7 @@ export async function updateTsconfigPaths(libraryName: string) {
 
     await prettier(tsconfigPath);
 
-    console.log(chalk.green(`Updated tsconfig.json paths for ${libraryName}`));
+    console.info(chalk.green(`Updated tsconfig.json paths for ${libraryName}`));
   } catch (error) {
     console.error(
       chalk.red(`Failed to update tsconfig.json: ${error.message}`),

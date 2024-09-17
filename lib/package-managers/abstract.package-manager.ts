@@ -54,6 +54,7 @@ export abstract class AbstractPackageManager {
   public async addProduction(
     dependencies: string[],
     tag: string,
+    cwd = process.cwd(),
   ): Promise<boolean> {
     const command: string = [
       this.cli.add,
@@ -75,7 +76,7 @@ export abstract class AbstractPackageManager {
     });
     spinner.start();
     try {
-      await this.add(`${command} ${args}`);
+      await this.add(`${command} ${args}`, cwd);
       spinner.succeed();
       return true;
     } catch {
@@ -84,17 +85,21 @@ export abstract class AbstractPackageManager {
     }
   }
 
-  public async addDevelopment(dependencies: string[], tag: string) {
+  public async addDevelopment(
+    dependencies: string[],
+    tag: string,
+    cwd = process.cwd(),
+  ) {
     const command = `${this.cli.add} ${this.cli.saveDevFlag}`;
     const args: string = dependencies
       .map((dependency) => `${dependency}@${tag}`)
       .join(' ');
-    await this.add(`${command} ${args}`);
+    await this.add(`${command} ${args}`, cwd);
   }
 
-  private async add(commandArguments: string) {
+  private async add(commandArguments: string, cwd = process.cwd()) {
     const collect = true;
-    await this.runner.run(commandArguments, collect);
+    await this.runner.run(commandArguments, collect, cwd);
   }
 
   public async getProduction(): Promise<ProjectDependency[]> {

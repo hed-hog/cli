@@ -9,6 +9,8 @@ import {
 import { checkVersion } from '../lib/utils/checkVersion';
 
 const bootstrap = async () => {
+  const debug = true;
+
   await checkVersion();
 
   const program = new Command();
@@ -22,12 +24,13 @@ const bootstrap = async () => {
     .usage('<command> [options]')
     .helpOption('-h, --help', 'Output usage information.');
 
-  if (localBinExists()) {
+  if (!debug && localBinExists()) {
     const localCommandLoader = loadLocalBinCommandLoader();
     await localCommandLoader.load(program);
   } else {
     await CommandLoader.load(program);
   }
+
   await program.parseAsync(process.argv);
 
   if (!process.argv.slice(2).length) {

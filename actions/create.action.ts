@@ -38,12 +38,12 @@ export class CreateAction extends AbstractAction {
       false;
 
     if (!libraryName.length) {
-      console.log(chalk.red('You must tell a name for the module.'));
+      console.error(chalk.red('You must tell a name for the module.'));
       process.exit(1);
     }
 
     if (/\s/.test(libraryName)) {
-      console.log(
+      console.error(
         chalk.red('Error: The library name should not contain spaces.'),
       );
       process.exit(1);
@@ -73,7 +73,7 @@ export class CreateAction extends AbstractAction {
 
     await this.installDependencies(libraryPath, options);
 
-    console.log(chalk.green(`Library ${libraryName} created successfully!`));
+    console.info(chalk.green(`Library ${libraryName} created successfully!`));
   }
 
   private createGitignore(libraryPath: string) {
@@ -103,6 +103,7 @@ export class CreateAction extends AbstractAction {
         build: 'tsc --project tsconfig.production.json && npm version patch',
         prod: 'npm run build && npm publish --access public',
       },
+      files: ['dist/**/*', 'src/migrations/**/*.ts', 'src/**/*.ejs'],
       keywords: [],
       author: '',
       license: 'MIT',
@@ -173,7 +174,7 @@ export class CreateAction extends AbstractAction {
       PackageManagerFactory.create(inputPackageManager);
 
     try {
-      console.log(chalk.blue('Installing production dependencies...'));
+      console.info(chalk.blue('Installing production dependencies...'));
       const dependencies = [
         '@hedhog/auth',
         '@hedhog/pagination',
@@ -187,9 +188,9 @@ export class CreateAction extends AbstractAction {
       await packageManager.addProduction(dependencies, 'latest');
       process.chdir(currentDir);
 
-      console.log(chalk.green('Dependencies installed successfully.'));
+      console.info(chalk.green('Dependencies installed successfully.'));
     } catch (error) {
-      console.log(chalk.red('Error installing dependencies:', error));
+      console.info(chalk.red('Error installing dependencies:', error));
       process.exit(1);
     }
   }

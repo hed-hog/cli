@@ -25,7 +25,7 @@ export class CommandLoader {
         `\n${ERROR_PREFIX} Invalid command: ${chalk.red('%s')}`,
         program.args.join(' '),
       );
-      console.log(
+      console.info(
         `See ${chalk.red('--help')} for a list of available commands.\n`,
       );
       process.exit(1);

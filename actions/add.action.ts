@@ -11,11 +11,14 @@ import { Runner, RunnerFactory } from '../lib/runners';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { runScript } from '../lib/utils/run-script';
 import { getRootPath } from '../lib/utils/get-root-path';
+import { render } from 'ejs';
+import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 
 export class AddAction extends AbstractAction {
-  public async handle(inputs: Input[], options: Input[]) {
-    console.log('AddAction', { inputs, options });
+  private packagesAdded: string[] = [];
+  private showWarning = false;
 
+  public async handle(inputs: Input[], options: Input[]) {
     let migrateRun = false;
     const silentComplete =
       options.find(({ name }) => name === 'silentComplete')?.value || false;
@@ -40,36 +43,41 @@ export class AddAction extends AbstractAction {
       `${module}`,
     );
 
-    console.log({
-      silentComplete,
-      module,
-      directoryPath,
-      appModulePath,
-      addModuleName,
-      packageName,
-      nodeModulePath,
-    });
-
     if (!this.checkIfDirectoryIsPackage(directoryPath)) {
-      console.error(chalk.red('This directory is not a package.'));
+      console.error(chalk.red('This directory is not a package 22.'));
       return;
     }
 
-    await this.installPackage(packageName);
+    await this.installPackage(directoryPath, packageName);
 
     await this.checkDependences(directoryPath, module, nodeModulePath);
 
     await this.checkIfModuleExists(module, nodeModulePath);
 
-    await this.modifyAppModule(appModulePath, addModuleName, packageName);
+    const installedModule = await this.modifyAppModule(
+      directoryPath,
+      module,
+      appModulePath,
+      addModuleName,
+      packageName,
+      nodeModulePath,
+    );
 
-    await this.copyMigrationsFiles(directoryPath, nodeModulePath);
+    let hasMigrations = false;
+
+    if (installedModule) {
+      hasMigrations = await this.copyMigrationsFiles(
+        directoryPath,
+        nodeModulePath,
+      );
+    }
 
     const envVars = await this.parseEnvFile(
       join(directoryPath, 'backend', '.env'),
     );
 
     if (
+      hasMigrations &&
       envVars.DATABASE_URL &&
       envVars.DB_HOST &&
       envVars.DB_PORT &&
@@ -100,20 +108,25 @@ export class AddAction extends AbstractAction {
   }
 
   async add(module: string) {
-    const action = new AddAction();
-    return action.handle(
-      [{ name: 'module', value: module }],
-      [{ name: 'silentComplete', value: true }],
-    );
+    if (!this.packagesAdded.includes(module)) {
+      const action = new AddAction();
+      await action.handle(
+        [{ name: 'module', value: module }],
+        [{ name: 'silentComplete', value: true }],
+      );
+
+      this.packagesAdded.push(module);
+
+      console.log('packagesAdded', this.packagesAdded);
+
+      return true;
+    } else {
+      return false;
+    }
   }
 
   async getModuleDependencies(modulePath: string) {
     const packageJsonPath = join(modulePath, 'package.json');
-
-    console.log('getModuleDependencies', {
-      modulePath,
-      packageJsonPath,
-    });
 
     if (!existsSync(packageJsonPath)) {
       throw new Error('package.json not found.');
@@ -174,11 +187,7 @@ export class AddAction extends AbstractAction {
         !packageInstalledModules.find(([moduleName]) => moduleName === name),
     );
 
-    console.log({
-      moduleDependences,
-      packageInstalledModules,
-      missingDependences,
-    });
+    console.log({ missingDependences });
 
     for (const [name] of missingDependences) {
       await this.add(name);
@@ -201,6 +210,7 @@ export class AddAction extends AbstractAction {
   async copyMigrationsFiles(directoryPath: string, nodeModulePath: string) {
     const spinner = ora('Copying migrations files...').start();
     try {
+      let copies = 0;
       const migrationsPath = join(`${nodeModulePath}`, `src`, `migrations`);
 
       if (existsSync(migrationsPath)) {
@@ -215,6 +225,13 @@ export class AddAction extends AbstractAction {
             'utf8',
           );
 
+          const fileContentFinal = await formatTypeScriptCode(
+            fileContent.replace(
+              /export class Migrate implements/g,
+              `export class Migrate${timestamp} implements`,
+            ),
+          );
+
           await writeFile(
             join(
               directoryPath,
@@ -224,17 +241,17 @@ export class AddAction extends AbstractAction {
               `migrations`,
               `${timestamp}-migrate.ts`,
             ),
-            fileContent.replace(
-              /export class Migrate implements/g,
-              `export class Migrate${timestamp} implements`,
-            ),
+            fileContentFinal,
           );
+
+          copies++;
         }
 
         spinner.succeed('Migrations files copied.');
-        return true;
+        return copies > 0;
       } else {
         spinner.info('No migrations files found.');
+        return false;
       }
     } catch (error) {
       spinner.fail(error.message);
@@ -250,16 +267,31 @@ export class AddAction extends AbstractAction {
   }
 
   async modifyAppModule(
+    directoryPath: string,
+    module: string,
     filePath: string,
     newModule: string,
     newModulePath: string,
+    nodeModulePath: string,
   ) {
-    if (['UtilModule'].includes(newModule)) {
+    let alreadyInstalled = false;
+
+    if (['UtilsModule'].includes(newModule)) {
       return;
     }
 
-    // Lê o conteúdo do arquivo
     let fileContent = await readFile(filePath, 'utf-8');
+
+    fileContent = await formatTypeScriptCode(fileContent, {
+      printWidth: 100000,
+      singleQuote: true,
+      trailingComma: 'all',
+      semi: true,
+    });
+
+    //fileContent = fileContent.replaceAll('\r\n', '\n').replaceAll('\n', '');
+
+    console.log({ fileContent });
 
     // Verifica se a linha de import já existe
     const importStatement = `import { ${newModule} } from '${newModulePath}';`;
@@ -278,32 +310,38 @@ export class AddAction extends AbstractAction {
         fileContent = `${importStatement}\n\n${fileContent}`;
       }
     } else {
-      console.warn(
-        chalk.yellow(
-          `${EMOJIS.WARNING} The row for "${newModule}" module already exists.`,
-        ),
-      );
+      if (this.showWarning) {
+        console.warn(
+          chalk.yellow(
+            `${EMOJIS.WARNING} The row for "${newModule}" module already exists.`,
+          ),
+        );
+      }
+      alreadyInstalled = true;
     }
 
-    // Encontra o decorador @Module
-    const moduleRegex = /@Module\s*\(\s*{([\s\S]*?)}\s*\)/g;
-    const moduleMatch = moduleRegex.exec(fileContent);
+    let importsMatch;
+    const importFind = 'imports: [';
+    const startImportsIndex =
+      fileContent.indexOf(importFind) + importFind.length;
+    let endImportsIndex = 0;
+    let openBracketCount = 1;
 
-    if (!moduleMatch) {
-      console.error(
-        chalk.red(
-          `${EMOJIS.ERROR} The "@Module" decorator not found in the file.`,
-        ),
-      );
-      return;
+    for (let i = startImportsIndex; i < fileContent.length; i++) {
+      if (fileContent[i] === '[') {
+        openBracketCount++;
+      }
+
+      if (fileContent[i] === ']') {
+        openBracketCount--;
+      }
+
+      if (openBracketCount === 0) {
+        endImportsIndex = i + 1;
+        importsMatch = fileContent.substring(startImportsIndex, i);
+        break;
+      }
     }
-
-    // Pega o conteúdo do decorador @Module
-    let moduleContent = moduleMatch[1];
-
-    // Regex para encontrar o array de imports dentro do decorador
-    const importsRegex = /(imports\s*:\s*\[)([\s\S]*?)(\])/;
-    const importsMatch = importsRegex.exec(moduleContent);
 
     if (!importsMatch) {
       console.error(
@@ -314,43 +352,117 @@ export class AddAction extends AbstractAction {
       return;
     }
 
-    let importsList = importsMatch[2].split(',').map((imp) => imp.trim());
+    // Separa a lista de imports
+    const importsList: string[] = [];
 
-    // Verifica se o módulo já foi importado
-    const alreadyImported = importsList.some((imp) => imp.includes(newModule));
+    openBracketCount = 0;
+    let openBracesCount = 0;
 
-    if (alreadyImported) {
-      console.warn(
-        chalk.yellow(
-          `${EMOJIS.WARNING} The "${newModule}" module is already imported.`,
-        ),
-      );
-      return;
+    for (let i = 0; i < importsMatch.length; i++) {
+      if (importsMatch[i] === '[') {
+        openBracketCount++;
+      }
+
+      if (importsMatch[i] === ']') {
+        openBracketCount--;
+      }
+
+      if (importsMatch[i] === '{') {
+        openBracesCount++;
+      }
+
+      if (importsMatch[i] === '}') {
+        openBracesCount--;
+      }
+
+      if (openBracketCount === 0 && openBracesCount === 0) {
+        if (importsMatch[i] === ',') {
+          if (importsMatch.substring(0, i).trim()) {
+            importsList.push(importsMatch.substring(0, i).trim());
+          }
+          importsMatch = importsMatch.substring(i + 1);
+          i = 0;
+        }
+      }
     }
 
-    if (newModule === 'MailModule') {
-      newModule = `MailModule.register({ type: '' //Choose AWS, SMTP or GMAIL })`;
+    if (importsMatch.trim()) {
+      importsList.push(importsMatch.trim());
     }
 
-    // Adiciona o novo módulo no início da lista
-    importsList.unshift(newModule);
+    console.log({ importsList });
 
-    // Recria a seção de imports
-    const updatedImports = `imports: [${importsList.join(', ')}]`;
-
-    // Substitui o bloco original de imports pelo atualizado
-    moduleContent = moduleContent.replace(importsMatch[0], updatedImports);
-
-    // Substitui o decorador original pelo atualizado
-    const updatedFileContent = fileContent.replace(
-      moduleMatch[1],
-      moduleContent,
+    const moduleTemplatePath = join(
+      nodeModulePath,
+      'src',
+      `${module}.template.ejs`,
     );
 
-    // Escreve o conteúdo atualizado de volta no arquivo
-    await writeFile(filePath, updatedFileContent, 'utf-8');
+    let newModuleTemplate = `${newModule}`;
 
-    await this.npx(`prettier --write ${filePath}`);
+    if (existsSync(moduleTemplatePath)) {
+      const templateContent = await readFile(moduleTemplatePath, 'utf-8');
+      newModuleTemplate = render(templateContent, {});
+    }
+
+    // Verifica se o módulo já foi importado
+    const alreadyImported = importsList.some((imp) =>
+      imp.includes(newModuleTemplate),
+    );
+
+    if (alreadyImported) {
+      if (this.showWarning) {
+        console.warn(
+          chalk.yellow(
+            `${EMOJIS.WARNING} The "${newModule}" module is already imported.`,
+          ),
+        );
+      }
+      alreadyInstalled = true;
+    }
+
+    if (alreadyInstalled) {
+      return false;
+    }
+
+    importsList.push(newModuleTemplate);
+
+    const startFileContent = fileContent.substring(0, startImportsIndex);
+    const endFileContent = fileContent.substring(endImportsIndex - 1);
+
+    try {
+      const updatedFileContent = await formatTypeScriptCode(
+        `${startFileContent}${importsList.join(', ')}${endFileContent}`,
+        {
+          singleQuote: true,
+          trailingComma: 'all',
+          semi: true,
+        },
+      );
+
+      await writeFile(filePath, updatedFileContent, 'utf-8');
+    } catch (error) {
+      console.info(
+        chalk.blue('Not possible add module, the original file was restored.'),
+      );
+
+      await writeFile(
+        filePath,
+        await formatTypeScriptCode(fileContent, {
+          singleQuote: true,
+          trailingComma: 'all',
+          semi: true,
+        }),
+        'utf-8',
+      );
+      try {
+        await runScript(`format`, join(directoryPath, 'backend'));
+      } catch (error) {
+        console.error(chalk.red('Error formatting file app.module.ts'));
+      }
+    }
+
+    return true;
   }
 
   async checkIfModuleExists(module: string, nodeModulePath: string) {
@@ -368,15 +480,8 @@ export class AddAction extends AbstractAction {
   }
 
   checkIfDirectoryIsPackage(directory: string) {
-    console.log('checkIfDirectoryIsPackage', { directory });
-    const spinner = ora('Checking directory...').start();
     try {
       const packageJson = require(`${directory}/package.json`);
-
-      console.log('checkIfDirectoryIsPackage', {
-        directory,
-        packageJson,
-      });
 
       if (!existsSync(join(directory, 'backend'))) {
         throw new Error(
@@ -390,11 +495,10 @@ export class AddAction extends AbstractAction {
         );
       }
       */
-      spinner.succeed('Directory is a package.');
+
       return packageJson;
     } catch (error) {
-      console.log({ error });
-      spinner.fail('Directory is not a package. ' + error.message);
+      console.error(chalk.red('Directory is not a package.'));
       return false;
     }
   }
@@ -403,11 +507,13 @@ export class AddAction extends AbstractAction {
     return value.charAt(0).toUpperCase() + value.slice(1);
   }
 
-  async installPackage(module: string) {
+  async installPackage(directoryPath: string, module: string) {
     const packageManager = await PackageManagerFactory.find();
-    const result = await packageManager.addProduction([module], 'latest');
-
-    return result;
+    return packageManager.addProduction(
+      [module],
+      'latest',
+      join(directoryPath, 'backend'),
+    );
   }
 
   async parseEnvFile(envPath: string) {

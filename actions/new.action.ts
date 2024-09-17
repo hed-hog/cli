@@ -80,7 +80,7 @@ export class NewAction extends AbstractAction {
           process.exit(1);
         }
       } else {
-        return console.log(
+        return console.info(
           chalk.yellow(
             `${EMOJIS.WARNING}  Operation cancelled by user because the directory ${name} is not empty`,
           ),
@@ -450,7 +450,7 @@ export class NewAction extends AbstractAction {
       if (available) {
         return port;
       } else {
-        console.log(
+        console.info(
           chalk.yellow(
             `${EMOJIS.WARNING}Port ${port} is not available, trying next port ${port + 1}...`,
           ),
@@ -544,13 +544,14 @@ export class NewAction extends AbstractAction {
             password,
             port,
           });
-          query = `SELECT table_name AS count FROM information_schema.tables WHERE table_schema = ? AND table_name = ?`;
+          query = `SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_name = ?`;
           const result = await connection.query(query, [
             database,
             'migrations',
           ]);
           await connection.end();
-          return (result as any)[0][0].count === 1;
+          console.log('MySQL Result', result);
+          return (result as any)[0].length === 1;
       }
     } catch (error) {
       console.error(chalk.red(error.message));
@@ -565,7 +566,7 @@ export class NewAction extends AbstractAction {
     user: string,
     password: string,
     database: string,
-    retries = 12,
+    retries = 24,
     interval = 5000,
   ) {
     const spinner = ora('Testing database connection').start();
