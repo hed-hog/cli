@@ -231,6 +231,10 @@ export class AddAction extends AbstractAction {
     newModule: string,
     newModulePath: string,
   ) {
+    if (['UtilModule'].includes(newModule)) {
+      return;
+    }
+
     // Lê o conteúdo do arquivo
     let fileContent = await readFile(filePath, 'utf-8');
 
@@ -263,7 +267,11 @@ export class AddAction extends AbstractAction {
     const moduleMatch = moduleRegex.exec(fileContent);
 
     if (!moduleMatch) {
-      console.error('Decorador @Module não encontrado.');
+      console.error(
+        chalk.red(
+          `${EMOJIS.ERROR} The "@Module" decorator not found in the file.`,
+        ),
+      );
       return;
     }
 
@@ -275,7 +283,11 @@ export class AddAction extends AbstractAction {
     const importsMatch = importsRegex.exec(moduleContent);
 
     if (!importsMatch) {
-      console.error('"imports" property not found in @Module decorator.');
+      console.error(
+        chalk.red(
+          `${EMOJIS.ERROR} "imports" property not found in @Module decorator.`,
+        ),
+      );
       return;
     }
 
