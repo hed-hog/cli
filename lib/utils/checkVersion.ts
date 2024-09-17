@@ -1,30 +1,49 @@
 import chalk = require('chalk');
 import { version } from '../../package.json';
 import { getNpmPackage } from './get-npm-package';
-import { readFile, writeFile } from 'fs/promises';
+import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { existsSync } from 'fs';
 
-const filePath = join(tmpdir(), '@hedhog/cli', 'latestVersion');
+const filePath = join(tmpdir(), 'hedhog-cli');
 
-export const cehckOnlineVersion = async () => {
+export const checkOnlineVersion = async () => {
   try {
     const currentVersion = version;
+
     const {
       'dist-tags': { latest: latestVersion },
     } = await getNpmPackage('@hedhog/cli');
 
-    if (currentVersion !== latestVersion) {
-      await writeFile(filePath, latestVersion);
+    if (currentVersion === latestVersion) {
+      await mkdirRecursive(filePath);
+      await writeFile(join(filePath, '.latestVersion'), latestVersion);
     }
-  } catch (_error) {}
+  } catch (error) {
+    console.error('Failed to check online version', error);
+  }
+};
+
+export const mkdirRecursive = async (dir: string) => {
+  const parts = dir.split('/');
+  for (let i = 1; i <= parts.length; i++) {
+    const path = parts.slice(0, i).join('/');
+
+    if (!existsSync(path)) {
+      await mkdir(path);
+    }
+  }
 };
 
 export const checkVersion = async () => {
   const currentVersion = version;
-  if (existsSync(filePath)) {
-    const latestVersion = await readFile(filePath, 'utf-8');
+  if (existsSync(join(filePath, '.latestVersion'))) {
+    const latestVersion = await readFile(
+      join(filePath, '.latestVersion'),
+      'utf-8',
+    );
+
     if (currentVersion !== latestVersion) {
       console.info();
       console.info(
@@ -40,5 +59,6 @@ export const checkVersion = async () => {
       console.info();
     }
   }
-  cehckOnlineVersion();
+
+  checkOnlineVersion();
 };
