@@ -9,7 +9,7 @@ import {
 import { checkVersion } from '../lib/utils/checkVersion';
 
 const bootstrap = async () => {
-  await checkVersion();
+  checkVersion();
 
   const program = new Command();
 
