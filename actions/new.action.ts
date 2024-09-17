@@ -39,21 +39,28 @@ export class NewAction extends AbstractAction {
     let dbname = options.find(({ name }) => name === 'dbname')?.value;
     let dockerCompose =
       options.find(({ name }) => name === 'docker-compose')?.value ?? false;
+    let force = options.find(({ name }) => name === 'force')?.value ?? false;
     let docker = !dockerCompose ? 'no' : 'yes';
     let hasDocker = false;
 
     if (!(await this.checkDirectoryIsNotExists(directoryPath))) {
-      const answerDirectory = await inquirer.createPromptModule({
-        output: process.stderr,
-        input: process.stdin,
-      })({
-        type: 'list',
-        name: 'clear',
-        message: `The directory ${name} is not empty. Do you want to overwrite it?`,
-        choices: ['yes', 'no'],
-      });
+      if (!force) {
+        const answerDirectory = await inquirer.createPromptModule({
+          output: process.stderr,
+          input: process.stdin,
+        })({
+          type: 'list',
+          name: 'clear',
+          message: `The directory ${name} is not empty. Do you want to overwrite it?`,
+          choices: ['yes', 'no'],
+        });
 
-      if (answerDirectory.clear === 'yes') {
+        if (answerDirectory.clear === 'yes') {
+          force = true;
+        }
+      }
+
+      if (force) {
         this.removeDirectory(directoryPath);
       } else {
         return console.log(

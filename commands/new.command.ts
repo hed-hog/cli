@@ -33,6 +33,11 @@ export class NewCommand extends AbstractCommand {
       .option('-w, --dbpassword [password]', 'Specify database password.')
       .option('-n, --dbname [database]', 'Specify database name.')
       .option(
+        '-f, --force',
+        'Force project creation if directory exists.',
+        false,
+      )
+      .option(
         '-c, --docker-compose',
         'Create a docker-compose file if connection failed.',
         false,
@@ -58,6 +63,7 @@ export class NewCommand extends AbstractCommand {
           options.push({ name: 'directory', value: command.directory });
           options.push({ name: 'skip-git', value: command.skipGit });
           options.push({ name: 'skip-install', value: command.skipInstall });
+          options.push({ name: 'force', value: command.force });
           options.push({
             name: 'docker-compose',
             value: command.dockerCompose,
