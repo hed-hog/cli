@@ -117,8 +117,6 @@ export class AddAction extends AbstractAction {
 
       this.packagesAdded.push(module);
 
-      console.log('packagesAdded', this.packagesAdded);
-
       return true;
     } else {
       return false;
@@ -186,8 +184,6 @@ export class AddAction extends AbstractAction {
       ([name]: [string, any]) =>
         !packageInstalledModules.find(([moduleName]) => moduleName === name),
     );
-
-    console.log({ missingDependences });
 
     for (const [name] of missingDependences) {
       await this.add(name);
@@ -289,10 +285,6 @@ export class AddAction extends AbstractAction {
       semi: true,
     });
 
-    //fileContent = fileContent.replaceAll('\r\n', '\n').replaceAll('\n', '');
-
-    console.log({ fileContent });
-
     // Verifica se a linha de import já existe
     const importStatement = `import { ${newModule} } from '${newModulePath}';`;
     if (!fileContent.includes(importStatement)) {
@@ -389,8 +381,6 @@ export class AddAction extends AbstractAction {
     if (importsMatch.trim()) {
       importsList.push(importsMatch.trim());
     }
-
-    console.log({ importsList });
 
     const moduleTemplatePath = join(
       nodeModulePath,

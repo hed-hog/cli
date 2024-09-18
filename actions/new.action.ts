@@ -550,7 +550,6 @@ export class NewAction extends AbstractAction {
             'migrations',
           ]);
           await connection.end();
-          console.log('MySQL Result', result);
           return (result as any)[0].length === 1;
       }
     } catch (error) {
