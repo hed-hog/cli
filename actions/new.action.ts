@@ -707,6 +707,7 @@ DB_DATABASE="${config.database}"
 DATABASE_URL="${config.type === 'postgres' ? 'postgresql' : 'mysql'}://\${DB_USERNAME}:\${DB_PASSWORD}@\${DB_HOST}:\${DB_PORT}/\${DB_DATABASE}"
 
 JWT_SECRET="${secret}"
+JWT_EXPIRES_IN="7d"
     `;
 
     const envFilePath = join(dirPath, '.env');
