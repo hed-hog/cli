@@ -13,6 +13,7 @@ import { runScript } from '../lib/utils/run-script';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
+import { getNpmPackage } from '../lib/utils/get-npm-package';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -497,13 +498,51 @@ export class AddAction extends AbstractAction {
     return value.charAt(0).toUpperCase() + value.slice(1);
   }
 
+  async getLatestVersion(module: string) {
+    const {
+      'dist-tags': { latest: latestVersion },
+    } = await getNpmPackage(module);
+
+    return latestVersion;
+  }
+
+  async checkIfPackageExists(directoryPath: string, module: string) {
+    const packageJson = require(join(directoryPath, 'backend', 'package.json'));
+
+    if (packageJson.dependencies[module]) {
+      const currentVersion = packageJson.dependencies[module];
+      const latestVersion = await this.getLatestVersion(module);
+
+      const currentVersionParts = currentVersion.split('.');
+      const latestVersionParts = latestVersion.split('.');
+      let isLatest = true;
+
+      for (let i = 0; i < currentVersionParts.length; i++) {
+        if (
+          parseInt(currentVersionParts[i]) < parseInt(latestVersionParts[i])
+        ) {
+          isLatest = false;
+          break;
+        }
+      }
+
+      return isLatest;
+    }
+
+    return false;
+  }
+
   async installPackage(directoryPath: string, module: string) {
-    const packageManager = await PackageManagerFactory.find();
-    return packageManager.addProduction(
-      [module],
-      'latest',
-      join(directoryPath, 'backend'),
-    );
+    if (!this.checkIfPackageExists(directoryPath, module)) {
+      const packageManager = await PackageManagerFactory.find();
+      return packageManager.addProduction(
+        [module],
+        'latest',
+        join(directoryPath, 'backend'),
+      );
+    } else {
+      return true;
+    }
   }
 
   async parseEnvFile(envPath: string) {
