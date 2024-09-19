@@ -465,7 +465,7 @@ export class AddAction extends AbstractAction {
       spinner.succeed(`Module ${module} installed.`);
       return true;
     } catch (error) {
-      spinner.fail(`Module ${module} not installed.`);
+      spinner.warn(`Module ${module} not installed.`);
       return false;
     }
   }
