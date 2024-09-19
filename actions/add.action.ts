@@ -186,8 +186,6 @@ export class AddAction extends AbstractAction {
         !packageInstalledModules.find(([moduleName]) => moduleName === name),
     );
 
-    console.log({ missingDependences });
-
     for (const [name] of missingDependences) {
       await this.add(name);
     }
@@ -514,9 +512,6 @@ export class AddAction extends AbstractAction {
     if (packageJson.dependencies[module]) {
       const currentVersion = packageJson.dependencies[module];
       const latestVersion = await this.getLatestVersion(module);
-
-      console.log('checking version', { currentVersion, latestVersion });
-
       const currentVersionParts = currentVersion.split('.');
       const latestVersionParts = latestVersion.split('.');
       let isLatest = true;
@@ -545,7 +540,6 @@ export class AddAction extends AbstractAction {
         join(directoryPath, 'backend'),
       );
     } else {
-      console.log(`Package ${module} already installed`);
       return true;
     }
   }
