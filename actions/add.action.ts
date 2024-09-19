@@ -532,7 +532,7 @@ export class AddAction extends AbstractAction {
   }
 
   async installPackage(directoryPath: string, module: string) {
-    if (!this.checkIfPackageExists(directoryPath, module)) {
+    if (!(await this.checkIfPackageExists(directoryPath, module))) {
       const packageManager = await PackageManagerFactory.find();
       return packageManager.addProduction(
         [module],
