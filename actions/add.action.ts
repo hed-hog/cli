@@ -110,13 +110,13 @@ export class AddAction extends AbstractAction {
 
   async add(module: string) {
     if (!this.packagesAdded.includes(module)) {
+      this.packagesAdded.push(module);
+
       const action = new AddAction();
       await action.handle(
         [{ name: 'module', value: module }],
         [{ name: 'silentComplete', value: true }],
       );
-
-      this.packagesAdded.push(module);
 
       return true;
     } else {
