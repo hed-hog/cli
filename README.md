@@ -29,6 +29,9 @@ Below are the main commands provided by the CLI. Each command is prefixed with `
 - **`hedhog start`**  
   Starts the HedHog project in development mode, running both the backend API and admin interface. This command ensures that your project is up and running locally.
 
+- **`hedhog refresh <module>`**
+  Refreshes the module's configuration and dependencies. This command can help resolve issues related to outdated or mismatched settings, ensuring your project is up to date with the latest configurations and modules.
+
 ## Folder Structure
 
 The project follows a clear folder structure to ensure easy navigation and maintenance:

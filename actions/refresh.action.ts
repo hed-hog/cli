@@ -20,24 +20,33 @@ export class RefreshAction extends AbstractAction {
     const packageJsonPath = path.join(process.cwd(), 'package.json');
     const appModulePath = path.join(process.cwd(), 'src/app.module.ts');
     const packageLockPath = path.join(process.cwd(), 'package-lock.json');
+    const migrationsPath = path.join(process.cwd(), 'src/typeorm/migrations');
 
     if (!fs.existsSync(packageJsonPath)) {
       console.error(chalk.red('package.json not found.'));
       process.exit(1);
     }
 
+    this.deleteMigrationsFiles(migrationsPath);
     await this.updatePackageJson(packageJsonPath);
-    // const originalAppModule = await this.updateAppModule(appModulePath);
+    await this.updateAppModule(appModulePath);
     await this.deletePackageLock(packageLockPath);
     await this.addDependency(dependencyName);
+  }
 
-    /* if (originalAppModule) {
-      fs.writeFileSync(appModulePath, originalAppModule);
-      await prettier(appModulePath);
-      console.info(
-        chalk.green('Reescreveu o conteúdo atualizado de app.module.ts.'),
-      );
-    } */
+  private deleteMigrationsFiles(migrationsPath: string) {
+    if (fs.existsSync(migrationsPath)) {
+      const files = fs.readdirSync(migrationsPath);
+      for (const file of files) {
+        const filePath = path.join(migrationsPath, file);
+        if (fs.statSync(filePath).isFile()) {
+          fs.unlinkSync(filePath);
+          console.info(`Deleted file: ${filePath}`);
+        }
+      }
+    } else {
+      console.error(`Folder not found: ${migrationsPath}`);
+    }
   }
 
   private async updatePackageJson(packageJsonPath: string) {
@@ -46,7 +55,11 @@ export class RefreshAction extends AbstractAction {
     const removeHedhogDeps = (deps: { [key: string]: string } | undefined) => {
       if (!deps) return;
       for (const key of Object.keys(deps)) {
-        if (key.startsWith('@hedhog') && key !== '@hedhog/prisma') {
+        if (
+          key.startsWith('@hedhog') &&
+          key !== '@hedhog/prisma' &&
+          key !== '@hedhog/utils'
+        ) {
           delete deps[key];
         }
       }
@@ -66,27 +79,25 @@ export class RefreshAction extends AbstractAction {
     );
   }
 
-  /* private async updateAppModule(appModulePath: string): Promise<string | null> {
+  private async updateAppModule(appModulePath: string) {
     if (!fs.existsSync(appModulePath)) {
       console.error(chalk.red('src/app.module.ts not found.'));
       return null;
     }
+    const fileContent = fs.readFileSync(appModulePath, 'utf8');
 
-    const originalContent = fs.readFileSync(appModulePath, 'utf8');
+    const updatedContent = fileContent
+      .replace(/imports:\s*\[([^\]]+)\]/, `imports: [PrismaModule]`)
+      .replace(/import\s*{[^}]*}\s*from\s*'@hedhog\/(?!prisma)[^']*';\n?/g, '');
 
-    originalContent.replace(
-      /imports:\s*\[([^\]]+)\]/,
-      `imports: [PrismaModule]`,
-    );
+    fs.writeFileSync(appModulePath, updatedContent, 'utf8');
 
     console.info(
       chalk.blue(
         'Updated app.module.ts and removed @hedhog modules (except PrismaModule).',
       ),
     );
-
-    return originalContent;
-  } */
+  }
 
   private async deletePackageLock(packageLockPath: string) {
     if (fs.existsSync(packageLockPath)) {
