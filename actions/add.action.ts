@@ -19,7 +19,13 @@ export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
 
-  public async handle(inputs: Input[], options: Input[]) {
+  public async handle(
+    inputs: Input[],
+    options: Input[],
+    packagesAdded: string[] = [],
+  ) {
+    this.packagesAdded = packagesAdded;
+
     let migrateRun = false;
     const silentComplete =
       options.find(({ name }) => name === 'silentComplete')?.value || false;
@@ -106,6 +112,10 @@ export class AddAction extends AbstractAction {
     if (!silentComplete) {
       await this.complete(module, migrateRun);
     }
+
+    return {
+      packagesAdded,
+    };
   }
 
   async add(module: string) {
@@ -113,10 +123,17 @@ export class AddAction extends AbstractAction {
       this.packagesAdded.push(module);
 
       const action = new AddAction();
-      await action.handle(
+      const result = await action.handle(
         [{ name: 'module', value: module }],
         [{ name: 'silentComplete', value: true }],
+        this.packagesAdded,
       );
+
+      if (result?.packagesAdded) {
+        this.packagesAdded = Array.from(
+          new Set([...this.packagesAdded, ...result.packagesAdded]),
+        );
+      }
 
       return true;
     } else {
