@@ -10,7 +10,6 @@ export async function createController(
   await fs.mkdir(controllerPath, { recursive: true });
 
   const controllerContent = `
-import { AuthGuard } from '@hedhog/admin';
 import { Pagination } from '@hedhog/pagination';
 import {
   Body,
@@ -22,7 +21,6 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  UseGuards,
   forwardRef,
 } from '@nestjs/common';
 import { CreateDTO } from './dto/create.dto';
@@ -30,7 +28,6 @@ import { DeleteDTO } from './dto/delete.dto';
 import { UpdateDTO } from './dto/update.dto';
 import { ${capitalize(libraryName)}Service } from './${libraryName}.service';
 
-@UseGuards(AuthGuard)
 @Controller('${libraryName}s')
 export class ${capitalize(libraryName)}Controller {
   constructor(
