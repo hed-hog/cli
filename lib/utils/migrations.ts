@@ -1,7 +1,6 @@
 import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import path = require('path');
-import { Runner, RunnerFactory } from '../runners';
 import { prettier } from './formatting';
 
 export async function createMigrationDirectory(
@@ -21,7 +20,7 @@ export async function createMigrationDirectory(
 import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
 import { idColumn, timestampColumn } from '@hedhog/utils';
 
-export class Migration implements MigrationInterface {
+export class Migrate implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -34,7 +33,6 @@ export class Migration implements MigrationInterface {
         ],
       })
     );
-
     ${generateForeignKeys(tableName, fields)}
   }
 
@@ -75,19 +73,19 @@ function generateColumnDefinition(field: any, index: number) {
 
 export function parseFields(fieldsInput: string) {
   return fieldsInput.split(',').map((field) => {
-    const [name, type, lengthOrRef, foreignTable, foreignColumn] =
-      field.split(':');
+    const [name, type, lengthOrForignTable, foreignColumn] = field.split(':');
     const isOptional = name.endsWith('?');
     const fieldName = name.replace('?', '');
 
     return {
       name: fieldName,
       type: type || 'varchar',
-      length:
-        lengthOrRef && !isNaN(Number(lengthOrRef)) ? lengthOrRef : undefined,
+      length: isNaN(Number(lengthOrForignTable)) ? null : lengthOrForignTable,
       isNullable: isOptional,
       isForeignKey: type === 'fk',
-      foreignTable: foreignTable || null,
+      foreignTable: isNaN(Number(lengthOrForignTable))
+        ? lengthOrForignTable
+        : null,
       foreignColumn: foreignColumn || null,
     };
   });
