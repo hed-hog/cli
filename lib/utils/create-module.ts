@@ -7,7 +7,7 @@ export async function createModule(libraryPath: string, libraryName: string) {
   await fs.mkdir(modulePath, { recursive: true });
 
   const moduleContent = `
-import { AuthModule } from '@hedhog/auth';
+import { AdminModule } from '@hedhog/admin';
 import { PaginationModule } from '@hedhog/pagination';
 import { PrismaModule } from '@hedhog/prisma';
 import { forwardRef, Module } from '@nestjs/common';
@@ -16,7 +16,7 @@ import { ${capitalize(libraryName)}Controller } from './${libraryName}.controlle
 
 @Module({
   imports: [
-    forwardRef(() => AuthModule),
+    forwardRef(() => AdminModule),
     forwardRef(() => PrismaModule),
     forwardRef(() => PaginationModule),
   ],

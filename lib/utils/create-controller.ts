@@ -10,7 +10,7 @@ export async function createController(
   await fs.mkdir(controllerPath, { recursive: true });
 
   const controllerContent = `
-import { AuthGuard } from '@hedhog/auth';
+import { AuthGuard } from '@hedhog/admin';
 import { Pagination } from '@hedhog/pagination';
 import {
   Body,

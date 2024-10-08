@@ -32,10 +32,9 @@ export class InfoAction extends AbstractAction {
   private manager!: AbstractPackageManager;
 
   private warningMessageDependenciesWhiteList = [
-    '@hedhog/auth',
+    '@hedhog/admin',
     '@hedhog/pagination',
     '@hedhog/prisma',
-    '@hedhog/user',
   ];
 
   public async handle() {
