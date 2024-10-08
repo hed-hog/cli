@@ -116,7 +116,7 @@ export class CreateAction extends AbstractAction {
     };
 
     if (!removeDefaultDeps) {
-      const devDeps = ['@hedhog/auth', '@hedhog/pagination', '@hedhog/prisma'];
+      const devDeps = ['@hedhog/admin', '@hedhog/pagination', '@hedhog/prisma'];
 
       for (const devDep of devDeps) {
         (packageJsonContent as any).peerDependencies[devDep] = 'latest';
@@ -176,7 +176,7 @@ export class CreateAction extends AbstractAction {
     try {
       console.info(chalk.blue('Installing production dependencies...'));
       const dependencies = [
-        '@hedhog/auth',
+        '@hedhog/admin',
         '@hedhog/pagination',
         '@hedhog/prisma',
         'ts-node',
