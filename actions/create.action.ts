@@ -49,6 +49,16 @@ export class CreateAction extends AbstractAction {
       process.exit(1);
     }
 
+    if (!tableName.length) {
+      console.error(chalk.red('Error: You must specify a table name.'));
+      process.exit(1);
+    }
+
+    if (!fieldsInput.length) {
+      console.error(chalk.red('Error: You must specify fields.'));
+      process.exit(1);
+    }
+
     const libraryPath = path.join(process.cwd(), 'libs', libraryName);
     this.createGitignore(libraryPath);
     await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
