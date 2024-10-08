@@ -35,7 +35,7 @@ export class Migration implements MigrationInterface {
       })
     );
 
-    ${generateForeignKeys(fields)}
+    ${generateForeignKeys(tableName, fields)}
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -53,8 +53,12 @@ export class Migration implements MigrationInterface {
 function generateColumnDefinition(field: any, index: number) {
   let columnParts: string[] = [
     `name: '${field.name}'`,
-    `type: '${field.type}'`,
+    `type: '${field.type === 'fk' ? 'int' : field.type}'`,
   ];
+
+  if (field.type === 'fk') {
+    columnParts.push('unsigned: true');
+  }
 
   if (field.length) {
     columnParts.push(`length: '${field.length}'`);
@@ -89,13 +93,13 @@ export function parseFields(fieldsInput: string) {
   });
 }
 
-function generateForeignKeys(fields: any[]) {
+function generateForeignKeys(tableName: string, fields: any[]) {
   const foreignKeys = fields
     .filter((field) => field.isForeignKey)
     .map(
       (field) => `
     await queryRunner.createForeignKey(
-      '${field.name}',
+      '${tableName}',
       new TableForeignKey({
         columnNames: ['${field.name}'],
         referencedTableName: '${field.foreignTable}',
