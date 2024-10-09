@@ -109,9 +109,8 @@ export class AddAction extends AbstractAction {
       }
     }
 
-    await this.updateLibsPrisma(directoryPath);
-
     if (!silentComplete) {
+      await this.updateLibsPrisma(directoryPath);
       await this.complete(module, migrateRun);
     }
 
