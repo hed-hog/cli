@@ -10,6 +10,8 @@ import { StartCommand } from './start.command';
 import { StartAction } from '../actions/start.action';
 import { RefreshCommand } from './refresh.command';
 import { RefreshAction } from '../actions/refresh.action';
+import { ResetCommand } from './reset.command';
+import { ResetAction } from '../actions/reset.action';
 export class CommandLoader {
   public static async load(program: Command): Promise<void> {
     new NewCommand(new NewAction()).load(program);
@@ -18,6 +20,7 @@ export class CommandLoader {
     new InfoCommand(new InfoAction()).load(program);
     new StartCommand(new StartAction()).load(program);
     new RefreshCommand(new RefreshAction()).load(program);
+    new ResetCommand(new ResetAction()).load(program);
 
     this.handleInvalidCommand(program);
   }
