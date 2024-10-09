@@ -109,6 +109,8 @@ export class AddAction extends AbstractAction {
       }
     }
 
+    await this.updateLibsPrisma(directoryPath);
+
     if (!silentComplete) {
       await this.complete(module, migrateRun);
     }
@@ -116,6 +118,20 @@ export class AddAction extends AbstractAction {
     return {
       packagesAdded,
     };
+  }
+
+  async updateLibsPrisma(directoryPath: string) {
+    const spinner = ora('Updating prisma libraries...').start();
+    const libPath = join(directoryPath, 'lib');
+    const libsPath = join(directoryPath, 'lib', 'libs');
+
+    if (existsSync(libPath) && existsSync(libsPath)) {
+      spinner.info('Updating prisma libraries...');
+      await runScript('prisma:update', libPath);
+      spinner.succeed('Prisma libraries updated.');
+    } else {
+      spinner.clear();
+    }
   }
 
   async add(module: string) {
