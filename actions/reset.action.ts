@@ -26,9 +26,35 @@ export class ResetAction extends AbstractAction {
     await this.removeMigrations(directoryPath);
     await this.removeDependencies(directoryPath);
     await this.recreateAppModule(directoryPath);
+    await this.checkEnvFile(directoryPath);
     await this.recreateDatabase(directoryPath);
 
     console.log(chalk.green('Project reset successfully.'));
+  }
+
+  async checkEnvFile(path: string) {
+    const spinner = ora('Check .env file...').start();
+    const envPath = join(path, '.env');
+
+    if (!existsSync(envPath)) {
+      writeFile(
+        envPath,
+        `
+DB_TYPE=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=hedhog
+DB_PASSWORD=changeme
+DB_DATABASE=hedhog
+
+DATABASE_URL=\${DB_TYPE}://\${DB_USERNAME}:\${DB_PASSWORD}@\${DB_HOST}:\${DB_PORT}/\${DB_DATABASE}
+`,
+        'utf-8',
+      );
+      spinner.succeed('Environment file created.');
+    } else {
+      spinner.succeed('Environment file found.');
+    }
   }
 
   async unlinkDirectoryRecursive(path: string) {
