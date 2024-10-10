@@ -16,6 +16,7 @@ import { getFileContent } from '../lib/utils/get-file-content';
 import { EMOJIS } from '../lib/ui';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { recreateDatabase } from '../lib/utils/recreate-database';
+import { getEnvFileTemplate } from '../lib/utils/env-file-template';
 
 export class ResetAction extends AbstractAction {
   public async handle() {
@@ -37,20 +38,7 @@ export class ResetAction extends AbstractAction {
     const envPath = join(path, '.env');
 
     if (!existsSync(envPath)) {
-      writeFile(
-        envPath,
-        `
-DB_TYPE=postgres
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=hedhog
-DB_PASSWORD=changeme
-DB_DATABASE=hedhog
-
-DATABASE_URL=\${DB_TYPE}://\${DB_USERNAME}:\${DB_PASSWORD}@\${DB_HOST}:\${DB_PORT}/\${DB_DATABASE}
-`,
-        'utf-8',
-      );
+      await writeFile(envPath, getEnvFileTemplate(), 'utf-8');
       spinner.succeed('Environment file created.');
     } else {
       spinner.succeed('Environment file found.');
