@@ -27,6 +27,7 @@ export class ResetAction extends AbstractAction {
     await this.removeMigrations(directoryPath);
     await this.removeDependencies(directoryPath);
     await this.recreateAppModule(directoryPath);
+    await this.recreatePrismaSchema(directoryPath);
     await this.checkEnvFile(directoryPath);
     await this.recreateDatabase(directoryPath);
 
@@ -66,6 +67,27 @@ export class ResetAction extends AbstractAction {
     }
   }
 
+  async recreatePrismaSchema(path: string) {
+    const spinner = ora('Recreate Prisma Schema').start();
+    try {
+      const prismaSchemaPath = join(path, 'src', 'prisma', 'schema.prisma');
+
+      if (existsSync(prismaSchemaPath)) {
+        await unlink(prismaSchemaPath);
+      }
+
+      const bootstrapContent = await getFileContent(
+        'https://raw.githubusercontent.com/hed-hog/bootstrap/refs/heads/master/backend/src/prisma/schema.prisma',
+      );
+
+      await writeFile(prismaSchemaPath, bootstrapContent, 'utf-8');
+      spinner.succeed('Prisma Schema created.');
+    } catch (error) {
+      spinner.fail('Failed to recreate Prisma Schema.');
+      console.error(error);
+    }
+  }
+
   async recreateAppModule(path: string) {
     const spinner = ora('Recreate app.module.ts...').start();
     try {
@@ -81,7 +103,6 @@ export class ResetAction extends AbstractAction {
 
       await writeFile(appModulePath, bootstrapContent, 'utf-8');
       spinner.succeed('AppModule created.');
-      spinner.succeed('App module recreated.');
     } catch (error) {
       spinner.fail('Failed to recreate app.module.ts.');
       console.error(error);
