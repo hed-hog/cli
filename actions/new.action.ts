@@ -56,6 +56,19 @@ export class NewAction extends AbstractAction {
     let docker = !dockerCompose ? 'no' : 'yes';
     let hasDocker = false;
 
+    if (!(await this.isNestJSCliInstalled())) {
+      let packageManager: AbstractPackageManager;
+
+      try {
+        packageManager = await PackageManagerFactory.find();
+        await packageManager.installGlobal('@nestjs/cli');
+      } catch (error) {
+        if (error && error.message) {
+          console.error(chalk.red(error.message));
+        }
+      }
+    }
+
     if (!(await this.checkDirectoryIsNotExists(directoryPath))) {
       if (!force) {
         const answerDirectory = await inquirer.createPromptModule({
@@ -335,6 +348,16 @@ export class NewAction extends AbstractAction {
 
     console.info(chalk.gray(MESSAGES.START_COMMAND(packageManager)));
     console.info();
+  }
+
+  async isNestJSCliInstalled() {
+    const nestjs = RunnerFactory.create(Runner.NESTJS);
+    try {
+      await nestjs?.run('--version', true);
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   async removeDirectory(directory: string) {

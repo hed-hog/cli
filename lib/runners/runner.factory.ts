@@ -6,6 +6,7 @@ import { YarnRunner } from './yarn.runner';
 import { PnpmRunner } from './pnpm.runner';
 import { NpxRunner } from './npx.runner';
 import { DockerRunner } from './docker.runner';
+import { NestJSRunner } from './nestjs.runner';
 
 export class RunnerFactory {
   public static create(runner: Runner) {
@@ -27,6 +28,9 @@ export class RunnerFactory {
 
       case Runner.DOCKER:
         return new DockerRunner();
+
+      case Runner.NESTJS:
+        return new NestJSRunner();
 
       default:
         console.info(chalk.yellow(`[WARN] Unsupported runner: ${runner}`));

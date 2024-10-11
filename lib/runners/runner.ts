@@ -5,4 +5,5 @@ export enum Runner {
   PNPM,
   NPX,
   DOCKER,
+  NESTJS,
 }

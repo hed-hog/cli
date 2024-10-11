@@ -11,6 +11,11 @@ import { ProjectDependency } from './project.dependency';
 export abstract class AbstractPackageManager {
   constructor(protected runner: AbstractRunner) {}
 
+  public async installGlobal(packageName: string) {
+    const commandArguments = `${this.cli.install} -g ${packageName}`;
+    await this.runner.run(commandArguments);
+  }
+
   public async install(directory: string, packageManager: string) {
     const spinner = ora({
       spinner: {

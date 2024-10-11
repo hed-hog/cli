@@ -124,12 +124,17 @@ export class AddAction extends AbstractAction {
     const libPath = join(directoryPath, 'lib');
     const libsPath = join(directoryPath, 'lib', 'libs');
 
-    if (existsSync(libPath) && existsSync(libsPath)) {
-      spinner.info('Updating prisma libraries...');
-      await runScript('prisma:update', libPath);
-      spinner.succeed('Prisma libraries updated.');
-    } else {
-      spinner.clear();
+    try {
+      if (existsSync(libPath) && existsSync(libsPath)) {
+        spinner.info('Updating prisma libraries...');
+        await runScript('prisma:update', libPath);
+        spinner.succeed('Prisma libraries updated.');
+      } else {
+        spinner.clear();
+      }
+    } catch (error) {
+      spinner.fail('Failed to update prisma libraries.');
+      console.error(error);
     }
   }
 
