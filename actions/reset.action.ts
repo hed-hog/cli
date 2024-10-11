@@ -16,6 +16,7 @@ import { getFileContent } from '../lib/utils/get-file-content';
 import { EMOJIS } from '../lib/ui';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { recreateDatabase } from '../lib/utils/recreate-database';
+import { getEnvFileTemplate } from '../lib/utils/env-file-template';
 
 export class ResetAction extends AbstractAction {
   public async handle() {
@@ -26,9 +27,22 @@ export class ResetAction extends AbstractAction {
     await this.removeMigrations(directoryPath);
     await this.removeDependencies(directoryPath);
     await this.recreateAppModule(directoryPath);
+    await this.checkEnvFile(directoryPath);
     await this.recreateDatabase(directoryPath);
 
     console.log(chalk.green('Project reset successfully.'));
+  }
+
+  async checkEnvFile(path: string) {
+    const spinner = ora('Check .env file...').start();
+    const envPath = join(path, '.env');
+
+    if (!existsSync(envPath)) {
+      await writeFile(envPath, getEnvFileTemplate(), 'utf-8');
+      spinner.succeed('Environment file created.');
+    } else {
+      spinner.succeed('Environment file found.');
+    }
   }
 
   async unlinkDirectoryRecursive(path: string) {
