@@ -42,7 +42,7 @@ export class NewCommand extends AbstractCommand {
         'Create a docker-compose file if connection failed.',
         false,
       )
-      .option('--data-volume', 'Database volume path.', './data')
+      .option('--data-volume <path>', 'Database volume path.', './data')
       .action(async (name, command) => {
         try {
           if (!name) {
