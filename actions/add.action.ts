@@ -160,7 +160,10 @@ export class AddAction extends AbstractAction {
       const action = new AddAction();
       const result = await action.handle(
         [{ name: 'module', value: module }],
-        [{ name: 'silentComplete', value: true }],
+        [
+          { name: 'silentComplete', value: true },
+          { name: 'debug', value: this.debug },
+        ],
         this.packagesAdded,
       );
 
