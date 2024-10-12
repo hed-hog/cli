@@ -37,9 +37,8 @@ export class NewAction extends AbstractAction {
     let dbuser = options.find(({ name }) => name === 'dbuser')?.value;
     let dbpassword = options.find(({ name }) => name === 'dbpassword')?.value;
     let dbname = options.find(({ name }) => name === 'dbname')?.value;
-    let dataVolume = String(
-      options.find(({ name }) => name === 'data-volume')?.value,
-    );
+    let dataVolume = options.find(({ name }) => name === 'data-volume')?.value;
+    dataVolume = String(dataVolume) || './data';
     let dockerCompose = options.some(
       (option) => option.name === 'docker-compose' && option.value === true,
     );
