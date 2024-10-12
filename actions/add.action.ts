@@ -14,11 +14,17 @@ import { getRootPath } from '../lib/utils/get-root-path';
 import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
-import { create } from 'domain';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
+  private debug = false;
+
+  async showDebug(...args: any[]) {
+    if (this.debug) {
+      console.log(chalk.yellow('DEBUG'), ...args);
+    }
+  }
 
   public async handle(
     inputs: Input[],
@@ -33,6 +39,10 @@ export class AddAction extends AbstractAction {
     const module = String(
       inputs.find((input) => input.name === 'module')?.value || '',
     ).toLowerCase();
+
+    this.debug = options.some(
+      (option) => option.name === 'debug' && option.value === true,
+    );
 
     const directoryPath = await getRootPath();
     const appModulePath = join(
@@ -50,6 +60,10 @@ export class AddAction extends AbstractAction {
       `@hedhog`,
       `${module}`,
     );
+
+    this.showDebug('Directory path:', directoryPath);
+    this.showDebug('App module path:', appModulePath);
+    this.showDebug('Add module name:', addModuleName);
 
     if (!this.checkIfDirectoryIsPackage(directoryPath)) {
       console.error(chalk.red('This directory is not a package 22.'));
@@ -267,6 +281,9 @@ export class AddAction extends AbstractAction {
         `migrations`,
       );
 
+      this.showDebug('Migrations path:', migrationsPath);
+      this.showDebug('Migration dest path:', migrationDestPath);
+
       if (!existsSync(migrationDestPath)) {
         await this.createDirectoryRecursive(migrationDestPath);
       }
@@ -288,6 +305,13 @@ export class AddAction extends AbstractAction {
               /export class Migrate implements/g,
               `export class Migrate${timestamp} implements`,
             ),
+          );
+
+          this.showDebug(
+            'Copy migration file:',
+            file,
+            ' to ',
+            `${timestamp}-migrate.ts`,
           );
 
           await writeFile(

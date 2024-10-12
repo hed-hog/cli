@@ -8,12 +8,17 @@ export class AddCommand extends AbstractCommand {
       .command('add')
       .argument('<string>', 'module name')
       .option('--silent-complete', 'Skip completion message.', false)
+      .option('--debug', 'Show debug information.', false)
       .description('Adds support for an external module to your project.')
       .usage('<module> [options]')
       .action(async (module, command) => {
         const options: Input[] = [];
 
         options.push({ name: 'silentComplete', value: command.silentComplete });
+        options.push({
+          name: 'debug',
+          value: command.debug,
+        });
         const inputs: Input[] = [];
         inputs.push({ name: 'module', value: module });
         this.action.handle(inputs, options);
