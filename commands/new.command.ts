@@ -43,6 +43,7 @@ export class NewCommand extends AbstractCommand {
         false,
       )
       .option('--data-volume <path>', 'Database volume path.', './data')
+      .option('--debug', 'Show debug information.', false)
       .action(async (name, command) => {
         try {
           if (!name) {
@@ -72,6 +73,10 @@ export class NewCommand extends AbstractCommand {
           options.push({
             name: 'docker-compose',
             value: command.dockerCompose,
+          });
+          options.push({
+            name: 'debug',
+            value: command.debug,
           });
           options.push({
             name: 'packageManager',

@@ -21,6 +21,14 @@ import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { runScript } from '../lib/utils/run-script';
 
 export class NewAction extends AbstractAction {
+  private debug = false;
+
+  async showDebug(...args: any[]) {
+    if (this.debug) {
+      console.log(chalk.yellow('DEBUG'), ...args);
+    }
+  }
+
   public async handle(inputs: Input[], options: Input[]) {
     this.detectLanguage();
 
@@ -45,6 +53,9 @@ export class NewAction extends AbstractAction {
     let force = options.some(
       (option) => option.name === 'force' && option.value === true,
     );
+    this.debug = options.some(
+      (option) => option.name === 'debug' && option.value === true,
+    );
 
     const packageManager =
       String(options.find(({ name }) => name === 'packageManager')?.value) ??
@@ -56,6 +67,27 @@ export class NewAction extends AbstractAction {
       false;
     let docker = !dockerCompose ? 'no' : 'yes';
     let hasDocker = false;
+
+    this.showDebug({
+      name,
+      directory,
+      directoryPath,
+      backEndDirectoryPath,
+      database,
+      dbhost,
+      dbport,
+      dbuser,
+      dbpassword,
+      dbname,
+      dataVolume,
+      dockerCompose,
+      force,
+      packageManager,
+      skipGit,
+      skipInstall,
+      docker,
+      hasDocker,
+    });
 
     if (!(await this.isNestJSCliInstalled())) {
       let packageManager: AbstractPackageManager;
