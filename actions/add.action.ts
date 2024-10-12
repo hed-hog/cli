@@ -124,6 +124,12 @@ export class AddAction extends AbstractAction {
       }
     }
 
+    if (module === 'admin') {
+      await this.modifyControllerApp(
+        join(directoryPath, 'backend', 'src', 'app.controller.ts'),
+      );
+    }
+
     if (!silentComplete) {
       await this.updateLibsPrisma(directoryPath);
       await this.complete(module, migrateRun);
@@ -360,6 +366,72 @@ export class AddAction extends AbstractAction {
     const runner = RunnerFactory.create(Runner.NPX);
     await runner?.run(args);
     spinner.succeed();
+  }
+
+  async modifyControllerApp(path: string) {
+    let alreadyInstalled = false;
+    let fileContent = await readFile(path, 'utf-8');
+
+    if (['@Public()'].includes(fileContent)) {
+      return;
+    }
+
+    fileContent = await formatTypeScriptCode(fileContent, {
+      printWidth: 100000,
+      singleQuote: true,
+      trailingComma: 'all',
+      semi: true,
+    });
+
+    const importStatement = `import { Public } from '@hedhog/admin';`;
+    if (!fileContent.includes(importStatement)) {
+      // Adiciona a linha de import no início do arquivo (após os outros imports)
+      const importRegex = /(import[\s\S]+?;)/g;
+      const importMatch = importRegex.exec(fileContent);
+      if (importMatch) {
+        const lastImport = importMatch[0];
+        fileContent = fileContent.replace(
+          lastImport,
+          `${lastImport}\n${importStatement}`,
+        );
+      } else {
+        // Se nenhum import estiver presente, adiciona no início do arquivo
+        fileContent = `${importStatement}\n\n${fileContent}`;
+      }
+    } else {
+      if (this.showWarning) {
+        console.warn(
+          chalk.yellow(`${EMOJIS.WARNING} The row for already exists.`),
+        );
+      }
+      alreadyInstalled = true;
+    }
+
+    if (alreadyInstalled) {
+      return false;
+    }
+
+    const controllerRegex = /@Controller\([\s\S]+?\)/g;
+    const controllerMatch = controllerRegex.exec(fileContent);
+
+    if (!controllerMatch) {
+      console.error(
+        chalk.red(`${EMOJIS.ERROR} "Controller" decorator not found in file.`),
+      );
+      return;
+    }
+
+    const controller = controllerMatch[0];
+    const updatedFileContent = await formatTypeScriptCode(
+      `${fileContent}`.replace(controller, `${controller}\n  @Public()\n`),
+      {
+        singleQuote: true,
+        trailingComma: 'all',
+        semi: true,
+      },
+    );
+
+    await writeFile(path, updatedFileContent, 'utf-8');
   }
 
   async modifyAppModule(
