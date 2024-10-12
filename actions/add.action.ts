@@ -6,7 +6,7 @@ import * as ora from 'ora';
 import { existsSync } from 'fs';
 import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
-import { join } from 'path';
+import { join, sep } from 'path';
 import { Runner, RunnerFactory } from '../lib/runners';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { runScript } from '../lib/utils/run-script';
@@ -260,12 +260,19 @@ export class AddAction extends AbstractAction {
   }
 
   async createDirectoryRecursive(path: string) {
-    const folders = path.split('/');
+    this.showDebug('Creating directory:', path);
+    const folders = path.split(sep);
     let currentPath = folders[0];
 
     for (let i = 1; i < folders.length; i++) {
       currentPath = join(currentPath, folders[i]);
+      this.showDebug(
+        'Checking directory:',
+        currentPath,
+        existsSync(currentPath),
+      );
       if (!existsSync(currentPath)) {
+        this.showDebug('Creating directory:', currentPath);
         await mkdir(currentPath);
       }
     }
@@ -286,6 +293,10 @@ export class AddAction extends AbstractAction {
 
       this.showDebug('Migrations path:', migrationsPath);
       this.showDebug('Migration dest path:', migrationDestPath);
+      this.showDebug(
+        'Migration dest path exists:',
+        existsSync(migrationDestPath),
+      );
 
       if (!existsSync(migrationDestPath)) {
         await this.createDirectoryRecursive(migrationDestPath);
