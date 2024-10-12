@@ -4,7 +4,7 @@ import { PackageManagerFactory } from '../lib/package-managers';
 import { AbstractAction } from './abstract.action';
 import * as ora from 'ora';
 import { existsSync } from 'fs';
-import { readdir, readFile, writeFile } from 'fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { join } from 'path';
 import { Runner, RunnerFactory } from '../lib/runners';
@@ -14,6 +14,7 @@ import { getRootPath } from '../lib/utils/get-root-path';
 import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
+import { create } from 'domain';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -241,11 +242,34 @@ export class AddAction extends AbstractAction {
     console.info();
   }
 
+  async createDirectoryRecursive(path: string) {
+    const folders = path.split('/');
+    let currentPath = folders[0];
+
+    for (let i = 1; i < folders.length; i++) {
+      currentPath = join(currentPath, folders[i]);
+      if (!existsSync(currentPath)) {
+        await mkdir(currentPath);
+      }
+    }
+  }
+
   async copyMigrationsFiles(directoryPath: string, nodeModulePath: string) {
     const spinner = ora('Copying migrations files...').start();
     try {
       let copies = 0;
       const migrationsPath = join(`${nodeModulePath}`, `src`, `migrations`);
+      const migrationDestPath = join(
+        directoryPath,
+        `backend`,
+        `src`,
+        `typeorm`,
+        `migrations`,
+      );
+
+      if (!existsSync(migrationDestPath)) {
+        await this.createDirectoryRecursive(migrationDestPath);
+      }
 
       if (existsSync(migrationsPath)) {
         let migrationsFiles = (await readdir(migrationsPath))
