@@ -411,19 +411,8 @@ export class AddAction extends AbstractAction {
       return false;
     }
 
-    const controllerRegex = /@Controller\([\s\S]+?\)/g;
-    const controllerMatch = controllerRegex.exec(fileContent);
-
-    if (!controllerMatch) {
-      console.error(
-        chalk.red(`${EMOJIS.ERROR} "Controller" decorator not found in file.`),
-      );
-      return;
-    }
-
-    const controller = controllerMatch[0];
     const updatedFileContent = await formatTypeScriptCode(
-      `${fileContent}`.replace(controller, `${controller}\n  @Public()\n`),
+      `${fileContent}`.replace(`@Controller()`, `@Public()\n@Controller()\n`),
       {
         singleQuote: true,
         trailingComma: 'all',
