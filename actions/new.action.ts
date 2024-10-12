@@ -37,7 +37,7 @@ export class NewAction extends AbstractAction {
     let dbuser = options.find(({ name }) => name === 'dbuser')?.value;
     let dbpassword = options.find(({ name }) => name === 'dbpassword')?.value;
     let dbname = options.find(({ name }) => name === 'dbname')?.value;
-
+    let dataVolume = options.find(({ name }) => name === 'data-volume')?.value;
     let dockerCompose = options.some(
       (option) => option.name === 'docker-compose' && option.value === true,
     );
@@ -241,6 +241,7 @@ export class NewAction extends AbstractAction {
         String(dbpassword),
         String(dbname),
         Number(dbport),
+        dataVolume,
       );
 
       await this.runDockerCompose(directoryPath);
@@ -422,6 +423,7 @@ export class NewAction extends AbstractAction {
     password: string,
     databasename: string,
     databasePort: number,
+    dataVolume: string,
   ) {
     const spinner = ora('Creating docker-compose file').start();
 
@@ -434,7 +436,7 @@ export class NewAction extends AbstractAction {
     ports:
       - ${databasePort}:${type === 'mysql' ? 3306 : 5432}
     volumes:
-      - ./data:${type === 'mysql' ? '/var/lib/mysql' : '/var/lib/postgresql/data'}
+      - ${dataVolume}:${type === 'mysql' ? '/var/lib/mysql' : '/var/lib/postgresql/data'}
     healthcheck:
       test: ${type === 'mysql' ? 'mysqladmin ping -h	mysql' : 'pg_isready -U postgres'}
       interval: 10s
