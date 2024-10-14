@@ -449,7 +449,7 @@ export class NewAction extends AbstractAction {
     }
   }
 
-  async detectIfVolumeIsPath(volume: string) {
+  detectIfVolumeIsPath(volume: string) {
     if (!(volume.startsWith('/') || volume.startsWith('.'))) {
       return `volumes:
   test-data:`;
