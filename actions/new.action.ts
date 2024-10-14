@@ -449,6 +449,10 @@ export class NewAction extends AbstractAction {
     }
   }
 
+  async detectIfVolumeIsPath(volume: string) {
+    return volume.startsWith('/') || volume.startsWith('.');
+  }
+
   async createDockerCompose(
     directory: string,
     type: 'postgres' | 'mysql',
@@ -474,7 +478,13 @@ export class NewAction extends AbstractAction {
       test: ${type === 'mysql' ? 'mysqladmin ping -h	mysql' : 'pg_isready -U postgres'}
       interval: 10s
       timeout: 5s
-      retries: 5`;
+      retries: 5
+${
+  !this.detectIfVolumeIsPath(dataVolume) &&
+  `
+volumes:
+  test-data:`
+}`;
 
     await writeFile(
       join(directory, 'docker-compose.yml'),
