@@ -452,7 +452,8 @@ export class NewAction extends AbstractAction {
   detectIfVolumeIsPath(volume: string) {
     if (!(volume.startsWith('/') || volume.startsWith('.'))) {
       return `volumes:
-  test-data:`;
+  test-data:
+    driver: local`;
     } else {
       return '';
     }
