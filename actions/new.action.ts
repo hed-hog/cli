@@ -450,7 +450,12 @@ export class NewAction extends AbstractAction {
   }
 
   async detectIfVolumeIsPath(volume: string) {
-    return volume.startsWith('/') || volume.startsWith('.');
+    if (!(volume.startsWith('/') || volume.startsWith('.'))) {
+      return `volumes:
+  test-data:`;
+    } else {
+      return '';
+    }
   }
 
   async createDockerCompose(
@@ -479,12 +484,7 @@ export class NewAction extends AbstractAction {
       interval: 10s
       timeout: 5s
       retries: 5
-${
-  !this.detectIfVolumeIsPath(dataVolume) &&
-  `
-volumes:
-  test-data:`
-}`;
+${this.detectIfVolumeIsPath(dataVolume)}`;
 
     await writeFile(
       join(directory, 'docker-compose.yml'),
