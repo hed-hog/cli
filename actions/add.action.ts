@@ -148,7 +148,7 @@ export class AddAction extends AbstractAction {
     try {
       if (existsSync(libPath) && existsSync(libsPath)) {
         spinner.info('Updating prisma libraries...');
-        await runScript('prisma:update', libPath);
+        runScript('prisma:update', libPath);
         spinner.succeed('Prisma libraries updated.');
       } else {
         spinner.clear();
