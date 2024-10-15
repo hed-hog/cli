@@ -141,7 +141,9 @@ export class AddAction extends AbstractAction {
   }
 
   async updateLibsPrisma(directoryPath: string) {
-    const spinner = ora('Updating prisma libraries...').start();
+    console.info();
+    console.log('updateLibsPrisma', directoryPath);
+    const spinner = ora('Starting updating prisma in libraries...').start();
     const libPath = join(directoryPath, 'lib');
     const libsPath = join(directoryPath, 'lib', 'libs');
 
@@ -187,7 +189,7 @@ export class AddAction extends AbstractAction {
           spinner.warn('Failed to update prisma libraries.');
         }
       } else {
-        spinner.clear();
+        spinner.info('Libraries not found.');
       }
     } catch (error) {
       spinner.fail('Failed to update prisma libraries.');
