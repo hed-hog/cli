@@ -147,9 +147,45 @@ export class AddAction extends AbstractAction {
 
     try {
       if (existsSync(libPath) && existsSync(libsPath)) {
-        spinner.info('Updating prisma libraries...');
-        runScript('prisma:update', libPath);
-        spinner.succeed('Prisma libraries updated.');
+        spinner.info('Checking database connection...');
+
+        const {
+          DB_HOST,
+          DB_PORT,
+          DB_USERNAME,
+          DB_PASSWORD,
+          DB_DATABASE,
+          DATABASE_URL,
+        } = await this.parseEnvFile(join(libPath, '.env'));
+
+        spinner.info(`Database connection found...`);
+
+        let type = DATABASE_URL.split(':')[0] as any;
+
+        if (type === 'postgresql') {
+          type = 'postgres';
+        }
+
+        const isConnected = await testDatabaseConnection(
+          type,
+          DB_HOST,
+          Number(DB_PORT),
+          DB_USERNAME,
+          DB_PASSWORD,
+          DB_DATABASE,
+        );
+
+        spinner.info(
+          `Database connection status: ${isConnected ? 'OK' : 'FAIL'}`,
+        );
+
+        if (isConnected) {
+          spinner.info('Updating prisma libraries...');
+          runScript('prisma:update', libPath);
+          spinner.succeed('Prisma libraries updated.');
+        } else {
+          spinner.warn('Failed to update prisma libraries.');
+        }
       } else {
         spinner.clear();
       }
