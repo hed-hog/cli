@@ -39,6 +39,7 @@ export class NewAction extends AbstractAction {
     const directory = options.find(({ name }) => name === 'directory');
     const directoryPath = `${String(directory?.value) || '.'}/${name}`;
     const backEndDirectoryPath = join(directoryPath, 'backend');
+    const adminDirectoryPath = join(directoryPath, 'admin');
     let database = options.find(({ name }) => name === 'database')?.value;
     let dbhost = options.find(({ name }) => name === 'dbhost')?.value;
     let dbport = options.find(({ name }) => name === 'dbport')?.value;
@@ -46,7 +47,7 @@ export class NewAction extends AbstractAction {
     let dbpassword = options.find(({ name }) => name === 'dbpassword')?.value;
     let dbname = options.find(({ name }) => name === 'dbname')?.value;
     let dataVolume = options.find(({ name }) => name === 'data-volume')?.value;
-    dataVolume = String(dataVolume) || './data';
+    dataVolume = String(dataVolume) || '';
     let dockerCompose = options.some(
       (option) => option.name === 'docker-compose' && option.value === true,
     );
@@ -239,7 +240,7 @@ export class NewAction extends AbstractAction {
     if (databaseConnection) {
       spinner.succeed('Database connection successful');
     } else {
-      spinner.fail('Database connection failed');
+      spinner.warn('Database connection failed');
     }
 
     if (!databaseConnection) {
@@ -325,6 +326,7 @@ export class NewAction extends AbstractAction {
 
     if (!skipInstall) {
       await this.installPackages(options, backEndDirectoryPath);
+      await this.installPackages(options, adminDirectoryPath);
 
       process.chdir(backEndDirectoryPath);
 
@@ -424,6 +426,7 @@ export class NewAction extends AbstractAction {
     const docker = RunnerFactory.create(Runner.DOCKER);
 
     try {
+      spinner.info('Creating docker-compose and running');
       await docker?.run('compose up -d --build --quiet-pull', true, directory);
       spinner.succeed(`Docker-compose up and running`);
     } catch (error) {
@@ -452,7 +455,7 @@ export class NewAction extends AbstractAction {
   detectIfVolumeIsPath(volume: string) {
     if (!(volume.startsWith('/') || volume.startsWith('.'))) {
       return `volumes:
-  test-data:
+  ${volume}:
     driver: local`;
     } else {
       return '';
