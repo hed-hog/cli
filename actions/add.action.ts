@@ -14,6 +14,7 @@ import { getRootPath } from '../lib/utils/get-root-path';
 import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
+import * as YAML from 'yaml';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -94,6 +95,8 @@ export class AddAction extends AbstractAction {
       );
     }
 
+    let isDbConnected = false;
+
     const envVars = await this.parseEnvFile(
       join(directoryPath, 'backend', '.env'),
     );
@@ -109,7 +112,7 @@ export class AddAction extends AbstractAction {
     ) {
       const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
 
-      const isDbConnected = await testDatabaseConnection(
+      isDbConnected = await testDatabaseConnection(
         type,
         envVars.DB_HOST,
         Number(envVars.DB_PORT),
@@ -119,10 +122,16 @@ export class AddAction extends AbstractAction {
       );
 
       if (isDbConnected) {
-        await runScript('migrate:up', join(directoryPath, 'backend'));
+        try {
+          await runScript('migrate:up', join(directoryPath, 'backend'));
+        } catch (error) {
+          console.error(chalk.red('Error running migrations.'));
+        }
         migrateRun = true;
       }
     }
+
+    await this.applyHedhogFile(directoryPath, module);
 
     if (module === 'admin') {
       await this.modifyControllerApp(
@@ -138,6 +147,78 @@ export class AddAction extends AbstractAction {
     return {
       packagesAdded,
     };
+  }
+
+  async parseHedhogFile(path: string) {
+    const extension = path.split('.').pop();
+
+    switch (extension) {
+      case 'json':
+        return require(path);
+      case 'yaml':
+      case 'yml':
+        return YAML.parse(await readFile(path, 'utf-8'));
+      default:
+        throw new Error('Invalid hedhog file extension.');
+    }
+  }
+
+  async applyHedhogFile(directoryPath: string, module: string) {
+    this.showDebug('applyHedhogFile', { directoryPath, module });
+
+    const path = join(
+      directoryPath,
+      'backend',
+      'node_modules',
+      '@hedhog',
+      module,
+      'hedhog',
+    );
+    const extensions = ['json', 'yaml', 'yml'];
+
+    const spinner = ora('Loading Hedhog file..').start();
+    const extension = extensions.find((ext) => {
+      return existsSync(`${path}.${ext}`);
+    });
+    const filePath = `${path}.${extension}`;
+
+    this.showDebug({
+      path,
+      extensions,
+      extension,
+      filePath,
+    });
+
+    if (extension) {
+      try {
+        const hedhogFile = await this.parseHedhogFile(filePath);
+
+        this.showDebug('hedhogFile', hedhogFile);
+
+        spinner.info('Applying Hedhog file...');
+
+        if (hedhogFile?.data) {
+          for (const data of Object.keys(hedhogFile?.data)) {
+            switch (data) {
+              case 'menus':
+                await this.applyHedhogFileDataMenus(hedhogFile?.data[data]);
+              default:
+                console.warn(chalk.yellow(`Data type "${data}" not found.`));
+            }
+          }
+        }
+      } catch (error) {
+        spinner.fail(error.message);
+      }
+    } else {
+      spinner.info('Hedhog file not found.');
+    }
+  }
+
+  async applyHedhogFileDataMenus(menus: any[]) {
+    this.showDebug('applyHedhogFileDataMenus', {
+      menus,
+    });
   }
 
   async updateLibsPrisma(directoryPath: string) {
