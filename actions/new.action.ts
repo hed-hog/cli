@@ -19,6 +19,7 @@ import { createServer } from 'net';
 import { rm, writeFile } from 'fs/promises';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { runScript } from '../lib/utils/run-script';
+import { mkdirRecursive } from '../lib/utils/checkVersion';
 
 export class NewAction extends AbstractAction {
   private debug = false;
@@ -393,6 +394,8 @@ export class NewAction extends AbstractAction {
 
   async createPrismaSchema(path: string, type: 'postgres' | 'mysql') {
     const spinner = ora('Creating Prisma schema').start();
+
+    await mkdirRecursive(join(path, 'src', 'prisma'));
 
     const prismaSchemaContent = `generator client {
   provider = "prisma-client-js"
