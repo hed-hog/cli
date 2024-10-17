@@ -18,6 +18,7 @@ import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { recreateDatabase } from '../lib/utils/recreate-database';
 import { getEnvFileTemplate } from '../lib/utils/env-file-template';
 import { getRootPath } from '../lib/utils/get-root-path';
+import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
 
 export class ResetAction extends AbstractAction {
   public async handle() {
@@ -78,17 +79,16 @@ export class ResetAction extends AbstractAction {
   async recreatePrismaSchema(path: string) {
     const spinner = ora('Recreate Prisma Schema').start();
     try {
-      const prismaSchemaPath = join(path, 'src', 'prisma', 'schema.prisma');
+      const envVars = await this.parseEnvFile(join(path, '.env'));
 
-      if (existsSync(prismaSchemaPath)) {
-        await unlink(prismaSchemaPath);
-      }
+      const database = String(envVars.DATABASE_URL).split(':')[0] as
+        | 'postgres'
+        | 'mysql';
 
-      const bootstrapContent = await getFileContent(
-        'https://raw.githubusercontent.com/hed-hog/bootstrap/refs/heads/master/backend/src/prisma/schema.prisma',
+      await createPrismaSchema(
+        join(path, 'src', 'prisma'),
+        database === 'mysql' ? 'mysql' : 'postgres',
       );
-
-      await writeFile(prismaSchemaPath, bootstrapContent, 'utf-8');
       spinner.succeed('Prisma Schema created.');
     } catch (error) {
       spinner.fail('Failed to recreate Prisma Schema.');
