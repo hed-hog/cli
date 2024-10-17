@@ -44,7 +44,14 @@ export class AddAction extends AbstractAction {
       (option) => option.name === 'debug' && option.value === true,
     );
 
-    const directoryPath = await getRootPath();
+    let directoryPath = '';
+
+    try {
+      directoryPath = await getRootPath();
+    } catch (error) {
+      return console.error(chalk.red('Directory is not a hedhog project.'));
+    }
+
     const appModulePath = join(
       directoryPath,
       'backend',
