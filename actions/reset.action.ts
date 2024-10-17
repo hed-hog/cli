@@ -17,12 +17,20 @@ import { EMOJIS } from '../lib/ui';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { recreateDatabase } from '../lib/utils/recreate-database';
 import { getEnvFileTemplate } from '../lib/utils/env-file-template';
+import { getRootPath } from '../lib/utils/get-root-path';
 
 export class ResetAction extends AbstractAction {
   public async handle() {
     console.log(chalk.yellow('Resetting the project...'));
 
-    const directoryPath = process.cwd();
+    let directoryPath = '';
+
+    try {
+      directoryPath = await getRootPath();
+      directoryPath = join(directoryPath, 'backend');
+    } catch (error) {
+      return console.error(chalk.red('Directory is not a hedhog project.'));
+    }
 
     await this.removeMigrations(directoryPath);
     await this.removeDependencies(directoryPath);
