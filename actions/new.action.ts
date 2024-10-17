@@ -142,6 +142,11 @@ export class NewAction extends AbstractAction {
 
     await this.configureGit(directoryPath, skipGit);
 
+    await this.createPrismaSchema(
+      backEndDirectoryPath,
+      database as 'postgres' | 'mysql',
+    );
+
     if (!database) {
       const answerDatabase = await inquirer.createPromptModule({
         output: process.stderr,
@@ -384,6 +389,27 @@ export class NewAction extends AbstractAction {
 
     console.info(chalk.gray(MESSAGES.START_COMMAND(packageManager)));
     console.info();
+  }
+
+  async createPrismaSchema(path: string, type: 'postgres' | 'mysql') {
+    const spinner = ora('Creating Prisma schema').start();
+
+    const prismaSchemaContent = `generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "${type === 'mysql' ? 'mysql' : 'postgresql'}"
+  url      = env("DATABASE_URL")
+}`;
+
+    await writeFile(
+      join(path, 'src', 'prisma', 'schema.prisma'),
+      prismaSchemaContent,
+      'utf-8',
+    );
+
+    spinner.succeed('Prisma schema created');
   }
 
   async isNestJSCliInstalled() {
