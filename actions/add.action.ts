@@ -14,6 +14,7 @@ import { getRootPath } from '../lib/utils/get-root-path';
 import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
+import { mkdirRecursive } from '../lib/utils/checkVersion';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -334,6 +335,7 @@ export class AddAction extends AbstractAction {
     try {
       let copies = 0;
       const migrationsPath = join(`${nodeModulePath}`, `src`, `migrations`);
+      const entitiesPath = join(`${nodeModulePath}`, `src`, `entities`);
       const migrationDestPath = join(
         directoryPath,
         `backend`,
@@ -341,19 +343,43 @@ export class AddAction extends AbstractAction {
         `typeorm`,
         `migrations`,
       );
-
-      this.showDebug('Migrations path:', migrationsPath);
-      this.showDebug('Migration dest path:', migrationDestPath);
-      this.showDebug(
-        'Migration dest path exists:',
-        existsSync(migrationDestPath),
+      await mkdirRecursive(migrationDestPath);
+      const entitiesDestPath = join(
+        directoryPath,
+        `backend`,
+        `src`,
+        `typeorm`,
+        `entities`,
       );
+      await mkdirRecursive(entitiesDestPath);
 
-      if (!existsSync(migrationDestPath)) {
-        await this.createDirectoryRecursive(migrationDestPath);
+      this.showDebug({
+        migrationsPath,
+        migrationDestPath,
+        entitiesPath,
+        entitiesDestPath,
+      });
+
+      if (existsSync(entitiesPath)) {
+        let entitiesFiles = (await readdir(entitiesPath))
+          .filter((file) => file.endsWith('.ts'))
+          .filter((file) => !file.endsWith('.d.ts'));
+
+        for (const file of entitiesFiles) {
+          const fileContent = await readFile(`${entitiesPath}/${file}`, 'utf8');
+          const fileContentFinal = await formatTypeScriptCode(fileContent);
+
+          this.showDebug('Copy entity file:', file, ' to ', `${file}`);
+
+          await writeFile(join(entitiesDestPath, file), fileContentFinal);
+        }
+
+        spinner.succeed('Entities files copied.');
       }
 
       if (existsSync(migrationsPath)) {
+        spinner.info('Copying migrations files...');
+
         let migrationsFiles = (await readdir(migrationsPath))
           .filter((file) => file.endsWith('.ts'))
           .filter((file) => !file.endsWith('.d.ts'));
