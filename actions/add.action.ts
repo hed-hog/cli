@@ -15,6 +15,8 @@ import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
 import * as YAML from 'yaml';
+import { getPostgresClient } from '../lib/utils/get-pg-client';
+import { getMySQLClient } from '../lib/runners/get-mysql-client';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -250,15 +252,7 @@ export class AddAction extends AbstractAction {
 
     try {
       if (type === 'postgres') {
-        const { Client } = await import('pg');
-        const client = new Client({
-          host: envVars.DB_HOST,
-          user: envVars.DB_USERNAME,
-          password: envVars.DB_PASSWORD,
-          database: envVars.DB_DATABASE,
-          port: Number(envVars.DB_PORT),
-        });
-        await client.connect();
+        const client = await getPostgresClient(envVars);
 
         for (const menu of menus) {
           const { url, icon, name, menus: subMenus, menu_id } = menu;
@@ -307,14 +301,7 @@ export class AddAction extends AbstractAction {
 
         await client.end();
       } else if (type === 'mysql') {
-        const mysql = await import('mysql2/promise');
-        const connection = await mysql.createConnection({
-          host: envVars.DB_HOST,
-          user: envVars.DB_USERNAME,
-          password: envVars.DB_PASSWORD,
-          database: envVars.DB_DATABASE,
-          port: Number(envVars.DB_PORT),
-        });
+        const connection = await getMySQLClient(envVars);
 
         for (const menu of menus) {
           const { url, icon, name, menus: subMenus, menu_id } = menu;
@@ -388,15 +375,7 @@ export class AddAction extends AbstractAction {
 
       try {
         if (type === 'postgres') {
-          const { Client } = await import('pg');
-          const client = new Client({
-            host: envVars.DB_HOST,
-            user: envVars.DB_USERNAME,
-            password: envVars.DB_PASSWORD,
-            database: envVars.DB_DATABASE,
-            port: Number(envVars.DB_PORT),
-          });
-          await client.connect();
+          const client = await getPostgresClient(envVars);
 
           for (const route of routes) {
             const { url, method } = route;
@@ -409,15 +388,7 @@ export class AddAction extends AbstractAction {
 
           await client.end();
         } else if (type === 'mysql') {
-          const mysql = await import('mysql2/promise');
-          const connection = await mysql.createConnection({
-            host: envVars.DB_HOST,
-            user: envVars.DB_USERNAME,
-            password: envVars.DB_PASSWORD,
-            database: envVars.DB_DATABASE,
-            port: Number(envVars.DB_PORT),
-          });
-
+          const connection = await getMySQLClient(envVars);
           for (const route of routes) {
             const { url, method } = route;
 
@@ -454,15 +425,7 @@ export class AddAction extends AbstractAction {
 
       try {
         if (type === 'postgres') {
-          const { Client } = await import('pg');
-          const client = new Client({
-            host: envVars.DB_HOST,
-            user: envVars.DB_USERNAME,
-            password: envVars.DB_PASSWORD,
-            database: envVars.DB_DATABASE,
-            port: Number(envVars.DB_PORT),
-          });
-          await client.connect();
+          const client = await getPostgresClient(envVars);
 
           for (const screen of screens) {
             const { slug, icon, name, description } = screen;
@@ -489,15 +452,7 @@ export class AddAction extends AbstractAction {
 
           await client.end();
         } else if (type === 'mysql') {
-          const mysql = await import('mysql2/promise');
-          const connection = await mysql.createConnection({
-            host: envVars.DB_HOST,
-            user: envVars.DB_USERNAME,
-            password: envVars.DB_PASSWORD,
-            database: envVars.DB_DATABASE,
-            port: Number(envVars.DB_PORT),
-          });
-
+          const connection = await getMySQLClient(envVars);
           for (const screen of screens) {
             const { slug, icon, name, description } = screen;
 
