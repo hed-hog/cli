@@ -16,7 +16,7 @@ import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
 import * as YAML from 'yaml';
 import { getPostgresClient } from '../lib/utils/get-pg-client';
-import { getMySQLClient } from '../lib/runners/get-mysql-client';
+import { getMySQLClient } from '../lib/utils/get-mysql-client';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -259,7 +259,7 @@ export class AddAction extends AbstractAction {
 
           let parentId: number | null = null;
 
-          if (menu_id) {
+          if (menu_id && typeof menu_id === 'object') {
             const result = await client.query(
               'SELECT id FROM menus WHERE url = $1',
               [menu_id.url],
