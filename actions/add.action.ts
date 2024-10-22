@@ -19,10 +19,25 @@ import { getPostgresClient } from '../lib/utils/get-pg-client';
 import { getMySQLClient } from '../lib/utils/get-mysql-client';
 import { Database, DatabaseFactory } from '../lib/databases';
 
+type Menu = {
+  url: string;
+  icon: string;
+  name: Locale;
+  slug: string;
+  order: string;
+  menus: Menu[];
+  menu_id?: number | null | Partial<Menu>;
+};
+
+type Locale = {
+  [key: string]: string;
+};
+
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
   private debug = false;
+  private db: any = null;
 
   async showDebug(...args: any[]) {
     if (this.debug) {
@@ -35,6 +50,23 @@ export class AddAction extends AbstractAction {
     options: Input[],
     packagesAdded: string[] = [],
   ) {
+    const directoryPath = await getRootPath();
+    const envVars = await this.parseEnvFile(
+      join(directoryPath, 'backend', '.env'),
+    );
+    const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
+
+    this.db = DatabaseFactory.create(
+      type === 'mysql' ? Database.MYSQL : Database.POSTGRES,
+      envVars.DB_HOST,
+      envVars.DB_USERNAME,
+      envVars.DB_PASSWORD,
+      envVars.DB_DATABASE,
+      Number(envVars.DB_PORT),
+    );
+
+    const isDbConnected = this.db.testDatabaseConnection();
+
     this.packagesAdded = packagesAdded;
 
     let migrateRun = false;
@@ -48,7 +80,6 @@ export class AddAction extends AbstractAction {
       (option) => option.name === 'debug' && option.value === true,
     );
 
-    const directoryPath = await getRootPath();
     const appModulePath = join(
       directoryPath,
       'backend',
@@ -97,8 +128,6 @@ export class AddAction extends AbstractAction {
         nodeModulePath,
       );
     }
-
-    const isDbConnected = await this.checkDbConnection();
 
     if (isDbConnected) {
       try {
@@ -232,55 +261,76 @@ export class AddAction extends AbstractAction {
     }
   }
 
+  parseQueryValue(value: any) {
+    switch (typeof value) {
+      case 'number':
+      case 'boolean':
+        return value;
+
+      default:
+        return `'${value}'`;
+    }
+  }
+
   objectToWhereClause(obj: any) {
     let whereClause = '';
 
     for (const key in obj) {
       if (typeof obj[key] === 'object') {
-        whereClause += `${key} ${obj[key].operator} ${obj[key].value}`;
+        whereClause += `${key} ${obj[key].operator} ${this.parseQueryValue(obj[key].value)}`;
       } else {
-        whereClause += `${key} = ${obj[key]}`;
+        whereClause += `${key} = ${this.parseQueryValue(obj[key])}`;
       }
     }
 
     return whereClause;
   }
 
-  async applyHedhogFileDataMenus(menus: any[]) {
-    this.showDebug('insertAndApplyMenuData', { menus });
-
-    const directoryPath = await getRootPath();
-    const envVars = await this.parseEnvFile(
-      join(directoryPath, 'backend', '.env'),
+  async insertMenu(parentId: number | null, menu: Menu) {
+    const rows = await this.db.query(
+      'INSERT INTO menus (url, icon, menu_id, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
+      [menu.url, menu.icon, parentId],
+      {
+        returning: 'id',
+      },
     );
-    const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
+    const menuId = rows[0].id;
 
-    let db = DatabaseFactory.create(
-      type === 'mysql' ? Database.MYSQL : Database.POSTGRES,
-      envVars.DB_HOST,
-      envVars.DB_USERNAME,
-      envVars.DB_PASSWORD,
-      envVars.DB_DATABASE,
-      Number(envVars.DB_PORT),
-    );
-
-    if (!db?.testDatabaseConnection()) {
-      console.error(
-        chalk.red('Database connection failed. Could not insert menu data.'),
+    for (const localeCode in menu.name) {
+      const rows = await this.db.query(
+        'SELECT id FROM locales WHERE code = ?',
+        [localeCode],
       );
-      return;
+      if (rows.length > 0) {
+        const localeId = rows[0].id;
+        await this.db.query(
+          'INSERT INTO menu_translations (menu_id, locale_id, name) VALUES (?, ?, ?)',
+          [menuId, localeId, menu.name[localeCode]],
+        );
+      } else {
+        console.error(`Locale with code "${localeCode}" not found.`);
+      }
     }
 
+    if (menu.menus && menu.menus.length > 0) {
+      for (const m of menu.menus) {
+        await this.insertMenu(menuId, m);
+      }
+    }
+  }
+
+  async applyHedhogFileDataMenus(menus: any[]) {
+    this.showDebug('insertAndApplyMenuData', { menus });
     this.showDebug('Database connection successful. Inserting menu data.');
 
     try {
       for (const menu of menus) {
-        const { url, icon, name, menus: subMenus, menu_id } = menu;
+        const { menu_id } = menu;
 
         let parentId: number | null = null;
 
         if (menu_id && typeof menu_id === 'object') {
-          const rows = await db.query(
+          const rows = await this.db.query(
             `SELECT id FROM menus WHERE ${this.objectToWhereClause(menu_id)}`,
           );
 
@@ -292,30 +342,7 @@ export class AddAction extends AbstractAction {
           }
         }
 
-        const rows = await db.query(
-          'INSERT INTO menus (url, icon, menu_id, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW()) RETURNING id',
-          [url, icon, parentId],
-        );
-        const menuId = rows[0].id;
-
-        for (const localeCode in name) {
-          const rows = await db.query('SELECT id FROM locales WHERE code = ?', [
-            localeCode,
-          ]);
-          if (rows.length > 0) {
-            const localeId = rows[0].id;
-            await db.query(
-              'INSERT INTO menu_translations (menu_id, locale_id, name) VALUES (?, ?, ?)',
-              [menuId, localeId, name[localeCode]],
-            );
-          } else {
-            console.error(`Locale with code "${localeCode}" not found.`);
-          }
-        }
-
-        if (subMenus && subMenus.length > 0) {
-          await this.applyHedhogFileDataMenus(subMenus);
-        }
+        await this.insertMenu(parentId, menu);
       }
 
       this.showDebug('Menus inserted successfully.');
@@ -395,7 +422,7 @@ export class AddAction extends AbstractAction {
             const { slug, icon, name, description } = screen;
 
             const result = await client.query(
-              'INSERT INTO screens (slug, icon, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING id',
+              'INSERT INTO screens (slug, icon, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())',
               [slug, icon],
             );
             const screenId = result.rows[0].id;
