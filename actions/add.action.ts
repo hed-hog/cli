@@ -15,11 +15,30 @@ import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
+import * as YAML from 'yaml';
+import { getPostgresClient } from '../lib/utils/get-pg-client';
+import { getMySQLClient } from '../lib/utils/get-mysql-client';
+import { Database, DatabaseFactory } from '../lib/databases';
+
+type Menu = {
+  url: string;
+  icon: string;
+  name: Locale;
+  slug: string;
+  order: string;
+  menus: Menu[];
+  menu_id?: number | null | Partial<Menu>;
+};
+
+type Locale = {
+  [key: string]: string;
+};
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
   private debug = false;
+  private db: any = null;
 
   async showDebug(...args: any[]) {
     if (this.debug) {
@@ -32,7 +51,47 @@ export class AddAction extends AbstractAction {
     options: Input[],
     packagesAdded: string[] = [],
   ) {
+    /**
+     * 1. Get the root path of the project
+     */
+
+    let directoryPath = '';
+
+    try {
+      directoryPath = await getRootPath();
+    } catch (error) {
+      return console.error(chalk.red('Directory is not a hedhog project.'));
+    }
+
+    /**
+     * 2. Get the database connection
+     */
+
+    const envVars = await this.parseEnvFile(
+      join(directoryPath, 'backend', '.env'),
+    );
+    const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
+
+    this.db = DatabaseFactory.create(
+      type === 'mysql' ? Database.MYSQL : Database.POSTGRES,
+      envVars.DB_HOST,
+      envVars.DB_USERNAME,
+      envVars.DB_PASSWORD,
+      envVars.DB_DATABASE,
+      Number(envVars.DB_PORT),
+    );
+
+    const isDbConnected = this.db.testDatabaseConnection();
+
+    /**
+     * 3. Get the module name
+     */
+
     this.packagesAdded = packagesAdded;
+
+    /**
+     * 4. Get the options
+     */
 
     let migrateRun = false;
     const silentComplete =
@@ -44,14 +103,6 @@ export class AddAction extends AbstractAction {
     this.debug = options.some(
       (option) => option.name === 'debug' && option.value === true,
     );
-
-    let directoryPath = '';
-
-    try {
-      directoryPath = await getRootPath();
-    } catch (error) {
-      return console.error(chalk.red('Directory is not a hedhog project.'));
-    }
 
     const appModulePath = join(
       directoryPath,
@@ -68,6 +119,8 @@ export class AddAction extends AbstractAction {
       `@hedhog`,
       `${module}`,
     );
+
+    /* *********************************************************************** */
 
     this.showDebug('Directory path:', directoryPath);
     this.showDebug('App module path:', appModulePath);
@@ -102,35 +155,16 @@ export class AddAction extends AbstractAction {
       );
     }
 
-    const envVars = await this.parseEnvFile(
-      join(directoryPath, 'backend', '.env'),
-    );
-
-    if (
-      hasMigrations &&
-      envVars.DATABASE_URL &&
-      envVars.DB_HOST &&
-      envVars.DB_PORT &&
-      envVars.DB_USERNAME &&
-      envVars.DB_PASSWORD &&
-      envVars.DB_DATABASE
-    ) {
-      const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
-
-      const isDbConnected = await testDatabaseConnection(
-        type,
-        envVars.DB_HOST,
-        Number(envVars.DB_PORT),
-        envVars.DB_USERNAME,
-        envVars.DB_PASSWORD,
-        envVars.DB_DATABASE,
-      );
-
-      if (isDbConnected) {
+    if (isDbConnected && hasMigrations) {
+      try {
         await runScript('migrate:up', join(directoryPath, 'backend'));
-        migrateRun = true;
+      } catch (error) {
+        console.error(chalk.red('Error running migrations.'));
       }
+      migrateRun = true;
     }
+
+    await this.applyHedhogFile(directoryPath, module);
 
     if (module === 'admin') {
       await this.modifyControllerApp(
@@ -146,6 +180,331 @@ export class AddAction extends AbstractAction {
     return {
       packagesAdded,
     };
+  }
+
+  async parseHedhogFile(path: string) {
+    const extension = path.split('.').pop();
+
+    switch (extension) {
+      case 'json':
+        return require(path);
+      case 'yaml':
+      case 'yml':
+        return YAML.parse(await readFile(path, 'utf-8'));
+      default:
+        throw new Error('Invalid hedhog file extension.');
+    }
+  }
+
+  async applyHedhogFile(directoryPath: string, module: string) {
+    this.showDebug('applyHedhogFile', { directoryPath, module });
+
+    const path = join(
+      directoryPath,
+      'backend',
+      'node_modules',
+      '@hedhog',
+      module,
+      'hedhog',
+    );
+    const extensions = ['json', 'yaml', 'yml'];
+
+    const spinner = ora('Loading Hedhog file..').start();
+    const extension = extensions.find((ext) => {
+      return existsSync(`${path}.${ext}`);
+    });
+    const filePath = `${path}.${extension}`;
+
+    this.showDebug({
+      path,
+      extensions,
+      extension,
+      filePath,
+    });
+
+    if (extension) {
+      try {
+        const hedhogFile = await this.parseHedhogFile(filePath);
+
+        this.showDebug('hedhogFile', hedhogFile);
+
+        spinner.info('Applying Hedhog file...');
+
+        if (hedhogFile?.data) {
+          for (const data of Object.keys(hedhogFile?.data)) {
+            switch (data) {
+              case 'menus':
+                await this.applyHedhogFileDataMenus(hedhogFile?.data[data]);
+                break;
+
+              case 'routes':
+                await this.applyHedhogFileDataRoutes(hedhogFile?.data[data]);
+                break;
+
+              case 'screens':
+                await this.applyHedhogFileDataScreens(hedhogFile?.data[data]);
+                break;
+
+              default:
+                console.warn(chalk.yellow(`Data type "${data}" not found.`));
+            }
+          }
+        }
+      } catch (error) {
+        spinner.fail(error.message);
+      }
+    } else {
+      spinner.info('Hedhog file not found.');
+    }
+  }
+
+  async checkDbConnection() {
+    const directoryPath = await getRootPath();
+    const envVars = await this.parseEnvFile(
+      join(directoryPath, 'backend', '.env'),
+    );
+
+    if (
+      envVars.DATABASE_URL &&
+      envVars.DB_HOST &&
+      envVars.DB_PORT &&
+      envVars.DB_USERNAME &&
+      envVars.DB_PASSWORD &&
+      envVars.DB_DATABASE
+    ) {
+      const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
+      const isDbConnected = await testDatabaseConnection(
+        type,
+        envVars.DB_HOST,
+        Number(envVars.DB_PORT),
+        envVars.DB_USERNAME,
+        envVars.DB_PASSWORD,
+        envVars.DB_DATABASE,
+      );
+      return isDbConnected;
+    } else {
+      return false;
+    }
+  }
+
+  parseQueryValue(value: any) {
+    switch (typeof value) {
+      case 'number':
+      case 'boolean':
+        return value;
+
+      default:
+        return `'${value}'`;
+    }
+  }
+
+  objectToWhereClause(obj: any) {
+    let whereClause = '';
+
+    for (const key in obj) {
+      if (typeof obj[key] === 'object') {
+        whereClause += `${key} ${obj[key].operator} ${this.parseQueryValue(obj[key].value)}`;
+      } else {
+        whereClause += `${key} = ${this.parseQueryValue(obj[key])}`;
+      }
+    }
+
+    return whereClause;
+  }
+
+  async insertMenu(parentId: number | null, menu: Menu) {
+    const rows = await this.db.query(
+      'INSERT INTO menus (url, icon, menu_id, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
+      [menu.url, menu.icon, parentId],
+      {
+        returning: 'id',
+      },
+    );
+    const menuId = rows[0].id;
+
+    for (const localeCode in menu.name) {
+      const rows = await this.db.query(
+        'SELECT id FROM locales WHERE code = ?',
+        [localeCode],
+      );
+      if (rows.length > 0) {
+        const localeId = rows[0].id;
+        await this.db.query(
+          'INSERT INTO menu_translations (menu_id, locale_id, name) VALUES (?, ?, ?)',
+          [menuId, localeId, menu.name[localeCode]],
+        );
+      } else {
+        console.error(`Locale with code "${localeCode}" not found.`);
+      }
+    }
+
+    if (menu.menus && menu.menus.length > 0) {
+      for (const m of menu.menus) {
+        await this.insertMenu(menuId, m);
+      }
+    }
+  }
+
+  async applyHedhogFileDataMenus(menus: any[]) {
+    this.showDebug('insertAndApplyMenuData', { menus });
+    this.showDebug('Database connection successful. Inserting menu data.');
+
+    try {
+      for (const menu of menus) {
+        const { menu_id } = menu;
+
+        let parentId: number | null = null;
+
+        if (menu_id && typeof menu_id === 'object') {
+          const rows = await this.db.query(
+            `SELECT id FROM menus WHERE ${this.objectToWhereClause(menu_id)}`,
+          );
+
+          if (rows.length > 0) {
+            parentId = rows[0].id;
+          } else {
+            console.error(`Menu with URL "${menu_id.url}" not found.`);
+            continue;
+          }
+        }
+
+        await this.insertMenu(parentId, menu);
+      }
+
+      this.showDebug('Menus inserted successfully.');
+    } catch (error) {
+      console.error('Error inserting menu data:', error);
+      throw error;
+    }
+  }
+
+  async applyHedhogFileDataRoutes(routes: any[]) {
+    this.showDebug('applyHedhogFileDataRoutes', { routes });
+    const isDbConnected = await this.checkDbConnection();
+
+    if (isDbConnected) {
+      this.showDebug('Database connection successful. Inserting route data.');
+      const directoryPath = await getRootPath();
+      const envVars = await this.parseEnvFile(
+        join(directoryPath, 'backend', '.env'),
+      );
+      const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
+
+      try {
+        if (type === 'postgres') {
+          const client = await getPostgresClient(envVars);
+
+          for (const route of routes) {
+            const { url, method } = route;
+
+            await client.query(
+              'INSERT INTO routes (url, method, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())',
+              [url, method],
+            );
+          }
+
+          await client.end();
+        } else if (type === 'mysql') {
+          const connection = await getMySQLClient(envVars);
+          for (const route of routes) {
+            const { url, method } = route;
+
+            await connection.query(
+              'INSERT INTO routes (url, method, created_at, updated_at) VALUES (?, ?, NOW(), NOW())',
+              [url, method],
+            );
+          }
+
+          await connection.end();
+        }
+        this.showDebug('Routes inserted successfully.');
+      } catch (error) {
+        console.error('Error inserting route data:', error);
+      }
+    } else {
+      console.error(
+        chalk.red('Database connection failed. Could not insert route data.'),
+      );
+    }
+  }
+
+  async applyHedhogFileDataScreens(screens: any[]) {
+    this.showDebug('applyHedhogFileDataScreens', { screens });
+    const isDbConnected = await this.checkDbConnection();
+
+    if (isDbConnected) {
+      this.showDebug('Database connection successful. Inserting screen data.');
+      const directoryPath = await getRootPath();
+      const envVars = await this.parseEnvFile(
+        join(directoryPath, 'backend', '.env'),
+      );
+      const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
+
+      try {
+        if (type === 'postgres') {
+          const client = await getPostgresClient(envVars);
+
+          for (const screen of screens) {
+            const { slug, icon, name, description } = screen;
+
+            const result = await client.query(
+              'INSERT INTO screens (slug, icon, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())',
+              [slug, icon],
+            );
+            const screenId = result.rows[0].id;
+
+            for (const localeCode in name) {
+              const localeResult = await client.query(
+                'SELECT id FROM locales WHERE code = $1',
+                [localeCode],
+              );
+              const localeId = localeResult.rows[0].id;
+
+              await client.query(
+                'INSERT INTO screen_translations (screen_id, locale_id, name, description) VALUES ($1, $2, $3, $4)',
+                [screenId, localeId, name[localeCode], description[localeCode]],
+              );
+            }
+          }
+
+          await client.end();
+        } else if (type === 'mysql') {
+          const connection = await getMySQLClient(envVars);
+          for (const screen of screens) {
+            const { slug, icon, name, description } = screen;
+
+            const [insertScreenResult] = await connection.query(
+              'INSERT INTO screens (slug, icon, created_at, updated_at) VALUES (?, ?, NOW(), NOW())',
+              [slug, icon],
+            );
+            const insertHeader = insertScreenResult as any;
+            const screenId = insertHeader.insertId;
+
+            for (const localeCode in name) {
+              const [localeResult] = await connection.query(
+                'SELECT id FROM locales WHERE code = ?',
+                [localeCode],
+              );
+
+              const localeId = (localeResult as any[])[0].id;
+              await connection.query(
+                'INSERT INTO screen_translations (screen_id, locale_id, name, description) VALUES (?, ?, ?, ?)',
+                [screenId, localeId, name[localeCode], description[localeCode]],
+              );
+            }
+          }
+
+          await connection.end();
+        }
+        this.showDebug('Screens inserted successfully.');
+      } catch (error) {
+        console.error('Error inserting screen data:', error);
+      }
+    } else {
+      console.error(
+        chalk.red('Database connection failed. Could not insert screen data.'),
+      );
+    }
   }
 
   async updateLibsPrisma(directoryPath: string) {
