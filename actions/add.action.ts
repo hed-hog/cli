@@ -8,7 +8,6 @@ import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { join, sep } from 'path';
 import { Runner, RunnerFactory } from '../lib/runners';
-import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { runScript } from '../lib/utils/run-script';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { render } from 'ejs';
@@ -16,12 +15,9 @@ import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
 import * as YAML from 'yaml';
-import { getPostgresClient } from '../lib/utils/get-pg-client';
-import { getMySQLClient } from '../lib/utils/get-mysql-client';
 import { Database, DatabaseFactory } from '../lib/databases';
 import { applyHedhogFileDataMenus } from '../lib/utils/apply-menus';
 import { applyHedhogFileDataRoutes } from '../lib/utils/apply-routes';
-import { Screen } from '../lib/types/screen';
 import { applyHedhogFileDataScreens } from '../lib/utils/apply-screens';
 
 export class AddAction extends AbstractAction {
@@ -216,9 +212,7 @@ export class AddAction extends AbstractAction {
     if (extension) {
       try {
         const hedhogFile = await this.parseHedhogFile(filePath);
-
         this.showDebug('hedhogFile', hedhogFile);
-
         spinner.info('Applying Hedhog file...');
 
         if (hedhogFile?.data && this.isDbConnected) {
@@ -256,7 +250,6 @@ export class AddAction extends AbstractAction {
   }
 
   async updateLibsPrisma(directoryPath: string) {
-    console.info();
     console.log('updateLibsPrisma', directoryPath);
     const spinner = ora('Starting updating prisma in libraries...').start();
     const libPath = join(directoryPath, 'lib');
@@ -264,39 +257,11 @@ export class AddAction extends AbstractAction {
 
     try {
       if (existsSync(libPath) && existsSync(libsPath)) {
-        spinner.info('Checking database connection...');
-
-        const {
-          DB_HOST,
-          DB_PORT,
-          DB_USERNAME,
-          DB_PASSWORD,
-          DB_DATABASE,
-          DATABASE_URL,
-        } = await this.parseEnvFile(join(libPath, '.env'));
-
-        spinner.info(`Database connection found...`);
-
-        let type = DATABASE_URL.split(':')[0] as any;
-
-        if (type === 'postgresql') {
-          type = 'postgres';
-        }
-
-        const isConnected = await testDatabaseConnection(
-          type,
-          DB_HOST,
-          Number(DB_PORT),
-          DB_USERNAME,
-          DB_PASSWORD,
-          DB_DATABASE,
-        );
-
         spinner.info(
-          `Database connection status: ${isConnected ? 'OK' : 'FAIL'}`,
+          `Database connection status: ${this.isDbConnected ? 'OK' : 'FAIL'}`,
         );
 
-        if (isConnected) {
+        if (this.isDbConnected) {
           spinner.info('Updating prisma libraries...');
           runScript('prisma:update', libPath);
           spinner.succeed('Prisma libraries updated.');
@@ -365,9 +330,7 @@ export class AddAction extends AbstractAction {
 
   getPackageInstalledModules(directoryPath: string, moduleName: string) {
     const packageJsonMainPath = join(directoryPath, 'package.json');
-
     const packageJsonMain = require(packageJsonMainPath);
-
     const hedhogModules: any[] = [];
 
     for (const [key, value] of Object.entries(
