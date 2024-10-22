@@ -17,6 +17,7 @@ import { getNpmPackage } from '../lib/utils/get-npm-package';
 import * as YAML from 'yaml';
 import { getPostgresClient } from '../lib/utils/get-pg-client';
 import { getMySQLClient } from '../lib/utils/get-mysql-client';
+import { Database, DatabaseFactory } from '../lib/databases';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -231,11 +232,39 @@ export class AddAction extends AbstractAction {
     }
   }
 
+  objectToWhereClause(obj: any) {
+    let whereClause = '';
+
+    for (const key in obj) {
+      if (typeof obj[key] === 'object') {
+        whereClause += `${key} ${obj[key].operator} ${obj[key].value}`;
+      } else {
+        whereClause += `${key} = ${obj[key]}`;
+      }
+    }
+
+    return whereClause;
+  }
+
   async applyHedhogFileDataMenus(menus: any[]) {
     this.showDebug('insertAndApplyMenuData', { menus });
 
-    const isDbConnected = await this.checkDbConnection();
-    if (!isDbConnected) {
+    const directoryPath = await getRootPath();
+    const envVars = await this.parseEnvFile(
+      join(directoryPath, 'backend', '.env'),
+    );
+    const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
+
+    let db = DatabaseFactory.create(
+      type === 'mysql' ? Database.MYSQL : Database.POSTGRES,
+      envVars.DB_HOST,
+      envVars.DB_USERNAME,
+      envVars.DB_PASSWORD,
+      envVars.DB_DATABASE,
+      Number(envVars.DB_PORT),
+    );
+
+    if (!db?.testDatabaseConnection()) {
       console.error(
         chalk.red('Database connection failed. Could not insert menu data.'),
       );
@@ -244,114 +273,49 @@ export class AddAction extends AbstractAction {
 
     this.showDebug('Database connection successful. Inserting menu data.');
 
-    const directoryPath = await getRootPath();
-    const envVars = await this.parseEnvFile(
-      join(directoryPath, 'backend', '.env'),
-    );
-    const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
-
     try {
-      if (type === 'postgres') {
-        const client = await getPostgresClient(envVars);
+      for (const menu of menus) {
+        const { url, icon, name, menus: subMenus, menu_id } = menu;
 
-        for (const menu of menus) {
-          const { url, icon, name, menus: subMenus, menu_id } = menu;
+        let parentId: number | null = null;
 
-          let parentId: number | null = null;
-
-          if (menu_id && typeof menu_id === 'object') {
-            const result = await client.query(
-              'SELECT id FROM menus WHERE url = $1',
-              [menu_id.url],
-            );
-            if (result.rows.length > 0) {
-              parentId = result.rows[0].id;
-            } else {
-              console.error(`Menu with URL "${menu_id.url}" not found.`);
-              continue;
-            }
-          }
-
-          const result = await client.query(
-            'INSERT INTO menus (url, icon, menu_id, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id',
-            [url, icon, parentId],
+        if (menu_id && typeof menu_id === 'object') {
+          const rows = await db.query(
+            `SELECT id FROM menus WHERE ${this.objectToWhereClause(menu_id)}`,
           );
-          const menuId = result.rows[0].id;
 
-          for (const localeCode in name) {
-            const localeResult = await client.query(
-              'SELECT id FROM locales WHERE code = $1',
-              [localeCode],
-            );
-            if (localeResult.rows.length > 0) {
-              const localeId = localeResult.rows[0].id;
-              await client.query(
-                'INSERT INTO menu_translations (menu_id, locale_id, name) VALUES ($1, $2, $3)',
-                [menuId, localeId, name[localeCode]],
-              );
-            } else {
-              console.error(`Locale with code "${localeCode}" not found.`);
-            }
-          }
-
-          if (subMenus && subMenus.length > 0) {
-            await this.applyHedhogFileDataMenus(subMenus);
+          if (rows.length > 0) {
+            parentId = rows[0].id;
+          } else {
+            console.error(`Menu with URL "${menu_id.url}" not found.`);
+            continue;
           }
         }
 
-        await client.end();
-      } else if (type === 'mysql') {
-        const connection = await getMySQLClient(envVars);
+        const rows = await db.query(
+          'INSERT INTO menus (url, icon, menu_id, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW()) RETURNING id',
+          [url, icon, parentId],
+        );
+        const menuId = rows[0].id;
 
-        for (const menu of menus) {
-          const { url, icon, name, menus: subMenus, menu_id } = menu;
-
-          let parentId: number | null = null;
-
-          if (menu_id) {
-            const [result] = await connection.query(
-              'SELECT id FROM menus WHERE url = ?',
-              [menu_id.url],
+        for (const localeCode in name) {
+          const rows = await db.query('SELECT id FROM locales WHERE code = ?', [
+            localeCode,
+          ]);
+          if (rows.length > 0) {
+            const localeId = rows[0].id;
+            await db.query(
+              'INSERT INTO menu_translations (menu_id, locale_id, name) VALUES (?, ?, ?)',
+              [menuId, localeId, name[localeCode]],
             );
-            const rows = result as any[];
-            if (rows.length > 0) {
-              parentId = rows[0].id;
-            } else {
-              console.error(`Menu with URL "${menu_id.url}" not found.`);
-              continue;
-            }
-          }
-
-          const [insertMenuResult] = await connection.query(
-            'INSERT INTO menus (url, icon, menu_id, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
-            [url, icon, parentId],
-          );
-          const insertHeader = insertMenuResult as any;
-          const menuId = insertHeader.insertId;
-
-          for (const localeCode in name) {
-            const [localeResult] = await connection.query(
-              'SELECT id FROM locales WHERE code = ?',
-              [localeCode],
-            );
-            const localeRows = localeResult as any[];
-            if (localeRows.length > 0) {
-              const localeId = localeRows[0].id;
-              await connection.query(
-                'INSERT INTO menu_translations (menu_id, locale_id, name) VALUES (?, ?, ?)',
-                [menuId, localeId, name[localeCode]],
-              );
-            } else {
-              console.error(`Locale with code "${localeCode}" not found.`);
-            }
-          }
-
-          if (subMenus && subMenus.length > 0) {
-            await this.applyHedhogFileDataMenus(subMenus);
+          } else {
+            console.error(`Locale with code "${localeCode}" not found.`);
           }
         }
 
-        await connection.end();
+        if (subMenus && subMenus.length > 0) {
+          await this.applyHedhogFileDataMenus(subMenus);
+        }
       }
 
       this.showDebug('Menus inserted successfully.');

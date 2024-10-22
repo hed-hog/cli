@@ -34,7 +34,7 @@ export class AbstractDatabase {
 
       case Database.MYSQL:
         result = await (client as unknown as Connection).query(query, values);
-        result = result[0];
+        result = result[0] as any[];
         break;
     }
 
