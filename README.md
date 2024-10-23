@@ -32,6 +32,9 @@ Below are the main commands provided by the CLI. Each command is prefixed with `
 - **`hedhog refresh <module>`**
   Refreshes the module's configuration and dependencies. This command can help resolve issues related to outdated or mismatched settings, ensuring your project is up to date with the latest configurations and modules.
 
+- **`hedhog reset <dependency>`**
+  Redefine and reset the Hedhog project by removing additional dependencies and their related migrations.
+
 ## Folder Structure
 
 The project follows a clear folder structure to ensure easy navigation and maintenance:
