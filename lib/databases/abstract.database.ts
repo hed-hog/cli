@@ -1,6 +1,7 @@
 import { Client } from 'pg';
 import { Database } from './database';
 import { Connection } from 'mysql2/promise';
+import chalk = require('chalk');
 
 interface IQueryOption {
   returning?: string[] | string;
@@ -8,6 +9,8 @@ interface IQueryOption {
 }
 
 export class AbstractDatabase {
+  private client: Client | Connection | null = null;
+
   constructor(
     protected type: Database,
     protected host: string,
@@ -34,7 +37,7 @@ export class AbstractDatabase {
   }
 
   public async query(query: string, values?: any[], options?: IQueryOption) {
-    const client = await this.getClient();
+    await this.getClient();
     let result;
 
     if (options?.returning) {
@@ -54,8 +57,8 @@ export class AbstractDatabase {
         if (options?.returning) {
           query = `${query} RETURNING ${(options?.returning as string[]).join(', ')}`;
         }
-        console.log(this.replacePlaceholders(query), values);
-        result = await (client as Client).query(
+
+        result = await (this.client as Client).query(
           this.replacePlaceholders(query),
           values,
         );
@@ -63,7 +66,10 @@ export class AbstractDatabase {
         break;
 
       case Database.MYSQL:
-        result = await (client as unknown as Connection).query(query, values);
+        result = await (this.client as unknown as Connection).query(
+          query,
+          values,
+        );
         result = result[0] as any[];
         if (options?.returning) {
           const resultArray = [
@@ -75,16 +81,15 @@ export class AbstractDatabase {
           result = resultArray;
 
           const selectReturningQuery = `SELECT ${(options.returning as string[]).join(', ')} FROM ${this.getTableNameFromQuery(query)} WHERE ${options?.primaryKey} = ?`;
-          const returningResult = await (client as unknown as Connection).query(
-            selectReturningQuery,
-            [resultArray[0].id],
-          );
+          const returningResult = await (
+            this.client as unknown as Connection
+          ).query(selectReturningQuery, [resultArray[0].id]);
           result = returningResult;
         }
         break;
     }
 
-    await client.end();
+    await this.client?.end();
     return result;
   }
 
@@ -92,26 +97,26 @@ export class AbstractDatabase {
     switch (this.type) {
       case Database.POSTGRES:
         const { Client } = await import('pg');
-        const client = new Client({
+        this.client = new Client({
           host: this.host,
           user: this.user,
           password: this.password,
           database: this.database,
           port: this.port,
         });
-        await client.connect();
-        return client;
+        await this.client.connect();
+        return this.client;
 
       case Database.MYSQL:
         const mysql = await import('mysql2/promise');
-        const connection = await mysql.createConnection({
+        this.client = await mysql.createConnection({
           host: this.host,
           user: this.user,
           password: this.password,
           database: this.database,
           port: this.port,
         });
-        return connection;
+        return this.client;
     }
   }
 
@@ -129,28 +134,32 @@ export class AbstractDatabase {
     return true;
   }
 
-  async getPrimaryKey(tableName: string): Promise<string> {
+  public async getPrimaryKeys(tableName: string): Promise<string[]> {
     switch (this.type) {
       case Database.POSTGRES:
         const resultPg = await this.query(
-          `SELECT a.attname
-          FROM   pg_index i
-          JOIN   pg_attribute a ON a.attrelid = i.indrelid
-                              AND a.attnum = ANY(i.indkey)
-          WHERE  i.indrelid = '${tableName}'::regclass
-          AND    i.indisprimary;`,
+          `SELECT column_name
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+          WHERE constraint_type = 'PRIMARY KEY'
+          AND tc.table_name = ?`,
+          [tableName],
         );
-        return resultPg[0].attname;
+        return resultPg.map((row: any) => row.column_name);
 
       case Database.MYSQL:
         const resultMysql = await this.query(
-          `SHOW KEYS FROM ${tableName} WHERE Key_name = 'PRIMARY'`,
+          `SELECT COLUMN_NAME
+          FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+          WHERE TABLE_NAME = ? AND CONSTRAINT_NAME = 'PRIMARY'`,
+          [tableName],
         );
-        return resultMysql[0].Column;
+        return resultMysql.map((row: any) => row.COLUMN_NAME);
     }
   }
 
-  async getForeignKeys(tableName: string): Promise<string[]> {
+  public async getForeignKeys(tableName: string): Promise<string[]> {
     switch (this.type) {
       case Database.POSTGRES:
         const resultPg = await this.query(
@@ -178,5 +187,30 @@ export class AbstractDatabase {
         );
         return resultMysql.map((row: any) => row.COLUMN_NAME);
     }
+  }
+
+  public static parseQueryValue(value: any) {
+    switch (typeof value) {
+      case 'number':
+      case 'boolean':
+        return value;
+
+      default:
+        return `'${value}'`;
+    }
+  }
+
+  public static objectToWhereClause(obj: any) {
+    let whereClause = '';
+
+    for (const key in obj) {
+      if (typeof obj[key] === 'object') {
+        whereClause += `${key} ${obj[key].operator} ${AbstractDatabase.parseQueryValue(obj[key].value)}`;
+      } else {
+        whereClause += `${key} = ${AbstractDatabase.parseQueryValue(obj[key])}`;
+      }
+    }
+
+    return whereClause;
   }
 }

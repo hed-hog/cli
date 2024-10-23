@@ -19,6 +19,9 @@ import { Database, DatabaseFactory } from '../lib/databases';
 import { applyHedhogFileDataMenus } from '../lib/utils/apply-menus';
 import { applyHedhogFileDataRoutes } from '../lib/utils/apply-routes';
 import { applyHedhogFileDataScreens } from '../lib/utils/apply-screens';
+import { parseEnvFile } from '../lib/utils/parse-env-file';
+import { EnvFile } from '../lib/types/env-file';
+import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -39,7 +42,7 @@ export class AddAction extends AbstractAction {
     packagesAdded: string[] = [],
   ) {
     /**
-     * 1. Get the root path of the project
+     * 1. Get variables from the inputs and options
      */
 
     let directoryPath = '';
@@ -49,36 +52,6 @@ export class AddAction extends AbstractAction {
     } catch (error) {
       return console.error(chalk.red('Directory is not a hedhog project.'));
     }
-
-    /**
-     * 2. Get the database connection
-     */
-
-    const envVars = await this.parseEnvFile(
-      join(directoryPath, 'backend', '.env'),
-    );
-    const type = envVars.DATABASE_URL.split(':')[0] as 'postgres' | 'mysql';
-
-    this.db = DatabaseFactory.create(
-      type === 'mysql' ? Database.MYSQL : Database.POSTGRES,
-      envVars.DB_HOST,
-      envVars.DB_USERNAME,
-      envVars.DB_PASSWORD,
-      envVars.DB_DATABASE,
-      Number(envVars.DB_PORT),
-    );
-
-    this.isDbConnected = this.db.testDatabaseConnection();
-
-    /**
-     * 3. Get the module name
-     */
-
-    this.packagesAdded = packagesAdded;
-
-    /**
-     * 4. Get the options
-     */
 
     let migrateRun = false;
     const silentComplete =
@@ -107,11 +80,64 @@ export class AddAction extends AbstractAction {
       `${module}`,
     );
 
-    /* *********************************************************************** */
-
-    this.showDebug('Directory path:', directoryPath);
+    this.showDebug('Root path:', directoryPath);
     this.showDebug('App module path:', appModulePath);
     this.showDebug('Add module name:', addModuleName);
+
+    /**
+     * 2. Get the database connection
+     */
+    let envVars = {} as EnvFile;
+    try {
+      envVars = await parseEnvFile(join(directoryPath, 'backend', '.env'));
+    } catch (error) {
+      console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
+    }
+
+    this.showDebug('Env vars:', envVars);
+
+    const type = getDbTypeFromConnectionString(envVars.DATABASE_URL);
+
+    this.db = DatabaseFactory.create(
+      type === 'mysql' ? Database.MYSQL : Database.POSTGRES,
+      envVars.DB_HOST,
+      envVars.DB_USERNAME,
+      envVars.DB_PASSWORD,
+      envVars.DB_DATABASE,
+      Number(envVars.DB_PORT),
+    );
+
+    this.isDbConnected = await this.db.testDatabaseConnection();
+
+    this.showDebug('Database connection status:', this.isDbConnected);
+
+    this.showDebug(
+      'Primary Key Roles Table',
+      await this.db.getPrimaryKeys('roles'),
+    );
+    this.showDebug(
+      'ForeignKeys Key Roles Table',
+      await this.db.getForeignKeys('roles'),
+    );
+
+    this.showDebug(
+      'Primary Key RoleUsers Table',
+      await this.db.getPrimaryKeys('role_users'),
+    );
+    this.showDebug(
+      'ForeignKeys Key RoleUsers Table',
+      await this.db.getForeignKeys('role_users'),
+    );
+
+    /**
+     * 3. Get the module name
+     */
+
+    this.packagesAdded = packagesAdded;
+
+    this.showDebug('Packages added:', this.packagesAdded);
+
+    /* *********************************************************************** */
 
     if (!this.checkIfDirectoryIsPackage(directoryPath)) {
       console.error(chalk.red('This directory is not a package 22.'));
@@ -842,26 +868,6 @@ export class AddAction extends AbstractAction {
       );
     } else {
       return true;
-    }
-  }
-
-  async parseEnvFile(envPath: string) {
-    if (existsSync(envPath)) {
-      const envFile = await readFile(envPath, 'utf-8');
-      const envLines = envFile.split('\n');
-
-      const env: any = {};
-
-      for (const line of envLines) {
-        const [key, value] = line.split('=');
-        if (key && value) {
-          env[key] = value.replaceAll(/['"]+/g, '');
-        }
-      }
-
-      return env;
-    } else {
-      console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
     }
   }
 }

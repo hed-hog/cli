@@ -1,5 +1,5 @@
+import { AbstractDatabase } from '../databases';
 import { Menu } from '../types/menu';
-import objectToWhereClause from './where';
 
 async function insertMenu(db: any, parentId: number | null, menu: Menu) {
   const rows = await db.query(
@@ -42,7 +42,7 @@ export async function applyHedhogFileDataMenus(db: any, menus: Menu[]) {
 
       if (menu_id && typeof menu_id === 'object') {
         const rows = await db.query(
-          `SELECT id FROM menus WHERE ${objectToWhereClause(menu_id)}`,
+          `SELECT id FROM menus WHERE ${AbstractDatabase.objectToWhereClause(menu_id)}`,
         );
 
         if (rows.length > 0) {
