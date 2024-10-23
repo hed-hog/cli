@@ -22,6 +22,8 @@ import { applyHedhogFileDataScreens } from '../lib/utils/apply-screens';
 import { parseEnvFile } from '../lib/utils/parse-env-file';
 import { EnvFile } from '../lib/types/env-file';
 import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
+import { EntityFactory } from '../lib/entities/entity.factory';
+import { Entity } from '../lib/entities/entity';
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -241,6 +243,13 @@ export class AddAction extends AbstractAction {
         this.showDebug('hedhogFile', hedhogFile);
         spinner.info('Applying Hedhog file...');
 
+        const menus = EntityFactory.create(Entity.menus);
+
+        menus.create();
+
+        this.showDebug('complete');
+
+        /*
         if (hedhogFile?.data && this.isDbConnected) {
           for (const data of Object.keys(hedhogFile?.data)) {
             switch (data) {
@@ -267,6 +276,7 @@ export class AddAction extends AbstractAction {
             }
           }
         }
+          */
       } catch (error) {
         spinner.fail(error.message);
       }
