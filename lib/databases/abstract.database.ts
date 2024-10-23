@@ -128,4 +128,55 @@ export class AbstractDatabase {
     }
     return true;
   }
+
+  async getPrimaryKey(tableName: string): Promise<string> {
+    switch (this.type) {
+      case Database.POSTGRES:
+        const resultPg = await this.query(
+          `SELECT a.attname
+          FROM   pg_index i
+          JOIN   pg_attribute a ON a.attrelid = i.indrelid
+                              AND a.attnum = ANY(i.indkey)
+          WHERE  i.indrelid = '${tableName}'::regclass
+          AND    i.indisprimary;`,
+        );
+        return resultPg[0].attname;
+
+      case Database.MYSQL:
+        const resultMysql = await this.query(
+          `SHOW KEYS FROM ${tableName} WHERE Key_name = 'PRIMARY'`,
+        );
+        return resultMysql[0].Column;
+    }
+  }
+
+  async getForeignKeys(tableName: string): Promise<string[]> {
+    switch (this.type) {
+      case Database.POSTGRES:
+        const resultPg = await this.query(
+          `SELECT
+            tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+          FROM
+            information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
+          WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = ?;`,
+          [tableName],
+        );
+        return resultPg.map((row: any) => row.column_name);
+
+      case Database.MYSQL:
+        const resultMysql = await this.query(
+          `SELECT COLUMN_NAME
+          FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+          WHERE TABLE_NAME = ? AND CONSTRAINT_NAME != 'PRIMARY'`,
+          [tableName],
+        );
+        return resultMysql.map((row: any) => row.COLUMN_NAME);
+    }
+  }
 }
