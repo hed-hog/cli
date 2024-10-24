@@ -8,10 +8,18 @@ interface IQueryOption {
   primaryKeys?: string[] | string;
 }
 
+type RelationN2NResult = {
+  tableNameIntermediate: string;
+  columnNameOrigin: string;
+  columnNameDestination: string;
+  primaryKeyDestination: string;
+};
+
 export class AbstractDatabase {
   private client: Client | Connection | null = null;
   private foreignKeys: any = {};
   private primaryKeys: any = {};
+  private columnNameFromRelation: any = {};
 
   constructor(
     protected type: Database,
@@ -301,6 +309,220 @@ export class AbstractDatabase {
           [tableName],
         );
         return resultMysql.map((row: any) => row.COLUMN_NAME);
+    }
+  }
+
+  public async getColumnNameFromRelation(
+    tableNameOrigin: string,
+    tableNameDestination: string,
+  ) {
+    if (
+      this.columnNameFromRelation[`${tableNameOrigin}.${tableNameDestination}`]
+    ) {
+      return this.columnNameFromRelation[
+        `${tableNameOrigin}.${tableNameDestination}`
+      ];
+    }
+
+    switch (this.type) {
+      case Database.POSTGRES:
+        const resultPg = await this.query(
+          `SELECT
+            tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+            FROM
+            information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name = ? AND tc.table_name = ?;`,
+          [tableNameOrigin, tableNameDestination],
+        );
+
+        if (!resultPg.length) {
+          throw new Error(
+            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.`,
+          );
+        }
+
+        return (this.columnNameFromRelation[
+          `${tableNameOrigin}.${tableNameDestination}`
+        ] = resultPg[0].column_name);
+
+      case Database.MYSQL:
+        const resultMysql = await this.query(
+          `SELECT
+            TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+            FROM
+            INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = ? AND TABLE_NAME = ?;`,
+          [tableNameDestination, tableNameOrigin],
+        );
+
+        if (!resultMysql.length) {
+          throw new Error(
+            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.`,
+          );
+        }
+
+        return (this.columnNameFromRelation[
+          `${tableNameOrigin}.${tableNameDestination}`
+        ] = resultMysql[0].COLUMN_NAME);
+
+      default:
+        throw new Error(`Unsupported database type: ${this.type}`);
+    }
+  }
+
+  async getRelation1N(
+    tableNameOrigin: string,
+    tableNameDestination: string,
+  ): Promise<string> {
+    switch (this.type) {
+      case Database.POSTGRES:
+        const resultPg = await this.query(
+          `SELECT
+            tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+            FROM
+            information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name = ? AND tc.table_name = ?;`,
+          [tableNameOrigin, tableNameDestination],
+        );
+
+        if (!resultPg.length) {
+          throw new Error(
+            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.`,
+          );
+        }
+
+        return resultPg[0].column_name;
+
+      case Database.MYSQL:
+        const resultMysql = await this.query(
+          `SELECT
+            TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+            FROM
+            INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = ? AND TABLE_NAME = ?;`,
+          [tableNameDestination, tableNameOrigin],
+        );
+
+        if (!resultMysql.length) {
+          throw new Error(
+            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.`,
+          );
+        }
+
+        return resultMysql[0].COLUMN_NAME;
+    }
+  }
+
+  async getRelationN2N(
+    tableNameOrigin: string,
+    tableNameDestination: string,
+  ): Promise<RelationN2NResult> {
+    let tableNameIntermediate = '';
+    let columnNameOrigin = '';
+    let columnNameDestination = '';
+    let primaryKeyDestination = '';
+
+    switch (this.type) {
+      case Database.POSTGRES:
+        const resultPg1 = await this.query(
+          `SELECT
+            tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+            FROM
+            information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name = ?;`,
+          [tableNameOrigin],
+        );
+
+        for (const row of resultPg1) {
+          const resultPg2 = await this.query(
+            `SELECT
+                tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+                FROM
+                information_schema.table_constraints AS tc
+                JOIN information_schema.key_column_usage AS kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                  AND tc.table_schema = kcu.table_schema
+                JOIN information_schema.constraint_column_usage AS ccu
+                  ON ccu.constraint_name = tc.constraint_name
+                  AND ccu.table_schema = tc.table_schema
+                WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = ?;`,
+            [row['table_name']],
+          );
+
+          for (const row2 of resultPg2) {
+            if (row2['foreign_table_name'] === tableNameDestination) {
+              tableNameIntermediate = row['table_name'];
+              columnNameOrigin = row['column_name'];
+              columnNameDestination = row2['column_name'];
+              primaryKeyDestination = row2['foreign_column_name'];
+            }
+          }
+        }
+
+        return {
+          tableNameIntermediate,
+          columnNameOrigin,
+          columnNameDestination,
+          primaryKeyDestination,
+        };
+
+      case Database.MYSQL:
+        const resultMysql1 = await this.query(
+          `SELECT
+            TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+            FROM
+            INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?;`,
+          [tableNameOrigin],
+        );
+
+        for (const row of resultMysql1) {
+          const resultMysql2 = await this.query(
+            `SELECT
+              TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+              FROM
+              INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?;`,
+            [row['REFERENCED_TABLE_NAME']],
+          );
+
+          for (const row2 of resultMysql2) {
+            if (row2['REFERENCED_TABLE_NAME'] === tableNameDestination) {
+              tableNameIntermediate = row['TABLE_NAME'];
+              columnNameOrigin = row['COLUMN_NAME'];
+              columnNameDestination = row2['COLUMN_NAME'];
+              primaryKeyDestination = row2['REFERENCED_COLUMN_NAME'];
+            }
+          }
+        }
+
+        return {
+          tableNameIntermediate,
+          columnNameOrigin,
+          columnNameDestination,
+          primaryKeyDestination,
+        };
+
+      default:
+        throw new Error(`Unsupported database type: ${this.type}`);
     }
   }
 

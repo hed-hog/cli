@@ -23,6 +23,7 @@ import { EntityFactory } from '../lib/entities/entity.factory';
 import { Entity } from '../lib/entities/entity';
 import { DataType } from '../lib/types/data-type';
 import { AbstractEntity } from '../lib/entities/abstract.entity';
+import { debug } from '../lib/utils/debug';
 
 interface TableDependency {
   tableName: string;
@@ -35,9 +36,9 @@ export class AddAction extends AbstractAction {
   private db: any = null;
   private isDbConnected: boolean = false;
 
-  async showDebug(...args: any[]) {
+  showDebug(...args: any[]) {
     if (this.debug) {
-      console.log(chalk.yellow('DEBUG'), ...args);
+      debug(...args);
     }
   }
 
@@ -307,6 +308,7 @@ export class AddAction extends AbstractAction {
               this.db,
               tableName as Entity,
               hedhogFile?.data[tableName],
+              this.debug,
             );
 
             await entity.apply();
