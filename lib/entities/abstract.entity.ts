@@ -2,24 +2,22 @@ import chalk = require('chalk');
 import { AbstractDatabase } from '../databases';
 import { DataType } from '../types/data-type';
 import { Locale } from '../types/locale';
-import { debug } from '../utils/debug';
 import { pluralToSingular } from '../utils/plural-to-singular';
 import { Entity } from './entity';
+import EventEmitter = require('events');
 
 export class AbstractEntity {
   private locales: { [key: string]: number } = {};
+  private eventEmitter = new EventEmitter();
 
   constructor(
     protected db: AbstractDatabase,
     protected name: Entity,
     protected data: DataType[],
-    protected debug = false,
   ) {}
 
-  showDebug(...args: any[]) {
-    if (this.debug) {
-      debug(...args);
-    }
+  on(event: string, listener: (...args: any[]) => void) {
+    return this.eventEmitter.on(event, listener);
   }
 
   static isRelation(item: DataType, key: string) {
@@ -103,8 +101,6 @@ export class AbstractEntity {
     const whereQuery = [] as string[];
     const whereFinal = [] as any[];
 
-    let hasOperator = false;
-
     for (let i = 0; i < whereKeys.length; i++) {
       const whereValue = whereValues[i];
 
@@ -112,7 +108,6 @@ export class AbstractEntity {
         const operator = Object.keys(whereValue)[0];
 
         let value: string = whereValue[operator] as string;
-        console.log('where with operator', { whereValue, operator, value });
 
         if (['in', 'nin'].includes(operator) && Array.isArray(value)) {
           whereQuery.push(
@@ -127,8 +122,6 @@ export class AbstractEntity {
         }
 
         whereFinal.push(value);
-
-        hasOperator = true;
       } else {
         whereQuery.push(`${whereKeys[i]} = ?`);
         whereFinal.push(whereValue);
@@ -228,16 +221,14 @@ export class AbstractEntity {
         console.error(chalk.bgRed(`ERROR:`), chalk.red(error), query, values);
       }
 
-      this.showDebug(
+      this.eventEmitter.emit(
+        'debug',
         `Insert translation of ${this.name} with locale id ${localeId}`,
       );
     }
   }
 
   private async insert(items: DataType[], tableName = this.name) {
-    console.log('table', tableName, 'items', items);
-    console.log('===========================================');
-
     items = this.sortItems(items);
 
     for (let i = 0; i < items.length; i++) {
@@ -285,7 +276,7 @@ export class AbstractEntity {
         )
       )[0][primaryKeys[0]];
 
-      this.showDebug(`Insert ${mainTableName} with id ${id}`);
+      this.eventEmitter.emit('debug', `Insert ${mainTableName} with id ${id}`);
 
       /** Key with locales */
       await this.insertLocales(id, mainTableName, item);
@@ -334,7 +325,8 @@ export class AbstractEntity {
                     );
                   }
 
-                  this.showDebug(
+                  this.eventEmitter.emit(
+                    'debug',
                     `Insert relation N2N ${mainTableName} with id ${id}`,
                   );
                 }

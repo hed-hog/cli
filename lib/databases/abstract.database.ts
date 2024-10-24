@@ -1,25 +1,18 @@
 import { Client } from 'pg';
 import { Database } from './database';
 import { Connection } from 'mysql2/promise';
-import chalk = require('chalk');
-
-interface IQueryOption {
-  returning?: string[] | string;
-  primaryKeys?: string[] | string;
-}
-
-type RelationN2NResult = {
-  tableNameIntermediate: string;
-  columnNameOrigin: string;
-  columnNameDestination: string;
-  primaryKeyDestination: string;
-};
+import { QueryOption } from '../types/query-option';
+import { RelationN2NResult } from '../types/relation-n2n-result';
+import EventEmitter = require('events');
+import { TransactionQueries } from '../types/transaction-queries';
 
 export class AbstractDatabase {
   private client: Client | Connection | null = null;
   private foreignKeys: any = {};
   private primaryKeys: any = {};
   private columnNameFromRelation: any = {};
+  private eventEmitter = new EventEmitter();
+  private autoClose = true;
 
   constructor(
     protected type: Database,
@@ -30,6 +23,18 @@ export class AbstractDatabase {
     protected port: number,
   ) {}
 
+  public disableAutoClose() {
+    this.autoClose = false;
+  }
+
+  public close() {
+    return this.client?.end();
+  }
+
+  public on(event: string, listener: (...args: any[]) => void) {
+    return this.eventEmitter.on(event, listener);
+  }
+
   getArrayType(values: any[]) {
     return [...new Set(values.map((value) => typeof value))][0];
   }
@@ -39,13 +44,6 @@ export class AbstractDatabase {
     operator: 'in' | 'nin',
     values: string[] | number[],
   ) {
-    console.log('getWhereWithIn', {
-      columnName,
-      operator,
-      values,
-      type: this.getArrayType(values),
-    });
-
     switch (this.type) {
       case Database.POSTGRES:
         if (operator === 'in') {
@@ -135,33 +133,33 @@ export class AbstractDatabase {
     }
   }
 
-  private shouldHandleReturning(options?: IQueryOption): boolean {
+  private shouldHandleReturning(options?: QueryOption): boolean {
     return options?.returning !== undefined;
   }
 
-  private isReturningSingleField(options?: IQueryOption): boolean {
+  private isReturningSingleField(options?: QueryOption): boolean {
     return (
       options?.returning instanceof Array && options.returning.length === 1
     );
   }
 
-  private isReturningIdWithoutPrimaryKeys(options?: IQueryOption): boolean {
+  private isReturningIdWithoutPrimaryKeys(options?: QueryOption): boolean {
     return options?.returning === 'id' && !options.primaryKeys;
   }
 
-  private isMissingPrimaryKeys(options?: IQueryOption): boolean {
+  private isMissingPrimaryKeys(options?: QueryOption): boolean {
     return !options?.primaryKeys;
   }
 
-  private hasPrimaryKeys(options?: IQueryOption): boolean {
+  private hasPrimaryKeys(options?: QueryOption): boolean {
     return typeof options?.primaryKeys === 'string';
   }
 
-  private hasReturning(options?: IQueryOption): boolean {
+  private hasReturning(options?: QueryOption): boolean {
     return typeof options?.returning === 'string';
   }
 
-  private formatOptions(options?: IQueryOption) {
+  private formatOptions(options?: QueryOption) {
     if (options && this.shouldHandleReturning(options)) {
       if (this.isReturningSingleField(options)) {
         options.returning = (options.returning as any)[0];
@@ -185,7 +183,7 @@ export class AbstractDatabase {
     return options;
   }
 
-  private addReturningToQuery(query: string, options?: IQueryOption): string {
+  private addReturningToQuery(query: string, options?: QueryOption): string {
     if (
       this.type === Database.POSTGRES &&
       this.shouldHandleReturning(options)
@@ -195,7 +193,7 @@ export class AbstractDatabase {
     return query;
   }
 
-  private async getResult(query: string, result: any, options?: IQueryOption) {
+  private async getResult(query: string, result: any, options?: QueryOption) {
     switch (this.type) {
       case Database.POSTGRES:
         return result.rows;
@@ -225,18 +223,15 @@ export class AbstractDatabase {
     }
   }
 
-  public async query(query: string, values?: any[], options?: IQueryOption) {
-    await this.getClient();
-
+  public async query(query: string, values?: any[], options?: QueryOption) {
+    this.eventEmitter.emit('query', { query, values, options });
+    if (!this.client) {
+      await this.getClient();
+    }
     let result;
 
     options = this.formatOptions(options);
     query = this.addReturningToQuery(query, options);
-
-    console.log({
-      query: this.replacePlaceholders(query),
-      values,
-    });
 
     switch (this.type) {
       case Database.POSTGRES:
@@ -257,7 +252,11 @@ export class AbstractDatabase {
     }
 
     result = await this.getResult(query, result, options);
-    await this.client?.end();
+    if (this.autoClose) {
+      await this.client?.end();
+      this.client = null;
+    }
+
     return result;
   }
 
@@ -616,10 +615,12 @@ export class AbstractDatabase {
     return whereClause;
   }
 
-  public async transaction(
-    queries: { query: string; values?: any[]; options?: IQueryOption }[],
-  ) {
-    await this.getClient();
+  public async transaction(queries: TransactionQueries[]) {
+    this.eventEmitter.emit('transaction', { queries });
+
+    if (!this.client) {
+      await this.getClient();
+    }
 
     const results: any[] = [];
 
@@ -668,7 +669,10 @@ export class AbstractDatabase {
       }
       throw error;
     } finally {
-      await this.client?.end();
+      if (this.autoClose) {
+        await this.client?.end();
+        this.client = null;
+      }
     }
 
     return results;

@@ -4,15 +4,10 @@ import { AbstractEntity } from './abstract.entity';
 import { AbstractDatabase } from '../databases';
 
 export class EntityFactory {
-  public static create(
-    db: AbstractDatabase,
-    name: Entity,
-    data: DataType[],
-    debug = false,
-  ) {
+  public static create(db: AbstractDatabase, name: Entity, data: DataType[]) {
     switch (name) {
       default:
-        return new AbstractEntity(db, name, data, debug);
+        return new AbstractEntity(db, name, data);
     }
   }
 }

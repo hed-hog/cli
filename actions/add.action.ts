@@ -21,7 +21,6 @@ import { EnvFile } from '../lib/types/env-file';
 import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
 import { EntityFactory } from '../lib/entities/entity.factory';
 import { Entity } from '../lib/entities/entity';
-import { DataType } from '../lib/types/data-type';
 import { AbstractEntity } from '../lib/entities/abstract.entity';
 import { debug } from '../lib/utils/debug';
 
@@ -35,6 +34,7 @@ export class AddAction extends AbstractAction {
   private debug = false;
   private db: any = null;
   private isDbConnected: boolean = false;
+  private startAt = Date.now();
 
   showDebug(...args: any[]) {
     if (this.debug) {
@@ -111,6 +111,15 @@ export class AddAction extends AbstractAction {
       envVars.DB_PASSWORD,
       envVars.DB_DATABASE,
       Number(envVars.DB_PORT),
+    );
+
+    this.db.disableAutoClose();
+
+    this.db.on('query', (query: any) =>
+      this.showDebug(chalk.bgYellow('Query:'), query),
+    );
+    this.db.on('transaction', (query: any) =>
+      this.showDebug(chalk.bgYellow('Transaction:'), query),
     );
 
     this.isDbConnected = await this.db.testDatabaseConnection();
@@ -196,9 +205,29 @@ export class AddAction extends AbstractAction {
       await this.complete(module, migrateRun);
     }
 
+    this.showDebug(
+      'Total time:',
+      this.secondsToHuman((Date.now() - this.startAt) / 1000),
+    );
+
+    console.log(
+      'Total time:',
+      this.secondsToHuman((Date.now() - this.startAt) / 1000),
+    );
+
+    this.db.close();
+
     return {
       packagesAdded,
     };
+  }
+
+  secondsToHuman(seconds: number) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const sec = Math.floor(seconds % 60);
+
+    return `${hours}h ${minutes}m ${sec}s`;
   }
 
   async parseHedhogFile(path: string) {
@@ -267,6 +296,7 @@ export class AddAction extends AbstractAction {
   }
 
   async applyHedhogFile(directoryPath: string, module: string) {
+    const spinner = ora('Loading Hedhog file..').start();
     this.showDebug('applyHedhogFile', { directoryPath, module });
 
     const path = join(
@@ -279,7 +309,6 @@ export class AddAction extends AbstractAction {
     );
     const extensions = ['json', 'yaml', 'yml'];
 
-    const spinner = ora('Loading Hedhog file..').start();
     const extension = extensions.find((ext) => {
       return existsSync(`${path}.${ext}`);
     });
@@ -293,8 +322,10 @@ export class AddAction extends AbstractAction {
     });
 
     if (extension) {
+      spinner.info('Hedhog file found.');
       try {
         const hedhogFile = await this.parseHedhogFile(filePath);
+
         this.showDebug('data tables', Object.keys(hedhogFile.data));
         spinner.info('Applying Hedhog file...');
 
@@ -302,16 +333,23 @@ export class AddAction extends AbstractAction {
           for (const data of await this.extractTableDependencies(
             hedhogFile?.data,
           )) {
-            const { tableName, deps } = data;
+            spinner.info(`Applying entity ${data.tableName}...`);
+
+            const { tableName } = data;
 
             const entity = EntityFactory.create(
               this.db,
               tableName as Entity,
               hedhogFile?.data[tableName],
-              this.debug,
+            );
+
+            entity.on('debug', (message) =>
+              this.showDebug(chalk.bgYellow(`Entity ${tableName}:`), message),
             );
 
             await entity.apply();
+
+            spinner.succeed(`Entity ${tableName} applied.`);
           }
         }
       } catch (error) {
@@ -323,7 +361,6 @@ export class AddAction extends AbstractAction {
   }
 
   async updateLibsPrisma(directoryPath: string) {
-    console.log('updateLibsPrisma', directoryPath);
     const spinner = ora('Starting updating prisma in libraries...').start();
     const libPath = join(directoryPath, 'lib');
     const libsPath = join(directoryPath, 'lib', 'libs');
