@@ -1,3 +1,4 @@
+import chalk = require('chalk');
 import { AbstractDatabase } from '../databases';
 import { DataType } from '../types/data-type';
 import { Locale } from '../types/locale';
@@ -249,10 +250,18 @@ export class AbstractEntity {
           tableNameTranslations,
         );
 
-        await this.db.query(
-          `INSERT INTO ${tableNameTranslations} (locale_id, ${columnName}, ${fields.join(', ')}) VALUES (${['?', '?', ...fields].map((_) => '?').join(', ')})`,
-          [Number(localeId), id, ...Object.values(localeFields[localeId])],
-        );
+        const query = `INSERT INTO ${tableNameTranslations} (locale_id, ${columnName}, ${fields.join(', ')}) VALUES (${['?', '?', ...fields].map((_) => '?').join(', ')})`;
+        const values = [
+          Number(localeId),
+          id,
+          ...Object.values(localeFields[localeId]),
+        ];
+
+        try {
+          await this.db.query(query, values);
+        } catch (error) {
+          console.error(chalk.bgRed(`ERROR:`), chalk.red(error), query, values);
+        }
 
         this.showDebug(
           `Insert translation of ${this.name} with locale id ${localeId}`,
@@ -287,10 +296,19 @@ export class AbstractEntity {
                 );
 
                 for (const foreignId of foreignIds) {
-                  await this.db.query(
-                    `INSERT INTO ${relationN2N.tableNameIntermediate} (${relationN2N.columnNameOrigin}, ${relationN2N.columnNameDestination}) VALUES (?, ?)`,
-                    [id, foreignId],
-                  );
+                  const query = `INSERT INTO ${relationN2N.tableNameIntermediate} (${relationN2N.columnNameOrigin}, ${relationN2N.columnNameDestination}) VALUES (?, ?)`;
+                  const values = [id, foreignId];
+
+                  try {
+                    await this.db.query(query, values);
+                  } catch (error) {
+                    console.error(
+                      chalk.bgRed(`ERROR:`),
+                      chalk.red(error),
+                      query,
+                      values,
+                    );
+                  }
 
                   this.showDebug(
                     `Insert relation N2N ${this.name} with id ${id}`,
@@ -329,14 +347,23 @@ export class AbstractEntity {
                   }
                 }
 
-                await this.db.query(
-                  `INSERT INTO ${tableNameRelation} (${columnName1N}, ${Object.keys(relationItem).join(', ')}) VALUES (?, ${Object.keys(
-                    relationItem,
-                  )
-                    .map((_) => '?')
-                    .join(', ')})`,
-                  [id, ...Object.values(relationItem)],
-                );
+                const query = `INSERT INTO ${tableNameRelation} (${columnName1N}, ${Object.keys(relationItem).join(', ')}) VALUES (?, ${Object.keys(
+                  relationItem,
+                )
+                  .map((_) => '?')
+                  .join(', ')})`;
+                const values = [id, ...Object.values(relationItem)];
+
+                try {
+                  await this.db.query(query, values);
+                } catch (error) {
+                  console.error(
+                    chalk.bgRed(`ERROR:`),
+                    chalk.red(error),
+                    query,
+                    values,
+                  );
+                }
 
                 this.showDebug(
                   `Insert relation 1N ${this.name} with ${tableNameRelation} with id ${id}`,
