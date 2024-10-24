@@ -110,9 +110,12 @@ export class AbstractEntity {
 
       if (typeof whereValue === 'object') {
         const operator = Object.keys(whereValue)[0];
-        const value = ['in', 'nin'].includes(operator)
-          ? `(${whereValue[operator]})`
-          : whereValue[operator];
+
+        let value: string = whereValue[operator] as string;
+
+        if (['in', 'nin'].includes(operator) && Array.isArray(value)) {
+          value = `(${whereValue[operator].join(', ')})`;
+        }
 
         whereQuery.push(`${whereKeys[i]} ${this.parseOperator(operator)} ?`);
         whereFinal.push(value);
