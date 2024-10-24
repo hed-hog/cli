@@ -112,12 +112,20 @@ export class AbstractEntity {
         const operator = Object.keys(whereValue)[0];
 
         let value: string = whereValue[operator] as string;
+        console.log('where with operator', { whereValue, operator, value });
 
         if (['in', 'nin'].includes(operator) && Array.isArray(value)) {
-          value = `(${whereValue[operator].join(', ')})`;
+          whereQuery.push(
+            this.db.getWhereWithIn(
+              whereKeys[i],
+              operator as 'in' | 'nin',
+              value,
+            ),
+          );
+        } else {
+          whereQuery.push(`${whereKeys[i]} ${this.parseOperator(operator)} ?`);
         }
 
-        whereQuery.push(`${whereKeys[i]} ${this.parseOperator(operator)} ?`);
         whereFinal.push(value);
 
         hasOperator = true;
@@ -134,7 +142,7 @@ export class AbstractEntity {
       whereFinal,
     );
 
-    const result = whereResult.map((item) => {
+    const result = whereResult.map((item: any) => {
       if (primaryKeys.length > 1) {
         return primaryKeys.reduce((acc, key) => {
           acc[key] = item[key];
@@ -169,12 +177,72 @@ export class AbstractEntity {
       .map(({ item }) => item);
   }
 
-  private async insert(items: DataType[]) {
+  private async insertLocales(
+    id: number,
+    mainTableName: string,
+    item: DataType,
+  ) {
+    const localeColumns: string[] = [];
+
+    for (const key of Object.keys(item)) {
+      if (AbstractEntity.isLocale(item, key)) {
+        localeColumns.push(key);
+      }
+    }
+
+    const localeFields: any = {};
+
+    for (const localeColumn of localeColumns) {
+      for (const localeField of Object.keys(item[localeColumn])) {
+        const localeId = await this.getLocaleId(localeField);
+
+        if (typeof localeFields[localeId] !== 'object') {
+          localeFields[localeId] = {};
+        }
+
+        localeFields[localeId][localeColumn] = (item[localeColumn] as Locale)[
+          localeField
+        ];
+      }
+    }
+
+    for (const localeId of Object.keys(localeFields)) {
+      const fields = Object.keys(localeFields[localeId]);
+
+      const tableNameTranslations = this.getLocaleTableName(mainTableName);
+      const columnName = await this.db.getColumnNameFromRelation(
+        mainTableName,
+        tableNameTranslations,
+      );
+
+      const query = `INSERT INTO ${tableNameTranslations} (locale_id, ${columnName}, ${fields.join(', ')}) VALUES (${['?', '?', ...fields].map((_) => '?').join(', ')})`;
+      const values = [
+        Number(localeId),
+        id,
+        ...Object.values(localeFields[localeId]),
+      ];
+
+      try {
+        await this.db.query(query, values);
+      } catch (error) {
+        console.error(chalk.bgRed(`ERROR:`), chalk.red(error), query, values);
+      }
+
+      this.showDebug(
+        `Insert translation of ${this.name} with locale id ${localeId}`,
+      );
+    }
+  }
+
+  private async insert(items: DataType[], tableName = this.name) {
+    console.log('table', tableName, 'items', items);
+    console.log('===========================================');
+
     items = this.sortItems(items);
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      const mainTableName = this.name;
+      const mainTableName = tableName;
       const mainFields: string[] = [];
       const mainValues: any[] = [];
 
@@ -217,59 +285,10 @@ export class AbstractEntity {
         )
       )[0][primaryKeys[0]];
 
-      this.showDebug(`Insert ${this.name} with id ${id}`);
+      this.showDebug(`Insert ${mainTableName} with id ${id}`);
 
       /** Key with locales */
-      const localeColumns: string[] = [];
-
-      for (const key of Object.keys(item)) {
-        if (AbstractEntity.isLocale(item, key)) {
-          localeColumns.push(key);
-        }
-      }
-
-      const localeFields: any = {};
-
-      for (const localeColumn of localeColumns) {
-        for (const localeField of Object.keys(item[localeColumn])) {
-          const localeId = await this.getLocaleId(localeField);
-
-          if (typeof localeFields[localeId] !== 'object') {
-            localeFields[localeId] = {};
-          }
-
-          localeFields[localeId][localeColumn] = (item[localeColumn] as Locale)[
-            localeField
-          ];
-        }
-      }
-
-      for (const localeId of Object.keys(localeFields)) {
-        const fields = Object.keys(localeFields[localeId]);
-
-        const tableNameTranslations = this.getLocaleTableName(mainTableName);
-        const columnName = await this.db.getColumnNameFromRelation(
-          mainTableName,
-          tableNameTranslations,
-        );
-
-        const query = `INSERT INTO ${tableNameTranslations} (locale_id, ${columnName}, ${fields.join(', ')}) VALUES (${['?', '?', ...fields].map((_) => '?').join(', ')})`;
-        const values = [
-          Number(localeId),
-          id,
-          ...Object.values(localeFields[localeId]),
-        ];
-
-        try {
-          await this.db.query(query, values);
-        } catch (error) {
-          console.error(chalk.bgRed(`ERROR:`), chalk.red(error), query, values);
-        }
-
-        this.showDebug(
-          `Insert translation of ${this.name} with locale id ${localeId}`,
-        );
-      }
+      await this.insertLocales(id, mainTableName, item);
 
       /** Key relations */
       for (const key of Object.keys(item)) {
@@ -278,6 +297,8 @@ export class AbstractEntity {
             const relationItemKeys = Object.keys(
               (item[key] as any)[tableNameRelation],
             );
+
+            const relationItems = [] as DataType[];
 
             for (const relationItemKey of relationItemKeys) {
               const relationItem = (item[key] as any)[tableNameRelation][
@@ -314,7 +335,7 @@ export class AbstractEntity {
                   }
 
                   this.showDebug(
-                    `Insert relation N2N ${this.name} with id ${id}`,
+                    `Insert relation N2N ${mainTableName} with id ${id}`,
                   );
                 }
               } else {
@@ -322,6 +343,8 @@ export class AbstractEntity {
                   mainTableName,
                   tableNameRelation,
                 );
+
+                relationItem[columnName1N] = id;
 
                 for (const relationItemKey of Object.keys(relationItem)) {
                   if (
@@ -350,29 +373,10 @@ export class AbstractEntity {
                   }
                 }
 
-                const query = `INSERT INTO ${tableNameRelation} (${columnName1N}, ${Object.keys(relationItem).join(', ')}) VALUES (?, ${Object.keys(
-                  relationItem,
-                )
-                  .map((_) => '?')
-                  .join(', ')})`;
-                const values = [id, ...Object.values(relationItem)];
-
-                try {
-                  await this.db.query(query, values);
-                } catch (error) {
-                  console.error(
-                    chalk.bgRed(`ERROR:`),
-                    chalk.red(error),
-                    query,
-                    values,
-                  );
-                }
-
-                this.showDebug(
-                  `Insert relation 1N ${this.name} with ${tableNameRelation} with id ${id}`,
-                );
+                relationItems.push(relationItem);
               }
             }
+            await this.insert(relationItems, tableNameRelation as Entity);
           }
         }
       }

@@ -30,6 +30,42 @@ export class AbstractDatabase {
     protected port: number,
   ) {}
 
+  getArrayType(values: any[]) {
+    return [...new Set(values.map((value) => typeof value))][0];
+  }
+
+  getWhereWithIn(
+    columnName: string,
+    operator: 'in' | 'nin',
+    values: string[] | number[],
+  ) {
+    console.log('getWhereWithIn', {
+      columnName,
+      operator,
+      values,
+      type: this.getArrayType(values),
+    });
+
+    switch (this.type) {
+      case Database.POSTGRES:
+        if (operator === 'in') {
+          return `${columnName} = ANY(?::${this.getArrayType(values) === 'number' ? 'int' : 'text'}[])`;
+        } else {
+          return `${columnName} <> ALL(?::${this.getArrayType(values) === 'number' ? 'int' : 'text'}[])`;
+        }
+      case Database.MYSQL:
+        return `${columnName} ${operator === 'in' ? 'IN' : 'NOT IN'}(${values.map((value) => AbstractDatabase.addSimpleQuotes(value)).join(', ')})`;
+    }
+  }
+
+  static addSimpleQuotes(value: any): string {
+    if (typeof value === 'string') {
+      return `'${value}'`;
+    }
+
+    return value;
+  }
+
   private replacePlaceholders(query: string): string {
     let index = 1;
     return query.replace(/\?/g, () => {
@@ -125,11 +161,7 @@ export class AbstractDatabase {
     return typeof options?.returning === 'string';
   }
 
-  public async query(query: string, values?: any[], options?: IQueryOption) {
-    await this.getClient();
-
-    let result;
-
+  private formatOptions(options?: IQueryOption) {
     if (options && this.shouldHandleReturning(options)) {
       if (this.isReturningSingleField(options)) {
         options.returning = (options.returning as any)[0];
@@ -150,25 +182,25 @@ export class AbstractDatabase {
       }
     }
 
+    return options;
+  }
+
+  private addReturningToQuery(query: string, options?: IQueryOption): string {
+    if (
+      this.type === Database.POSTGRES &&
+      this.shouldHandleReturning(options)
+    ) {
+      return `${query} RETURNING ${(options?.returning as string[]).join(', ')}`;
+    }
+    return query;
+  }
+
+  private async getResult(query: string, result: any, options?: IQueryOption) {
     switch (this.type) {
       case Database.POSTGRES:
-        if (this.shouldHandleReturning(options)) {
-          query = `${query} RETURNING ${(options?.returning as string[]).join(', ')}`;
-        }
-
-        result = await (this.client as Client).query(
-          this.replacePlaceholders(query),
-          values,
-        );
-
-        result = result.rows;
-        break;
+        return result.rows;
 
       case Database.MYSQL:
-        result = await (this.client as unknown as Connection).query(
-          query,
-          values,
-        );
         result = result[0] as any[];
         if (this.shouldHandleReturning(options)) {
           const resultArray = [
@@ -189,9 +221,42 @@ export class AbstractDatabase {
           ).query(selectReturningQuery, [resultArray[0].id]);
           result = returningResult;
         }
+        return result;
+    }
+  }
+
+  public async query(query: string, values?: any[], options?: IQueryOption) {
+    await this.getClient();
+
+    let result;
+
+    options = this.formatOptions(options);
+    query = this.addReturningToQuery(query, options);
+
+    console.log({
+      query: this.replacePlaceholders(query),
+      values,
+    });
+
+    switch (this.type) {
+      case Database.POSTGRES:
+        result = await (this.client as Client).query(
+          this.replacePlaceholders(query),
+          values,
+        );
+
+        break;
+
+      case Database.MYSQL:
+        result = await (this.client as unknown as Connection).query(
+          query,
+          values,
+        );
+
         break;
     }
 
+    result = await this.getResult(query, result, options);
     await this.client?.end();
     return result;
   }
@@ -549,5 +614,63 @@ export class AbstractDatabase {
     }
 
     return whereClause;
+  }
+
+  public async transaction(
+    queries: { query: string; values?: any[]; options?: IQueryOption }[],
+  ) {
+    await this.getClient();
+
+    const results: any[] = [];
+
+    for (let i = 0; i < queries.length; i++) {
+      queries[i].options = this.formatOptions(queries[i].options);
+      queries[i].query = this.addReturningToQuery(
+        queries[i].query,
+        queries[i].options,
+      );
+    }
+
+    try {
+      switch (this.type) {
+        case Database.POSTGRES:
+          await (this.client as Client).query('BEGIN');
+          for (const { query, values, options } of queries) {
+            const resultPg = await (this.client as Client).query(
+              this.replacePlaceholders(query),
+              values,
+            );
+            results.push(this.getResult(query, resultPg, options));
+          }
+          await (this.client as Client).query('COMMIT');
+          break;
+
+        case Database.MYSQL:
+          await (this.client as Connection).beginTransaction();
+          for (const { query, values, options } of queries) {
+            const resultMySQL = await (
+              this.client as unknown as Connection
+            ).query(query, values);
+            results.push(this.getResult(query, resultMySQL, options));
+          }
+          await (this.client as Connection).commit();
+          break;
+      }
+    } catch (error) {
+      switch (this.type) {
+        case Database.POSTGRES:
+          await (this.client as Client).query('ROLLBACK');
+          break;
+
+        case Database.MYSQL:
+          await (this.client as Connection).rollback();
+          break;
+      }
+      throw error;
+    } finally {
+      await this.client?.end();
+    }
+
+    return results;
   }
 }
