@@ -16,15 +16,18 @@ import { getNpmPackage } from '../lib/utils/get-npm-package';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
 import * as YAML from 'yaml';
 import { Database, DatabaseFactory } from '../lib/databases';
-import { applyHedhogFileDataMenus } from '../lib/utils/apply-menus';
-import { applyHedhogFileDataRoutes } from '../lib/utils/apply-routes';
-import { applyHedhogFileDataScreens } from '../lib/utils/apply-screens';
 import { parseEnvFile } from '../lib/utils/parse-env-file';
 import { EnvFile } from '../lib/types/env-file';
 import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
 import { EntityFactory } from '../lib/entities/entity.factory';
 import { Entity } from '../lib/entities/entity';
+import { DataType } from '../lib/types/data-type';
+import { AbstractEntity } from '../lib/entities/abstract.entity';
 
+interface TableDependency {
+  tableName: string;
+  deps: string[];
+}
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
@@ -211,6 +214,57 @@ export class AddAction extends AbstractAction {
     }
   }
 
+  async extractTableDependencies(
+    data: Record<string, any>,
+  ): Promise<TableDependency[]> {
+    const result: TableDependency[] = [];
+
+    for (const tableName in data) {
+      const tableData = data[tableName];
+      let deps: Set<string> = new Set();
+
+      // Check for relations
+      for (const item of tableData) {
+        if (item.relations) {
+          const subDeps = (await this.extractTableDependencies(item.relations))
+            .map((e) => e.deps)
+            .flat();
+
+          for (const subDep of subDeps) {
+            deps.add(subDep);
+          }
+
+          for (const relation in item.relations) {
+            deps.add(relation);
+          }
+        }
+
+        for (const key in item) {
+          if (typeof item[key] === 'object' && item[key] !== null) {
+            if (AbstractEntity.isLocale(item, key)) {
+              deps.add('locales');
+            } else if (AbstractEntity.isWhere(item, key)) {
+              const tableNameDep = await this.db.getTableNameFromForeignKey(
+                tableName,
+                key,
+              );
+              if (tableNameDep !== tableName) {
+                deps.add(tableNameDep);
+              }
+            }
+          }
+        }
+      }
+
+      result.push({
+        tableName,
+        deps: Array.from(deps),
+      });
+    }
+
+    return result.sort((a, b) => a.deps.length - b.deps.length);
+  }
+
   async applyHedhogFile(directoryPath: string, module: string) {
     this.showDebug('applyHedhogFile', { directoryPath, module });
 
@@ -240,43 +294,24 @@ export class AddAction extends AbstractAction {
     if (extension) {
       try {
         const hedhogFile = await this.parseHedhogFile(filePath);
-        this.showDebug('hedhogFile', hedhogFile);
+        this.showDebug('data tables', Object.keys(hedhogFile.data));
         spinner.info('Applying Hedhog file...');
 
-        const menus = EntityFactory.create(Entity.menus);
-
-        menus.create();
-
-        this.showDebug('complete');
-
-        /*
         if (hedhogFile?.data && this.isDbConnected) {
-          for (const data of Object.keys(hedhogFile?.data)) {
-            switch (data) {
-              case 'menus':
-                await applyHedhogFileDataMenus(this.db, hedhogFile?.data[data]);
-                break;
+          for (const data of await this.extractTableDependencies(
+            hedhogFile?.data,
+          )) {
+            const { tableName, deps } = data;
 
-              case 'routes':
-                await applyHedhogFileDataRoutes(
-                  this.db,
-                  hedhogFile?.data[data],
-                );
-                break;
+            const entity = EntityFactory.create(
+              this.db,
+              tableName as Entity,
+              hedhogFile?.data[tableName],
+            );
 
-              case 'screens':
-                await applyHedhogFileDataScreens(
-                  this.db,
-                  hedhogFile?.data[data],
-                );
-                break;
-
-              default:
-                console.warn(chalk.yellow(`Data type "${data}" not found.`));
-            }
+            await entity.apply();
           }
         }
-          */
       } catch (error) {
         spinner.fail(error.message);
       }

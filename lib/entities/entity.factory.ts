@@ -1,15 +1,13 @@
-import * as chalk from 'chalk';
 import { Entity } from './entity';
-import { MenusEntity } from './menus.entity';
+import { DataType } from '../types/data-type';
+import { AbstractEntity } from './abstract.entity';
+import { AbstractDatabase } from '../databases';
 
 export class EntityFactory {
-  public static create(type: Entity) {
-    switch (type) {
-      case Entity.menus:
-        return new MenusEntity();
-
+  public static create(db: AbstractDatabase, name: Entity, data: DataType[]) {
+    switch (name) {
       default:
-        throw new Error(chalk.red(`Entity ${type} not found`));
+        return new AbstractEntity(db, name, data);
     }
   }
 }
