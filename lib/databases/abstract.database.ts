@@ -91,38 +91,60 @@ export class AbstractDatabase {
     }
   }
 
+  private shouldHandleReturning(options?: IQueryOption): boolean {
+    return options?.returning !== undefined;
+  }
+
+  private isReturningSingleField(options?: IQueryOption): boolean {
+    return (
+      options?.returning instanceof Array && options.returning.length === 1
+    );
+  }
+
+  private isReturningIdWithoutPrimaryKeys(options?: IQueryOption): boolean {
+    return options?.returning === 'id' && !options.primaryKeys;
+  }
+
+  private isMissingPrimaryKeys(options?: IQueryOption): boolean {
+    return !options?.primaryKeys;
+  }
+
+  private hasPrimaryKeys(options?: IQueryOption): boolean {
+    return typeof options?.primaryKeys === 'string';
+  }
+
+  private hasReturning(options?: IQueryOption): boolean {
+    return typeof options?.returning === 'string';
+  }
+
   public async query(query: string, values?: any[], options?: IQueryOption) {
     await this.getClient();
 
     let result;
 
-    if (options?.returning) {
-      if (
-        options.returning &&
-        options.returning instanceof Array &&
-        options.returning.length === 1
-      ) {
-        options.returning = options.returning[0];
+    if (options && this.shouldHandleReturning(options)) {
+      if (this.isReturningSingleField(options)) {
+        options.returning = (options.returning as any)[0];
       }
-      if (options.returning === 'id' && !options.primaryKeys) {
+      if (this.isReturningIdWithoutPrimaryKeys(options)) {
         options.primaryKeys = options.returning;
       }
 
-      if (!options.primaryKeys) {
+      if (this.isMissingPrimaryKeys(options)) {
         throw new Error('Primary key is required when using returning.');
       }
 
-      if (typeof options.primaryKeys === 'string') {
-        options.primaryKeys = [options.primaryKeys];
+      if (this.hasPrimaryKeys(options)) {
+        options.primaryKeys = [options.primaryKeys as string];
       }
-      if (typeof options.returning === 'string') {
-        options.returning = [options.returning];
+      if (this.hasReturning(options)) {
+        options.returning = [options.returning as string];
       }
     }
 
     switch (this.type) {
       case Database.POSTGRES:
-        if (options?.returning !== undefined) {
+        if (this.shouldHandleReturning(options)) {
           query = `${query} RETURNING ${(options?.returning as string[]).join(', ')}`;
         }
 
@@ -140,7 +162,7 @@ export class AbstractDatabase {
           values,
         );
         result = result[0] as any[];
-        if (options?.returning) {
+        if (this.shouldHandleReturning(options)) {
           const resultArray = [
             {
               id: (result as any).insertId,
@@ -153,7 +175,7 @@ export class AbstractDatabase {
             .map((pk) => `${pk} = ?`)
             .join(' AND ');
 
-          const selectReturningQuery = `SELECT ${(options.returning as string[]).join(', ')} FROM ${this.getTableNameFromQuery(query)} WHERE ${where}`;
+          const selectReturningQuery = `SELECT ${(options?.returning as string[]).join(', ')} FROM ${this.getTableNameFromQuery(query)} WHERE ${where}`;
           const returningResult = await (
             this.client as unknown as Connection
           ).query(selectReturningQuery, [resultArray[0].id]);
