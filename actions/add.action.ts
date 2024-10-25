@@ -30,6 +30,7 @@ interface TableDependency {
   tableName: string;
   deps: string[];
 }
+
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
@@ -292,6 +293,30 @@ export class AddAction extends AbstractAction {
     return result.sort((a, b) => a.deps.length - b.deps.length);
   }
 
+  topologicalSort(tables: any[]) {
+    const sortedTables: any[] = [];
+    const visited = new Set<string>();
+
+    const visit = (table: any) => {
+      if (!visited.has(table.tableName)) {
+        visited.add(table.tableName);
+
+        for (const dependency of table.dependencies) {
+          const depTable = tables.find((t) => t.tableName === dependency);
+          if (depTable) visit(depTable);
+        }
+
+        sortedTables.push(table);
+      }
+    };
+
+    for (const table of tables) {
+      visit(table);
+    }
+
+    return sortedTables;
+  }
+
   async sortTablesByDependencies(tables: Record<string, any>) {
     const tableList = [];
 
@@ -310,11 +335,17 @@ export class AddAction extends AbstractAction {
         table,
         dependencies,
       });
-
-      //TO DO
     }
 
-    console.log('================================');
+    const sortedTables = this.topologicalSort(tableList).map(
+      (table) => table.tableName,
+    );
+
+    console.log({
+      sortedTables,
+    });
+
+    return sortedTables;
   }
 
   async applyHedhogFile(directoryPath: string, module: string) {
