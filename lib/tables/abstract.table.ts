@@ -94,7 +94,5 @@ export class AbstractTable {
     });
 
     const queryRunner = this.db.getDataSource().createQueryRunner();
-
-    console.log({ queryRunner });
   }
 }

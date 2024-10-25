@@ -317,7 +317,7 @@ export class AddAction extends AbstractAction {
     return sortedTables;
   }
 
-  async sortTablesByDependencies(tables: Record<string, any>) {
+  sortTablesByDependencies(tables: Record<string, any>) {
     const tableList = [];
 
     for (const tableName of Object.keys(tables)) {
@@ -386,14 +386,10 @@ export class AddAction extends AbstractAction {
           //spinner.info('Applying Tables...');
 
           this.showDebug('tables before sort', Object.keys(hedhogFile?.tables));
-
           const tableSorted = this.sortTablesByDependencies(hedhogFile.tables);
-
           this.showDebug('tables after sort', tableSorted);
 
-          for (const tableName in tableSorted) {
-            console.log({ tableName });
-
+          for (const tableName of tableSorted) {
             const table = TableFactory.create(
               this.db,
               tableName,
@@ -403,9 +399,7 @@ export class AddAction extends AbstractAction {
             table.on('debug', (message) =>
               this.showDebug(chalk.bgYellow(`Entity ${tableName}:`), message),
             );
-
             await table.apply();
-
             //spinner.succeed(`Entity ${tableName} applied.`);
           }
         }
