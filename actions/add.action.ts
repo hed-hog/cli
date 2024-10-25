@@ -210,11 +210,6 @@ export class AddAction extends AbstractAction {
       this.secondsToHuman((Date.now() - this.startAt) / 1000),
     );
 
-    console.log(
-      'Total time:',
-      this.secondsToHuman((Date.now() - this.startAt) / 1000),
-    );
-
     this.db.close();
 
     return {
