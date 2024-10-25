@@ -28,7 +28,8 @@ import { AbstractTable } from '../lib/tables/abstract.table';
 
 interface TableDependency {
   tableName: string;
-  deps: string[];
+  dependencies: string[];
+  table?: any;
 }
 
 export class AddAction extends AbstractAction {
@@ -249,35 +250,35 @@ export class AddAction extends AbstractAction {
 
     for (const tableName in data) {
       const tableData = data[tableName];
-      let deps: Set<string> = new Set();
+      let dependencies: Set<string> = new Set();
 
       // Check for relations
       for (const item of tableData) {
         if (item.relations) {
           const subDeps = (await this.extractTableDependencies(item.relations))
-            .map((e) => e.deps)
+            .map((e) => e.dependencies)
             .flat();
 
           for (const subDep of subDeps) {
-            deps.add(subDep);
+            dependencies.add(subDep);
           }
 
           for (const relation in item.relations) {
-            deps.add(relation);
+            dependencies.add(relation);
           }
         }
 
         for (const key in item) {
           if (typeof item[key] === 'object' && item[key] !== null) {
             if (AbstractEntity.isLocale(item, key)) {
-              deps.add('locales');
+              dependencies.add('locales');
             } else if (AbstractEntity.isWhere(item, key)) {
               const tableNameDep = await this.db.getTableNameFromForeignKey(
                 tableName,
                 key,
               );
               if (tableNameDep !== tableName) {
-                deps.add(tableNameDep);
+                dependencies.add(tableNameDep);
               }
             }
           }
@@ -286,18 +287,18 @@ export class AddAction extends AbstractAction {
 
       result.push({
         tableName,
-        deps: Array.from(deps),
+        dependencies: Array.from(dependencies),
       });
     }
 
-    return result.sort((a, b) => a.deps.length - b.deps.length);
+    return result.sort((a, b) => a.dependencies.length - b.dependencies.length);
   }
 
-  topologicalSort(tables: any[]) {
-    const sortedTables: any[] = [];
+  topologicalSort(tables: TableDependency[]) {
+    const sortedTables: TableDependency[] = [];
     const visited = new Set<string>();
 
-    const visit = (table: any) => {
+    const visit = (table: TableDependency) => {
       if (!visited.has(table.tableName)) {
         visited.add(table.tableName);
 
