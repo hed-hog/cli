@@ -329,21 +329,11 @@ export class AddAction extends AbstractAction {
         table,
         dependencies,
       });
-
-      console.log({
-        tableName,
-        table,
-        dependencies,
-      });
     }
 
     const sortedTables = this.topologicalSort(tableList).map(
       (table) => table.tableName,
     );
-
-    console.log({
-      sortedTables,
-    });
 
     return sortedTables;
   }
