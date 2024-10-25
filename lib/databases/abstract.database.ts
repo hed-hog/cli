@@ -9,8 +9,11 @@ import { TransactionQueries } from '../types/transaction-queries';
 export class AbstractDatabase {
   private client: Client | Connection | null = null;
   private foreignKeys: any = {};
+  private foreignKeysByTable: any = {};
   private primaryKeys: any = {};
   private columnNameFromRelation: any = {};
+  private relationN2N: any = {};
+  private relation1N: any = {};
   private eventEmitter = new EventEmitter();
   private autoClose = true;
 
@@ -23,15 +26,15 @@ export class AbstractDatabase {
     protected port: number,
   ) {}
 
-  public disableAutoClose() {
+  disableAutoClose() {
     this.autoClose = false;
   }
 
-  public close() {
+  close() {
     return this.client?.end();
   }
 
-  public on(event: string, listener: (...args: any[]) => void) {
+  on(event: string, listener: (...args: any[]) => void) {
     return this.eventEmitter.on(event, listener);
   }
 
@@ -92,7 +95,7 @@ export class AbstractDatabase {
       case Database.POSTGRES:
         const resultPg = await this.query(
           `SELECT
-            tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+            ccu.table_name
           FROM
             information_schema.table_constraints AS tc
             JOIN information_schema.key_column_usage AS kcu
@@ -112,13 +115,16 @@ export class AbstractDatabase {
         }
 
         return (this.foreignKeys[`${tableName}.${foreignKey}`] =
-          resultPg[0].foreign_table_name);
+          resultPg[0].table_name);
 
       case Database.MYSQL:
         const resultMysql = await this.query(
-          `SELECT REFERENCED_TABLE_NAME as foreign_table_name
-          FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-          WHERE TABLE_NAME = ? AND COLUMN_NAME = ?`,
+          `SELECT kcu.REFERENCED_TABLE_NAME as table_name
+            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+            JOIN information_schema.table_constraints AS tc
+            ON tc.constraint_name = kcu.constraint_name
+                          AND tc.table_schema = kcu.table_schema
+            WHERE kcu.TABLE_NAME = ? AND kcu.COLUMN_NAME = ? AND tc.CONSTRAINT_TYPE = 'FOREIGN KEY'`,
           [tableName, foreignKey],
         );
 
@@ -129,7 +135,7 @@ export class AbstractDatabase {
         }
 
         return (this.foreignKeys[`${tableName}.${foreignKey}`] =
-          resultMysql[0].foreign_table_name);
+          resultMysql[0].table_name);
     }
   }
 
@@ -200,6 +206,7 @@ export class AbstractDatabase {
 
       case Database.MYSQL:
         result = result[0] as any[];
+
         if (this.shouldHandleReturning(options)) {
           const resultArray = [
             {
@@ -209,58 +216,36 @@ export class AbstractDatabase {
 
           result = resultArray;
 
-          const where = ((options?.primaryKeys as string[]) ?? [])
-            .map((pk) => `${pk} = ?`)
-            .join(' AND ');
+          if (
+            (Array.isArray(options?.returning) &&
+              options.returning.length > 1) ||
+            (options?.returning?.length === 1 &&
+              options?.primaryKeys &&
+              options?.returning[0] !== options?.primaryKeys[0])
+          ) {
+            const where = ((options?.primaryKeys as string[]) ?? [])
+              .map((pk) => `${pk} = ?`)
+              .join(' AND ');
 
-          const selectReturningQuery = `SELECT ${(options?.returning as string[]).join(', ')} FROM ${this.getTableNameFromQuery(query)} WHERE ${where}`;
-          const returningResult = await (
-            this.client as unknown as Connection
-          ).query(selectReturningQuery, [resultArray[0].id]);
-          result = returningResult;
+            const selectReturningQuery = `SELECT ${(options?.returning as string[]).join(', ')} FROM ${this.getTableNameFromQuery(query)} WHERE ${where}`;
+            const returningResult = await (
+              this.client as unknown as Connection
+            ).query(selectReturningQuery, [resultArray[0].id]);
+            result = returningResult;
+          }
+        } else if (result?.insertId) {
+          result = [
+            {
+              id: (result as any).insertId,
+            },
+          ];
         }
+
         return result;
     }
   }
 
-  public async query(query: string, values?: any[], options?: QueryOption) {
-    this.eventEmitter.emit('query', { query, values, options });
-    if (!this.client) {
-      await this.getClient();
-    }
-    let result;
-
-    options = this.formatOptions(options);
-    query = this.addReturningToQuery(query, options);
-
-    switch (this.type) {
-      case Database.POSTGRES:
-        result = await (this.client as Client).query(
-          this.replacePlaceholders(query),
-          values,
-        );
-
-        break;
-
-      case Database.MYSQL:
-        result = await (this.client as unknown as Connection).query(
-          query,
-          values,
-        );
-
-        break;
-    }
-
-    result = await this.getResult(query, result, options);
-    if (this.autoClose) {
-      await this.client?.end();
-      this.client = null;
-    }
-
-    return result;
-  }
-
-  public async getClient() {
+  async getClient() {
     switch (this.type) {
       case Database.POSTGRES:
         const { Client } = await import('pg');
@@ -287,7 +272,7 @@ export class AbstractDatabase {
     }
   }
 
-  public async testDatabaseConnection(): Promise<boolean> {
+  async testDatabaseConnection(): Promise<boolean> {
     try {
       switch (this.type) {
         case Database.POSTGRES:
@@ -301,7 +286,7 @@ export class AbstractDatabase {
     return true;
   }
 
-  public async getPrimaryKeys(tableName: string): Promise<string[]> {
+  async getPrimaryKeys(tableName: string): Promise<string[]> {
     if (this.primaryKeys[tableName]) {
       return this.primaryKeys[tableName];
     }
@@ -336,7 +321,7 @@ export class AbstractDatabase {
           [tableName],
         );
 
-        primaryKeys = resultMysql.map((row: any) => row.column_name);
+        primaryKeys = resultMysql.map((row: any) => row.COLUMN_NAME);
 
         if (primaryKeys.length > 0) {
           this.primaryKeys[tableName] = primaryKeys;
@@ -346,12 +331,15 @@ export class AbstractDatabase {
     }
   }
 
-  public async getForeignKeys(tableName: string): Promise<string[]> {
+  async getForeignKeys(tableName: string): Promise<string[]> {
+    if (this.foreignKeysByTable[tableName]) {
+      return this.foreignKeysByTable[tableName];
+    }
+
     switch (this.type) {
       case Database.POSTGRES:
         const resultPg = await this.query(
-          `SELECT
-            tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+          `SELECT kcu.column_name
           FROM
             information_schema.table_constraints AS tc
             JOIN information_schema.key_column_usage AS kcu
@@ -363,7 +351,9 @@ export class AbstractDatabase {
           WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = ?;`,
           [tableName],
         );
-        return resultPg.map((row: any) => row.column_name);
+        return (this.foreignKeysByTable[tableName] = resultPg.map(
+          (row: any) => row.column_name,
+        ));
 
       case Database.MYSQL:
         const resultMysql = await this.query(
@@ -372,11 +362,13 @@ export class AbstractDatabase {
           WHERE TABLE_NAME = ? AND CONSTRAINT_NAME != 'PRIMARY'`,
           [tableName],
         );
-        return resultMysql.map((row: any) => row.COLUMN_NAME);
+        return (this.foreignKeysByTable[tableName] = resultMysql.map(
+          (row: any) => row.COLUMN_NAME,
+        ));
     }
   }
 
-  public async getColumnNameFromRelation(
+  async getColumnNameFromRelation(
     tableNameOrigin: string,
     tableNameDestination: string,
   ) {
@@ -407,7 +399,7 @@ export class AbstractDatabase {
 
         if (!resultPg.length) {
           throw new Error(
-            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.`,
+            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database. [getColumnNameFromRelation]`,
           );
         }
 
@@ -422,12 +414,12 @@ export class AbstractDatabase {
             FROM
             INFORMATION_SCHEMA.KEY_COLUMN_USAGE
             WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = ? AND TABLE_NAME = ?;`,
-          [tableNameDestination, tableNameOrigin],
+          [tableNameOrigin, tableNameDestination],
         );
 
         if (!resultMysql.length) {
           throw new Error(
-            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.`,
+            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.  [getColumnNameFromRelation]`,
           );
         }
 
@@ -444,6 +436,10 @@ export class AbstractDatabase {
     tableNameOrigin: string,
     tableNameDestination: string,
   ): Promise<string> {
+    if (this.relation1N[`${tableNameOrigin}.${tableNameDestination}`]) {
+      return this.relation1N[`${tableNameOrigin}.${tableNameDestination}`];
+    }
+
     switch (this.type) {
       case Database.POSTGRES:
         const resultPg = await this.query(
@@ -463,11 +459,12 @@ export class AbstractDatabase {
 
         if (!resultPg.length) {
           throw new Error(
-            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.`,
+            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database. [getRelation1N]`,
           );
         }
 
-        return resultPg[0].column_name;
+        return (this.relation1N[`${tableNameOrigin}.${tableNameDestination}`] =
+          resultPg[0].column_name);
 
       case Database.MYSQL:
         const resultMysql = await this.query(
@@ -476,16 +473,17 @@ export class AbstractDatabase {
             FROM
             INFORMATION_SCHEMA.KEY_COLUMN_USAGE
             WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = ? AND TABLE_NAME = ?;`,
-          [tableNameDestination, tableNameOrigin],
+          [tableNameOrigin, tableNameDestination],
         );
 
         if (!resultMysql.length) {
           throw new Error(
-            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database.`,
+            `Foreign key ${tableNameOrigin}.${tableNameDestination} not found in database. [getRelation1N]`,
           );
         }
 
-        return resultMysql[0].COLUMN_NAME;
+        return (this.relation1N[`${tableNameOrigin}.${tableNameDestination}`] =
+          resultMysql[0].COLUMN_NAME);
     }
   }
 
@@ -493,6 +491,10 @@ export class AbstractDatabase {
     tableNameOrigin: string,
     tableNameDestination: string,
   ): Promise<RelationN2NResult> {
+    if (this.relationN2N[`${tableNameOrigin}.${tableNameDestination}`]) {
+      return this.relationN2N[`${tableNameOrigin}.${tableNameDestination}`];
+    }
+
     let tableNameIntermediate = '';
     let columnNameOrigin = '';
     let columnNameDestination = '';
@@ -502,7 +504,7 @@ export class AbstractDatabase {
       case Database.POSTGRES:
         const resultPg1 = await this.query(
           `SELECT
-            tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+            tc.table_name
             FROM
             information_schema.table_constraints AS tc
             JOIN information_schema.key_column_usage AS kcu
@@ -541,56 +543,69 @@ export class AbstractDatabase {
           }
         }
 
-        return {
-          tableNameIntermediate,
-          columnNameOrigin,
-          columnNameDestination,
-          primaryKeyDestination,
-        };
+        return (this.relationN2N[`${tableNameOrigin}.${tableNameDestination}`] =
+          {
+            tableNameIntermediate,
+            columnNameOrigin,
+            columnNameDestination,
+            primaryKeyDestination,
+          });
 
       case Database.MYSQL:
         const resultMysql1 = await this.query(
-          `SELECT
-            TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-            FROM
-            INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?;`,
+          `SELECT 
+            kcu.TABLE_NAME, 
+            kcu.COLUMN_NAME, 
+            kcu.REFERENCED_TABLE_NAME AS foreign_table_name, 
+            kcu.REFERENCED_COLUMN_NAME AS foreign_column_name
+          FROM 
+            information_schema.KEY_COLUMN_USAGE AS kcu
+          WHERE 
+            kcu.REFERENCED_TABLE_NAME = ?
+            AND kcu.TABLE_SCHEMA = DATABASE();`,
           [tableNameOrigin],
         );
 
         for (const row of resultMysql1) {
           const resultMysql2 = await this.query(
-            `SELECT
-              TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-              FROM
-              INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?;`,
-            [row['REFERENCED_TABLE_NAME']],
+            `SELECT 
+              kcu.TABLE_NAME, 
+              kcu.COLUMN_NAME, 
+              kcu.REFERENCED_TABLE_NAME AS foreign_table_name, 
+              kcu.REFERENCED_COLUMN_NAME AS foreign_column_name
+            FROM 
+              information_schema.KEY_COLUMN_USAGE AS kcu
+            WHERE 
+              kcu.TABLE_NAME = ?
+              AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+              AND kcu.TABLE_SCHEMA = DATABASE();`,
+            [row['TABLE_NAME']],
           );
 
           for (const row2 of resultMysql2) {
-            if (row2['REFERENCED_TABLE_NAME'] === tableNameDestination) {
+            if (row2['foreign_table_name'] === tableNameDestination) {
               tableNameIntermediate = row['TABLE_NAME'];
               columnNameOrigin = row['COLUMN_NAME'];
               columnNameDestination = row2['COLUMN_NAME'];
-              primaryKeyDestination = row2['REFERENCED_COLUMN_NAME'];
+              primaryKeyDestination = row2['foreign_column_name'];
             }
           }
         }
 
-        return {
-          tableNameIntermediate,
-          columnNameOrigin,
-          columnNameDestination,
-          primaryKeyDestination,
-        };
+        return (this.relationN2N[`${tableNameOrigin}.${tableNameDestination}`] =
+          {
+            tableNameIntermediate,
+            columnNameOrigin,
+            columnNameDestination,
+            primaryKeyDestination,
+          });
 
       default:
         throw new Error(`Unsupported database type: ${this.type}`);
     }
   }
 
-  public static parseQueryValue(value: any) {
+  static parseQueryValue(value: any) {
     switch (typeof value) {
       case 'number':
       case 'boolean':
@@ -601,7 +616,7 @@ export class AbstractDatabase {
     }
   }
 
-  public static objectToWhereClause(obj: any) {
+  static objectToWhereClause(obj: any) {
     let whereClause = '';
 
     for (const key in obj) {
@@ -615,7 +630,7 @@ export class AbstractDatabase {
     return whereClause;
   }
 
-  public async transaction(queries: TransactionQueries[]) {
+  async transaction(queries: TransactionQueries[]) {
     this.eventEmitter.emit('transaction', { queries });
 
     if (!this.client) {
@@ -676,5 +691,45 @@ export class AbstractDatabase {
     }
 
     return results;
+  }
+
+  async query(query: string, values?: any[], options?: QueryOption) {
+    this.eventEmitter.emit('query', { query, values, options });
+    if (!this.client) {
+      await this.getClient();
+    }
+    let result;
+
+    options = this.formatOptions(options);
+    query = this.addReturningToQuery(query, options);
+
+    switch (this.type) {
+      case Database.POSTGRES:
+        result = await (this.client as Client).query(
+          this.replacePlaceholders(query),
+          values,
+        );
+
+        break;
+
+      case Database.MYSQL:
+        result = await (this.client as unknown as Connection).query(
+          query,
+          values,
+        );
+
+        break;
+    }
+
+    result = await this.getResult(query, result, options);
+
+    this.eventEmitter.emit('query', { result });
+
+    if (this.autoClose) {
+      await this.client?.end();
+      this.client = null;
+    }
+
+    return result;
   }
 }

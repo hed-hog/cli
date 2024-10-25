@@ -5,6 +5,8 @@ import { Locale } from '../types/locale';
 import { pluralToSingular } from '../utils/plural-to-singular';
 import { Entity } from './entity';
 import EventEmitter = require('events');
+import { DataHash } from '../types/data-hash';
+import * as bcrypt from 'bcryptjs';
 
 export class AbstractEntity {
   private locales: { [key: string]: number } = {};
@@ -25,7 +27,11 @@ export class AbstractEntity {
   }
 
   static isWhere(item: DataType, key: string) {
-    return typeof item[key] === 'object' && typeof item[key].where === 'object';
+    return (
+      typeof item[key] === 'object' &&
+      'where' in item[key] &&
+      typeof item[key].where === 'object'
+    );
   }
 
   static isLocale(item: DataType, key: string) {
@@ -33,6 +39,14 @@ export class AbstractEntity {
       typeof item[key] === 'object' &&
       this.countKeyLength(item[key] as Locale).length === 1 &&
       this.countKeyLength(item[key] as Locale)[0] === 2
+    );
+  }
+
+  static isHash(item: DataType, key: string) {
+    return (
+      typeof item[key] === 'object' &&
+      'hash' in item[key] &&
+      typeof item[key].hash === 'string'
     );
   }
 
@@ -228,6 +242,12 @@ export class AbstractEntity {
     }
   }
 
+  async hashPassword(password: string): Promise<string> {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    return hashedPassword;
+  }
+
   private async insert(items: DataType[], tableName = this.name) {
     items = this.sortItems(items);
 
@@ -242,7 +262,8 @@ export class AbstractEntity {
         if (
           !AbstractEntity.isRelation(item, key) &&
           !AbstractEntity.isWhere(item, key) &&
-          !AbstractEntity.isLocale(item, key)
+          !AbstractEntity.isLocale(item, key) &&
+          !AbstractEntity.isHash(item, key)
         ) {
           mainFields.push(key);
           mainValues.push(item[key]);
@@ -260,10 +281,28 @@ export class AbstractEntity {
 
           mainFields.push(key);
           mainValues.push(value);
+        } else if (AbstractEntity.isHash(item, key)) {
+          const value = await this.hashPassword((item[key] as DataHash).hash);
+
+          console.log({
+            key,
+            item: item[key],
+            value,
+          });
+
+          mainFields.push(key);
+          mainValues.push(value);
         }
       }
 
       const primaryKeys = await this.db.getPrimaryKeys(mainTableName);
+
+      this.eventEmitter.emit('debug', {
+        mainTableName,
+        mainFields,
+        mainValues,
+        primaryKeys,
+      });
 
       const id = (
         await this.db.query(
@@ -311,6 +350,10 @@ export class AbstractEntity {
                 );
 
                 for (const foreignId of foreignIds) {
+                  this.eventEmitter.emit('debug', {
+                    relationN2N,
+                  });
+
                   const query = `INSERT INTO ${relationN2N.tableNameIntermediate} (${relationN2N.columnNameOrigin}, ${relationN2N.columnNameDestination}) VALUES (?, ?)`;
                   const values = [id, foreignId];
 
