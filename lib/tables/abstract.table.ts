@@ -1,6 +1,6 @@
 import EventEmitter = require('events');
 import { AbstractDatabase } from '../databases';
-import { TableColumn } from 'typeorm';
+import { Table, TableColumn } from 'typeorm';
 
 export class AbstractTable {
   private eventEmitter = new EventEmitter();
@@ -40,6 +40,7 @@ export class AbstractTable {
       case 'pk':
         return {
           ...data,
+          name: data.name ?? 'id',
           type: 'int',
           isPrimary: true,
           isGenerated: true,
@@ -94,5 +95,39 @@ export class AbstractTable {
     });
 
     const queryRunner = this.db.getDataSource().createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.createTable(
+        new Table({
+          name: this.name,
+          columns: AbstractTable.getColumns(this.data),
+        }),
+        true,
+      );
+
+      const foreignKeys = this.data.columns
+        .filter((column: any) => column.references && column.references.table)
+        .map((column: any) => ({
+          columnNames: [column.name],
+          referencedColumnNames: [column.references.column],
+          referencedTableName: column.references.table,
+          onDelete: column.references.onDelete || 'NO ACTION',
+        }));
+
+      if (foreignKeys.length) {
+        await queryRunner.createForeignKeys(this.name, foreignKeys);
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.eventEmitter.emit('error', 'Error applying table', error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
