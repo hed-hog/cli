@@ -284,12 +284,6 @@ export class AbstractEntity {
         } else if (AbstractEntity.isHash(item, key)) {
           const value = await this.hashPassword((item[key] as DataHash).hash);
 
-          console.log({
-            key,
-            item: item[key],
-            value,
-          });
-
           mainFields.push(key);
           mainValues.push(value);
         }
