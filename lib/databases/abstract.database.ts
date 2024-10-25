@@ -5,6 +5,7 @@ import { QueryOption } from '../types/query-option';
 import { RelationN2NResult } from '../types/relation-n2n-result';
 import EventEmitter = require('events');
 import { TransactionQueries } from '../types/transaction-queries';
+import { DataSource } from 'typeorm';
 
 export class AbstractDatabase {
   private client: Client | Connection | null = null;
@@ -25,6 +26,22 @@ export class AbstractDatabase {
     protected database: string,
     protected port: number,
   ) {}
+
+  getDataSource() {
+    return new DataSource({
+      type: this.type,
+      host: this.host,
+      port: this.port,
+      username: this.user,
+      password: this.password,
+      database: this.database,
+      synchronize: true,
+      logging: true,
+      entities: [],
+      subscribers: [],
+      migrations: [],
+    });
+  }
 
   disableAutoClose() {
     this.autoClose = false;

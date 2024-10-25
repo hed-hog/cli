@@ -23,6 +23,8 @@ import { EntityFactory } from '../lib/entities/entity.factory';
 import { Entity } from '../lib/entities/entity';
 import { AbstractEntity } from '../lib/entities/abstract.entity';
 import { debug } from '../lib/utils/debug';
+import { TableFactory } from '../lib/tables/table.factory';
+import { AbstractTable } from '../lib/tables/abstract.table';
 
 interface TableDependency {
   tableName: string;
@@ -290,8 +292,33 @@ export class AddAction extends AbstractAction {
     return result.sort((a, b) => a.deps.length - b.deps.length);
   }
 
+  async sortTablesByDependencies(tables: Record<string, any>) {
+    const tableList = [];
+
+    for (const tableName of Object.keys(tables)) {
+      const table = tables[tableName];
+      const dependencies = AbstractTable.getDependencies(table);
+
+      tableList.push({
+        tableName,
+        table,
+        dependencies,
+      });
+
+      console.log({
+        tableName,
+        table,
+        dependencies,
+      });
+
+      //TO DO
+    }
+
+    console.log('================================');
+  }
+
   async applyHedhogFile(directoryPath: string, module: string) {
-    const spinner = ora('Loading Hedhog file..').start();
+    //const spinner = ora('Loading Hedhog file..').start();
     this.showDebug('applyHedhogFile', { directoryPath, module });
 
     const path = join(
@@ -317,18 +344,47 @@ export class AddAction extends AbstractAction {
     });
 
     if (extension) {
-      spinner.info('Hedhog file found.');
+      //spinner.info('Hedhog file found.');
       try {
         const hedhogFile = await this.parseHedhogFile(filePath);
 
         this.showDebug('data tables', Object.keys(hedhogFile.data));
-        spinner.info('Applying Hedhog file...');
+        //spinner.info('Applying Hedhog file...');
+
+        if (hedhogFile?.tables && this.isDbConnected) {
+          //spinner.info('Applying Tables...');
+
+          this.showDebug('tables before sort', Object.keys(hedhogFile?.tables));
+
+          const tableSorted = this.sortTablesByDependencies(hedhogFile.tables);
+
+          this.showDebug('tables after sort', tableSorted);
+
+          for (const tableName in tableSorted) {
+            console.log({ tableName });
+
+            const table = TableFactory.create(
+              this.db,
+              tableName,
+              hedhogFile?.tables[tableName],
+            );
+
+            table.on('debug', (message) =>
+              this.showDebug(chalk.bgYellow(`Entity ${tableName}:`), message),
+            );
+
+            await table.apply();
+
+            //spinner.succeed(`Entity ${tableName} applied.`);
+          }
+        }
 
         if (hedhogFile?.data && this.isDbConnected) {
+          //spinner.info('Applying Data...');
           for (const data of await this.extractTableDependencies(
             hedhogFile?.data,
           )) {
-            spinner.info(`Applying entity ${data.tableName}...`);
+            //spinner.info(`Applying entity ${data.tableName}...`);
 
             const { tableName } = data;
 
@@ -344,14 +400,14 @@ export class AddAction extends AbstractAction {
 
             await entity.apply();
 
-            spinner.succeed(`Entity ${tableName} applied.`);
+            //spinner.succeed(`Entity ${tableName} applied.`);
           }
         }
       } catch (error) {
-        spinner.fail(error.message);
+        // spinner.fail(error.message);
       }
     } else {
-      spinner.info('Hedhog file not found.');
+      //spinner.info('Hedhog file not found.');
     }
   }
 

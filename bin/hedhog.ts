@@ -7,6 +7,7 @@ import {
   localBinExists,
 } from '../lib/utils/local-binaries';
 import { checkVersion } from '../lib/utils/checkVersion';
+import 'reflect-metadata';
 
 const bootstrap = async () => {
   const debug = true;
