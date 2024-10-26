@@ -580,7 +580,7 @@ export class AbstractDatabase {
       case Database.POSTGRES:
         const resultPg1 = await this.query(
           `SELECT
-            tc.table_name
+            tc.table_name, kcu.column_name
             FROM
             information_schema.table_constraints AS tc
             JOIN information_schema.key_column_usage AS kcu
@@ -615,6 +615,7 @@ export class AbstractDatabase {
               columnNameOrigin = row['column_name'];
               columnNameDestination = row2['column_name'];
               primaryKeyDestination = row2['foreign_column_name'];
+              break;
             }
           }
         }
@@ -664,6 +665,7 @@ export class AbstractDatabase {
               columnNameOrigin = row['COLUMN_NAME'];
               columnNameDestination = row2['COLUMN_NAME'];
               primaryKeyDestination = row2['foreign_column_name'];
+              break;
             }
           }
         }
@@ -779,22 +781,32 @@ export class AbstractDatabase {
     options = this.formatOptions(options);
     query = this.addReturningToQuery(query, options);
 
-    switch (this.type) {
-      case Database.POSTGRES:
-        result = await (this.client as Client).query(
-          this.replacePlaceholders(query),
-          values,
-        );
+    try {
+      switch (this.type) {
+        case Database.POSTGRES:
+          result = await (this.client as Client).query(
+            this.replacePlaceholders(query),
+            values,
+          );
 
-        break;
+          break;
 
-      case Database.MYSQL:
-        result = await (this.client as unknown as Connection).query(
-          query,
-          values,
-        );
+        case Database.MYSQL:
+          result = await (this.client as unknown as Connection).query(
+            query,
+            values,
+          );
 
-        break;
+          break;
+      }
+    } catch (error) {
+      console.error({
+        error,
+        query,
+        values,
+        options,
+      });
+      this.eventEmitter.emit('error', { error, query, values, options });
     }
 
     result = await this.getResult(query, result, options);

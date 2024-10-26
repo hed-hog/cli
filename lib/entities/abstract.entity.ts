@@ -319,12 +319,8 @@ export class AbstractEntity {
 
         const valueIndex = mainFields.indexOf(columnName);
         const lastOrderResult = await this.db.query(
-          `SELECT ${this.db.getColumnNameWithScaping(columnNameOrder)} FROM ${mainTableName} WHERE ${this.db.getColumnNameWithScaping(columnName)} ${mainValues[valueIndex] === undefined ? 'IS' : '='} ? ORDER BY ${this.db.getColumnNameWithScaping(columnNameOrder)} DESC LIMIT 1`,
-          [
-            mainValues[valueIndex] === undefined
-              ? null
-              : mainValues[valueIndex],
-          ],
+          `SELECT ${this.db.getColumnNameWithScaping(columnNameOrder)} FROM ${mainTableName} WHERE ${this.db.getColumnNameWithScaping(columnName)} ${mainValues[valueIndex] === undefined ? 'IS NULL' : `= ?`} ORDER BY ${this.db.getColumnNameWithScaping(columnNameOrder)} DESC LIMIT 1`,
+          mainValues[valueIndex] === undefined ? [] : [mainValues[valueIndex]],
         );
 
         const currentOrder = lastOrderResult[0]?.order ?? -1;
