@@ -19,15 +19,15 @@ import { createServer } from 'net';
 import { rm, writeFile } from 'fs/promises';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { runScript } from '../lib/utils/run-script';
-import { mkdirRecursive } from '../lib/utils/checkVersion';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
+import { debug } from '../lib/utils/debug';
 
 export class NewAction extends AbstractAction {
   private debug = false;
 
   async showDebug(...args: any[]) {
     if (this.debug) {
-      console.log(chalk.yellow('DEBUG'), ...args);
+      debug(chalk.yellow('DEBUG'), ...args);
     }
   }
 

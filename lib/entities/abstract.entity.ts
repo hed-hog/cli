@@ -109,7 +109,11 @@ export class AbstractEntity {
     }
   }
 
-  private async whereResolve(tableName: string, where: Record<string, any>) {
+  private async whereResolve(
+    tableName: string,
+    where: Record<string, any>,
+    field?: string,
+  ) {
     const whereKeys = Object.keys(where);
     const whereValues = Object.values(where);
     const whereQuery = [] as string[];
@@ -117,6 +121,7 @@ export class AbstractEntity {
 
     for (let i = 0; i < whereKeys.length; i++) {
       const whereValue = whereValues[i];
+      const whereField = whereKeys[i];
 
       if (typeof whereValue === 'object') {
         const operator = Object.keys(whereValue)[0];
@@ -125,27 +130,29 @@ export class AbstractEntity {
 
         if (['in', 'nin'].includes(operator) && Array.isArray(value)) {
           whereQuery.push(
-            this.db.getWhereWithIn(
-              whereKeys[i],
-              operator as 'in' | 'nin',
-              value,
-            ),
+            this.db.getWhereWithIn(whereField, operator as 'in' | 'nin', value),
           );
         } else {
-          whereQuery.push(`${whereKeys[i]} ${this.parseOperator(operator)} ?`);
+          whereQuery.push(`${whereField} ${this.parseOperator(operator)} ?`);
         }
 
         whereFinal.push(value);
       } else {
-        whereQuery.push(`${whereKeys[i]} = ?`);
+        whereQuery.push(`${whereField} = ?`);
         whereFinal.push(whereValue);
       }
     }
 
     const primaryKeys = await this.db.getPrimaryKeys(tableName);
 
+    let whereTable = tableName;
+
+    if (field) {
+      whereTable = await this.db.getTableNameFromForeignKey(tableName, field);
+    }
+
     const whereResult = await this.db.query(
-      `SELECT ${primaryKeys.join(', ')} FROM ${tableName} WHERE ${whereQuery.join(' AND ')}`,
+      `SELECT ${primaryKeys.join(', ')} FROM ${whereTable} WHERE ${whereQuery.join(' AND ')}`,
       whereFinal,
     );
 
@@ -271,6 +278,7 @@ export class AbstractEntity {
           const whereResult = await this.whereResolve(
             mainTableName,
             (item[key] as any).where,
+            key,
           );
 
           let value = null;
@@ -298,9 +306,41 @@ export class AbstractEntity {
         primaryKeys,
       });
 
+      const columnNameOrder = 'order';
+
+      if (
+        !mainFields.includes(columnNameOrder) &&
+        (await this.db.hasTableColumnOrder(mainTableName))
+      ) {
+        const columnName = await this.db.getColumnNameFromRelation(
+          mainTableName,
+          mainTableName,
+        );
+
+        const valueIndex = mainFields.indexOf(columnName);
+        const lastOrderResult = await this.db.query(
+          `SELECT ${this.db.getColumnNameWithScaping(columnNameOrder)} FROM ${mainTableName} WHERE ${this.db.getColumnNameWithScaping(columnName)} ${mainValues[valueIndex] === undefined ? 'IS' : '='} ? ORDER BY ${this.db.getColumnNameWithScaping(columnNameOrder)} DESC LIMIT 1`,
+          [
+            mainValues[valueIndex] === undefined
+              ? null
+              : mainValues[valueIndex],
+          ],
+        );
+
+        const currentOrder = lastOrderResult[0]?.order ?? -1;
+
+        mainFields.push(columnNameOrder);
+        mainValues.push(currentOrder + 1);
+        this.eventEmitter.emit('debug', {
+          lastOrder: currentOrder,
+          nextOrder: currentOrder + 1,
+          tableName,
+        });
+      }
+
       const id = (
         await this.db.query(
-          `INSERT INTO ${mainTableName} (${mainFields.join(', ')}) VALUES (${mainValues.map((_) => '?').join(', ')})`,
+          `INSERT INTO ${mainTableName} (${mainFields.map((f) => this.db.getColumnNameWithScaping(f)).join(', ')}) VALUES (${mainValues.map((_) => '?').join(', ')})`,
           mainValues,
           {
             returning: primaryKeys,

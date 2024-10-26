@@ -20,8 +20,7 @@ async function applyForeignKey(
         AND tc.table_name = ?;
     `;
 
-  const foreignKeys = await db.query(query, [tableName]);
-  console.log('Foreign Keys for table:', tableName, foreignKeys);
+  await db.query(query, [tableName]);
 
   const applyForeignKeyQuery = `
       ALTER TABLE ${tableName}
@@ -32,9 +31,6 @@ async function applyForeignKey(
 
   try {
     await db.query(applyForeignKeyQuery);
-    console.log(
-      `Foreign key successfully added between ${tableName} and ${foreignTableName}.`,
-    );
   } catch (error) {
     console.error('Error applying foreign key:', error);
   }

@@ -10,10 +10,31 @@ export class AbstractTable {
     protected db: AbstractDatabase,
     protected name: string,
     protected data: any,
-  ) {}
+  ) {
+    this.data = this.validadeData(data);
+  }
 
   on(event: string, listener: (...args: any[]) => void) {
     return this.eventEmitter.on(event, listener);
+  }
+
+  private validadeData(data: any) {
+    if (!data.columns || !Array.isArray(data.columns)) {
+      throw new Error('Columns are required');
+    }
+
+    for (let i = 0; i < data.columns.length; i++) {
+      if (
+        data.columns[i].default &&
+        typeof data.columns[i].default === 'string' &&
+        data.columns[i].default[0] !== "'" &&
+        data.columns[i].default[data.columns[i].default.length - 1] !== "'"
+      ) {
+        data.columns[i].default = `'${data.columns[i].default}'`;
+      }
+    }
+
+    return data;
   }
 
   static getColumns(data: any) {
@@ -39,68 +60,72 @@ export class AbstractTable {
   static getColumnOptions(data: any) {
     switch (data.type) {
       case 'pk':
-        return {
-          ...data,
+        return Object.assign({}, data, {
           name: data.name ?? 'id',
           type: 'int',
           isPrimary: true,
           isGenerated: true,
           generationStrategy: 'increment',
           unsigned: true,
-        };
+        });
       case 'fk':
-        return {
-          ...data,
+        return Object.assign({}, data, {
           type: 'int',
           unsigned: true,
           isPrimary: data?.isPrimary ?? false,
           isNullable: data?.isNullable ?? false,
-        };
+        });
       case 'created_at':
       case 'updated_at':
-        return {
-          ...data,
+        return Object.assign({}, data, {
           type: 'timestamp',
           default: 'CURRENT_TIMESTAMP',
           name: data.type,
-        };
+        });
+
       case 'deleted_at':
-        return {
-          ...data,
+        return Object.assign({}, data, {
           type: 'timestamp',
           default: 'CURRENT_TIMESTAMP',
           name: data.type,
           isNullable: true,
-        };
+        });
       case 'slug':
-        return {
-          ...data,
+        return Object.assign({}, data, {
           name: data.name ?? 'slug',
           type: 'varchar',
           length: 255,
           unique: true,
-        };
+        });
+      case 'order':
+        return Object.assign({}, data, {
+          name: data.name ?? 'order',
+          type: 'int',
+          default: 0,
+          unsigned: true,
+          comment: 'order',
+        });
       default:
-        return {
-          type: 'varchar',
-          ...data,
-        };
+        return Object.assign({ type: 'varchar' }, data);
     }
   }
 
   static getForeignKeys(data: any) {
     return data.columns
       .filter((column: any) => column.references && column.references.table)
-      .map((column: any) => {
-        const table = column.references.table;
-        delete column.references.table;
+      .map((columnData: any) => {
+        let { table, column, ...rest } = columnData.references;
+
+        if (!Array.isArray(column)) {
+          column = [column];
+        }
 
         return {
-          ...column.references,
-          columnNames: [column.name],
-          referencedColumnNames: [column.references.column],
+          ...rest,
+          columnNames: [columnData.name],
+          referencedColumnNames: column,
           referencedTableName: table,
-          onDelete: column.references.onDelete ?? 'NO ACTION',
+          onDelete: columnData.references.onDelete ?? 'NO ACTION',
         };
       });
   }
@@ -140,6 +165,7 @@ export class AbstractTable {
       }),
       Boolean(this.data.ifNotExists),
     );
+    await dataSource.destroy();
     this.eventEmitter.emit('debug', 'created successfully');
   }
 }

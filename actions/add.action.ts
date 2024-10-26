@@ -277,6 +277,7 @@ export class AddAction extends AbstractAction {
                 tableName,
                 key,
               );
+
               if (tableNameDep !== tableName) {
                 dependencies.add(tableNameDep);
               }
@@ -340,7 +341,7 @@ export class AddAction extends AbstractAction {
   }
 
   async applyHedhogFile(directoryPath: string, module: string) {
-    //const spinner = ora('Loading Hedhog file..').start();
+    const spinner = ora('Loading Hedhog file..').start();
     this.showDebug('applyHedhogFile', { directoryPath, module });
 
     const path = join(
@@ -366,16 +367,14 @@ export class AddAction extends AbstractAction {
     });
 
     if (extension) {
-      //spinner.info('Hedhog file found.');
+      spinner.info('Hedhog file found.');
       try {
         const hedhogFile = await this.parseHedhogFile(filePath);
 
         this.showDebug('data tables', Object.keys(hedhogFile.data));
-        //spinner.info('Applying Hedhog file...');
+        spinner.info('Applying Hedhog file...');
 
         if (hedhogFile?.tables && this.isDbConnected) {
-          //spinner.info('Applying Tables...');
-
           this.showDebug('tables before sort', Object.keys(hedhogFile?.tables));
           const tableSorted = this.sortTablesByDependencies(hedhogFile.tables);
           this.showDebug('tables after sort', tableSorted);
@@ -391,17 +390,15 @@ export class AddAction extends AbstractAction {
               this.showDebug(chalk.bgYellow(`Entity ${tableName}:`), message),
             );
             await table.apply();
-            //spinner.succeed(`Entity ${tableName} applied.`);
+            spinner.succeed(`Entity ${tableName} applied.`);
           }
         }
 
         if (hedhogFile?.data && this.isDbConnected) {
-          //spinner.info('Applying Data...');
+          spinner.info('Applying Data...');
           for (const data of await this.extractTableDependencies(
             hedhogFile?.data,
           )) {
-            //spinner.info(`Applying entity ${data.tableName}...`);
-
             const { tableName } = data;
 
             const entity = EntityFactory.create(
@@ -416,14 +413,14 @@ export class AddAction extends AbstractAction {
 
             await entity.apply();
 
-            //spinner.succeed(`Entity ${tableName} applied.`);
+            spinner.succeed(`Entity ${tableName} applied.`);
           }
         }
       } catch (error) {
-        // spinner.fail(error.message);
+        spinner.fail(error.message);
       }
     } else {
-      //spinner.info('Hedhog file not found.');
+      spinner.info('Hedhog file not found.');
     }
   }
 

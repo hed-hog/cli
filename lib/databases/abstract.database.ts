@@ -15,6 +15,8 @@ export class AbstractDatabase {
   private columnNameFromRelation: any = {};
   private relationN2N: any = {};
   private relation1N: any = {};
+  private columnComment: any = {};
+  private tableHasColumnOrder: any = {};
   private eventEmitter = new EventEmitter();
   private autoClose = true;
 
@@ -36,7 +38,7 @@ export class AbstractDatabase {
       password: this.password,
       database: this.database,
       synchronize: true,
-      logging: true,
+      logging: false,
       entities: [],
       subscribers: [],
       migrations: [],
@@ -91,6 +93,16 @@ export class AbstractDatabase {
     });
   }
 
+  getColumnNameWithScaping(columnName: string) {
+    switch (this.type) {
+      case Database.POSTGRES:
+        return `"${columnName}"`;
+
+      case Database.MYSQL:
+        return `\`${columnName}\``;
+    }
+  }
+
   getTableNameFromQuery(query: string): string | null {
     const match = query.match(/INSERT INTO\s+([`"]?[\w-]+[`"]?)/i);
     if (match && match[1]) {
@@ -98,6 +110,53 @@ export class AbstractDatabase {
     }
 
     return null;
+  }
+
+  async hasTableColumnOrder(tableName: string) {
+    if (this.tableHasColumnOrder[tableName]) {
+      return this.tableHasColumnOrder[tableName];
+    }
+
+    return (this.tableHasColumnOrder[tableName] =
+      (await this.getColumnComment(tableName, 'order')) === 'order');
+  }
+
+  async getColumnComment(tableName: string, columnName: string) {
+    if (this.columnComment[`${tableName}.${columnName}`]) {
+      return this.columnComment[`${tableName}.${columnName}`];
+    }
+
+    switch (this.type) {
+      case Database.POSTGRES:
+        const resultPg = await this.query(
+          `SELECT a.attname AS column_name,
+                col_description(a.attrelid, a.attnum) AS column_comment
+          FROM pg_class AS c
+          JOIN pg_attribute AS a ON a.attrelid = c.oid
+          WHERE c.relname = ?
+            AND a.attname = ?;`,
+          [tableName, columnName],
+        );
+
+        return resultPg.length > 0
+          ? (this.columnComment[`${tableName}.${columnName}`] =
+              resultPg[0].column_comment)
+          : '';
+
+      case Database.MYSQL:
+        const resultMysql = await this.query(
+          `SELECT COLUMN_NAME, COLUMN_COMMENT
+          FROM information_schema.COLUMNS
+          WHERE TABLE_NAME = ?
+            AND COLUMN_NAME = ?;`,
+          [tableName, columnName],
+        );
+
+        return resultMysql.length > 0
+          ? (this.columnComment[`${tableName}.${columnName}`] =
+              resultMysql[0].COLUMN_COMMENT)
+          : '';
+    }
   }
 
   async getTableNameFromForeignKey(
