@@ -342,6 +342,7 @@ export class AddAction extends AbstractAction {
 
   async applyHedhogFile(directoryPath: string, module: string) {
     const spinner = ora('Loading Hedhog file..').start();
+    let changeStructure = false;
     this.showDebug('applyHedhogFile', { directoryPath, module });
 
     const path = join(
@@ -390,10 +391,11 @@ export class AddAction extends AbstractAction {
               this.showDebug(chalk.bgYellow(`Entity ${tableName}:`), message),
             );
             await table.apply();
+
+            changeStructure = true;
+
             spinner.succeed(`Entity ${tableName} applied.`);
           }
-          await runScript('prisma:update', join(directoryPath, 'backend'));
-          spinner.succeed(`Pirisma updated.`);
         }
 
         if (hedhogFile?.data && this.isDbConnected) {
@@ -417,6 +419,11 @@ export class AddAction extends AbstractAction {
 
             spinner.succeed(`Entity ${tableName} applied.`);
           }
+        }
+
+        if (changeStructure) {
+          await runScript('prisma:update', join(directoryPath, 'backend'));
+          spinner.succeed(`Pirisma updated.`);
         }
       } catch (error) {
         spinner.fail(error.message);
