@@ -391,6 +391,9 @@ export class AddAction extends AbstractAction {
             );
             await table.apply();
             spinner.succeed(`Entity ${tableName} applied.`);
+
+            await runScript('prisma:update', join(directoryPath, 'backend'));
+            spinner.succeed(`Pirisma updated.`);
           }
         }
 
