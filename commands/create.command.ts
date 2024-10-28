@@ -20,11 +20,6 @@ export class CreateCommand extends AbstractCommand {
         'Specify package manager.',
         'npm',
       )
-      .option('-t, --table <string>', 'Specify the table name')
-      .option(
-        '-f, --fields <fields...>',
-        'Fields for the migration in the format field:type:length or field:fk:table:column',
-      )
       .action(async (name, command) => {
         try {
           if (!name) {
@@ -40,20 +35,6 @@ export class CreateCommand extends AbstractCommand {
             name: 'packageManager',
             value: command.packageManager,
           });
-
-          if (command.table) {
-            options.push({
-              name: 'table',
-              value: command.table,
-            });
-          }
-
-          if (command.fields) {
-            options.push({
-              name: 'fields',
-              value: command.fields,
-            });
-          }
 
           const inputs: Input[] = [];
           inputs.push({ name: 'name', value: name });

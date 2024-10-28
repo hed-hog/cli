@@ -2,11 +2,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { capitalize, prettier } from './formatting';
 
-export async function createController(
-  libraryPath: string,
-  libraryName: string,
-) {
-  const controllerPath = path.join(libraryPath, 'src');
+export async function createController(libraryPath: string, tableName: string) {
+  const controllerPath = path.join(libraryPath, tableName);
   await fs.mkdir(controllerPath, { recursive: true });
 
   const controllerContent = `
@@ -26,28 +23,28 @@ import {
 import { CreateDTO } from './dto/create.dto';
 import { DeleteDTO } from './dto/delete.dto';
 import { UpdateDTO } from './dto/update.dto';
-import { ${capitalize(libraryName)}Service } from './${libraryName}.service';
+import { ${capitalize(tableName)}Service } from './${tableName}.service';
 
-@Controller('${libraryName}s')
-export class ${capitalize(libraryName)}Controller {
+@Controller('${tableName}')
+export class ${capitalize(tableName)}Controller {
   constructor(
-    @Inject(forwardRef(() => ${capitalize(libraryName)}Service))
-    private readonly ${libraryName}Service: ${capitalize(libraryName)}Service,
+    @Inject(forwardRef(() => ${capitalize(tableName)}Service))
+    private readonly ${tableName}Service: ${capitalize(tableName)}Service,
   ) {}
 
   @Get()
   async get(@Pagination() paginationParams) {
-    return this.${libraryName}Service.get(paginationParams);
+    return this.${tableName}Service.get(paginationParams);
   }
 
   @Get(':id')
   async getById(@Param('id', ParseIntPipe) id: number) {
-    return this.${libraryName}Service.getById(id);
+    return this.${tableName}Service.getById(id);
   }
 
   @Post()
   create(@Body() data: CreateDTO) {
-    return this.${libraryName}Service.create(data);
+    return this.${tableName}Service.create(data);
   }
 
   @Patch(':id')
@@ -55,7 +52,7 @@ export class ${capitalize(libraryName)}Controller {
     @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateDTO,
   ) {
-    return this.${libraryName}Service.update({
+    return this.${tableName}Service.update({
       id,
       data,
     });
@@ -63,14 +60,14 @@ export class ${capitalize(libraryName)}Controller {
 
   @Delete()
   async delete(@Body() data: DeleteDTO) {
-    return this.${libraryName}Service.delete(data);
+    return this.${tableName}Service.delete(data);
   }
 }
   `.trim();
 
   const controllerFilePath = path.join(
     controllerPath,
-    `${libraryName}.controller.ts`,
+    `${tableName}.controller.ts`,
   );
   await fs.writeFile(controllerFilePath, controllerContent);
   await prettier(controllerFilePath);

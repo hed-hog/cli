@@ -3,7 +3,7 @@ import * as path from 'path';
 import { prettier } from './formatting';
 
 export async function createDTOs(libraryPath: string, fields: string) {
-  const dtoPath = path.join(libraryPath, 'src', 'dto');
+  const dtoPath = path.join(libraryPath, 'dto');
   await fs.mkdir(dtoPath, { recursive: true });
 
   await createDeleteDTO(dtoPath);

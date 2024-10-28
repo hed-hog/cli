@@ -22,14 +22,6 @@ export class CreateAction extends AbstractAction {
       inputs.find(({ name }) => name === 'name')?.value,
     ).toLowerCase();
 
-    const tableName = String(
-      options.find(({ name }) => name === 'table')?.value,
-    ).toLowerCase();
-
-    const fieldsInput = String(
-      options.find(({ name }) => name === 'fields' || name === 'f')?.value,
-    );
-
     const removeDefaultDeps =
       Boolean(options.find((i) => i.name === 'remove-default-deps')?.value) ??
       false;
@@ -43,16 +35,6 @@ export class CreateAction extends AbstractAction {
       console.error(
         chalk.red('Error: The library name should not contain spaces.'),
       );
-      process.exit(1);
-    }
-
-    if (!tableName.length) {
-      console.error(chalk.red('Error: You must specify a table name.'));
-      process.exit(1);
-    }
-
-    if (!fieldsInput.length) {
-      console.error(chalk.red('Error: You must specify fields.'));
       process.exit(1);
     }
 

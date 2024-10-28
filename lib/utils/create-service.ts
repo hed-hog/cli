@@ -4,11 +4,10 @@ import { capitalize, prettier } from './formatting';
 
 export async function createService(
   libraryPath: string,
-  libraryName: string,
   tableName: string,
   fields: { name: string; type: string }[],
 ) {
-  const servicePath = path.join(libraryPath, 'src');
+  const servicePath = path.join(libraryPath, tableName);
   await fs.mkdir(servicePath, { recursive: true });
 
   const fieldsForSearch = fields
@@ -29,7 +28,7 @@ import { DeleteDTO } from './dto/delete.dto';
 import { UpdateDTO } from './dto/update.dto';
 
 @Injectable()
-export class ${capitalize(libraryName)}Service {
+export class ${capitalize(tableName)}Service {
   constructor(
     @Inject(forwardRef(() => PrismaService))
     private readonly prismaService: PrismaService,
@@ -104,7 +103,7 @@ export class ${capitalize(libraryName)}Service {
 }
   `.trim();
 
-  const serviceFilePath = path.join(servicePath, `${libraryName}.service.ts`);
+  const serviceFilePath = path.join(servicePath, `${tableName}.service.ts`);
   await fs.writeFile(serviceFilePath, serviceContent);
   await prettier(serviceFilePath);
 }
