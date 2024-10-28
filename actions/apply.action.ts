@@ -53,9 +53,10 @@ export class ApplyAction extends AbstractAction {
 
     for (const table of tables) {
       const fields = table.columns
+        .filter((column) => column.name)
         .map((column) => {
-          const lengthPart = column.length ? `:${column.length}` : '';
-          return `${column.name}:${column.type}${lengthPart}`;
+          const lengthPart = column.length ? `${column.length}` : '255';
+          return `${column.name}:${column.type || 'varchar'}:${lengthPart}`;
         })
         .join(',');
 

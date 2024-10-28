@@ -56,35 +56,50 @@ function getPrimitiveType(type: string): string {
   }
 }
 
-function getValidator(field: any, isOptional = false): string {
+function getValidator(
+  field: any,
+  isOptional = false,
+  decoratorsUsed: Set<string>,
+): string {
   const { name, type, length } = field;
   const validations: string[] = [];
 
   switch (type) {
     case 'varchar':
+      decoratorsUsed.add('IsString');
       validations.push(`@IsString()`);
-      if (length) validations.push(`@Length(0, ${length})`);
+      if (length) {
+        decoratorsUsed.add('Length');
+        validations.push(`@Length(0, ${length})`);
+      }
       break;
     case 'int':
+      decoratorsUsed.add('IsInt');
       validations.push(`@IsInt()`);
       break;
     case 'decimal':
+      decoratorsUsed.add('IsDecimal');
       validations.push(`@IsDecimal()`);
       break;
     case 'date':
+      decoratorsUsed.add('IsDate');
       validations.push(`@IsDate()`);
       break;
     case 'boolean':
+      decoratorsUsed.add('IsBoolean');
       validations.push(`@IsBoolean()`);
       break;
     case 'fk':
+      decoratorsUsed.add('IsInt');
       validations.push(`@IsInt()`);
       break;
     default:
+      decoratorsUsed.add('IsString');
       validations.push(`@IsString()`);
   }
 
   if (isOptional) {
+    decoratorsUsed.add('IsOptional');
     validations.push('@IsOptional()');
   }
 
@@ -93,17 +108,20 @@ function getValidator(field: any, isOptional = false): string {
 
 async function createCreateDTO(dtoPath: string, fields: string) {
   const parsedFields = parseFields(fields);
+  const decoratorsUsed = new Set<string>();
   const dtoFields = parsedFields
-    .map((field) => getValidator(field))
+    .map((field) => getValidator(field, false, decoratorsUsed))
     .join('\n\n  ');
 
+  const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';`;
+
   const createDTOContent = `
-import { IsString, IsInt, IsOptional, Length, IsDate, IsDecimal, IsBoolean } from 'class-validator';
+${imports}
 
 export class CreateDTO {
   ${dtoFields}
 }
-    `.trim();
+  `.trim();
 
   const createDtoFilePath = path.join(dtoPath, 'create.dto.ts');
   await fs.writeFile(createDtoFilePath, createDTOContent);
@@ -112,17 +130,20 @@ export class CreateDTO {
 
 async function createUpdateDTO(dtoPath: string, fields: string) {
   const parsedFields = parseFields(fields);
+  const decoratorsUsed = new Set<string>();
   const dtoFields = parsedFields
-    .map((field) => getValidator(field, true))
+    .map((field) => getValidator(field, true, decoratorsUsed))
     .join('\n\n  ');
 
+  const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';`;
+
   const updateDTOContent = `
-import { IsString, IsInt, IsOptional, Length, IsDate, IsDecimal, IsBoolean } from 'class-validator';
+${imports}
 
 export class UpdateDTO {
   ${dtoFields}
 }
-    `.trim();
+  `.trim();
 
   const updateDtoFilePath = path.join(dtoPath, 'update.dto.ts');
   await fs.writeFile(updateDtoFilePath, updateDTOContent);
