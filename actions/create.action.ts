@@ -7,17 +7,14 @@ import {
   AbstractPackageManager,
   PackageManagerFactory,
 } from '../lib/package-managers';
-import { createDTOs } from '../lib/utils/create-dto';
-import { createMigrationDirectory, parseFields } from '../lib/utils/migrations';
-import { createController } from '../lib/utils/create-controller';
 import { createModule } from '../lib/utils/create-module';
-import { createService } from '../lib/utils/create-service';
 import {
   updateNestCliJson,
   updatePackageJson,
   updateTsconfigPaths,
 } from '../lib/utils/update-files';
 import { prettier } from '../lib/utils/formatting';
+import { createYaml } from '../lib/utils/create-yaml';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -64,15 +61,13 @@ export class CreateAction extends AbstractAction {
     await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
     await this.createTsconfigProduction(libraryPath);
 
-    await createMigrationDirectory(libraryPath, tableName, fieldsInput);
-    await createDTOs(libraryPath, fieldsInput);
     await createModule(libraryPath, libraryName);
-    await createController(libraryPath, libraryName);
-    await createService(
-      libraryPath,
-      libraryName,
-      tableName,
-      parseFields(fieldsInput),
+    await createYaml(libraryPath);
+
+    console.info(
+      chalk.green(
+        `Created YAML example file on the project root. After the installation, edit the hedhog.yaml file according to your need.`,
+      ),
     );
 
     await this.createIndexFile(libraryPath, libraryName);
@@ -110,10 +105,18 @@ export class CreateAction extends AbstractAction {
       private: false,
       main: 'dist/index.js',
       scripts: {
+        clean: 'rimraf ./dist',
+        prebuild: 'npm run clean',
         build: 'tsc --project tsconfig.production.json && npm version patch',
         prod: 'npm run build && npm publish --access public',
       },
-      files: ['dist/**/*', 'src/migrations/**/*.ts', 'src/**/*.ejs'],
+      files: [
+        'dist/**/*',
+        'src/entities/**/*.ts',
+        'src/migrations/**/*.ts',
+        'src/**/*.ejs',
+        'hedhog.yaml',
+      ],
       keywords: [],
       author: '',
       license: 'MIT',
@@ -214,8 +217,6 @@ export class CreateAction extends AbstractAction {
 
     const indexContent = `
   export * from './${libraryName}.module';
-  export * from './${libraryName}.service';
-  export * from './${libraryName}.controller';
     `.trim();
 
     const indexFilePath = path.join(srcPath, 'index.ts');
