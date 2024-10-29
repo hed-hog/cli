@@ -176,7 +176,7 @@ export class ResetAction extends AbstractAction {
       for (const line of envLines) {
         const [key, value] = line.split('=');
         if (key && value) {
-          env[key] = value.replaceAll(/['"]+/g, '');
+          env[key.trim()] = value.trim().replace(/['"\r]+/g, '');
         }
       }
 
