@@ -229,7 +229,7 @@ export class AbstractEntity {
         tableNameTranslations,
       );
 
-      const query = `INSERT INTO ${tableNameTranslations} (locale_id, ${columnName}, ${fields.join(', ')}) VALUES (${['?', '?', ...fields].map((_) => '?').join(', ')})`;
+      const query = `INSERT INTO ${tableNameTranslations} (locale_id, ${this.db.getColumnNameWithScaping(columnName)}, ${fields.map((f) => this.db.getColumnNameWithScaping(f)).join(', ')}) VALUES (${['?', '?', ...fields].map((_) => '?').join(', ')})`;
       const values = [
         Number(localeId),
         id,
@@ -384,8 +384,15 @@ export class AbstractEntity {
                     relationN2N,
                   });
 
-                  const query = `INSERT INTO ${relationN2N.tableNameIntermediate} (${relationN2N.columnNameOrigin}, ${relationN2N.columnNameDestination}) VALUES (?, ?)`;
+                  const query = `INSERT INTO ${relationN2N.tableNameIntermediate} (${this.db.getColumnNameWithScaping(relationN2N.columnNameOrigin)}, ${this.db.getColumnNameWithScaping(relationN2N.columnNameDestination)}) VALUES (?, ?)`;
                   const values = [id, foreignId];
+
+                  if (relationN2N.tableNameIntermediate === 'settings') {
+                    console.log({
+                      query,
+                      values,
+                    });
+                  }
 
                   try {
                     await this.db.query(query, values);
