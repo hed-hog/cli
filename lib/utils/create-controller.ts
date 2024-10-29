@@ -24,7 +24,9 @@ import { CreateDTO } from './dto/create.dto';
 import { DeleteDTO } from './dto/delete.dto';
 import { UpdateDTO } from './dto/update.dto';
 import { ${capitalize(tableName)}Service } from './${tableName}.service';
+import { Role } from '@hedhog/admin';
 
+@Role()
 @Controller('${tableName}')
 export class ${capitalize(tableName)}Controller {
   constructor(
