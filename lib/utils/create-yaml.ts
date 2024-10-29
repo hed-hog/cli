@@ -28,11 +28,33 @@ tables: # Definitions for database tables
   categories:
     columns:
       - type: pk # Indicates this is a primary key
-      - name: name # Category name
-        length: 100 # Maximum length of 100 characters
-      - name: description # Description of the category
-        length: 512 # Maximum length of 512 characters
+      - type: slug
+      - name: created_at
+      - name: updated_at
     ifNotExists: true # Create this table only if it does not exist
+
+  category_translations:
+    columns:
+    - name: category_id
+      type: fk
+      isPrimary: true
+      references:
+          table: categories
+          column: id
+          onDelete: RESTRICT
+    - name: locale_id
+      type: fk
+      isPrimary: true
+      references:
+          table: locales
+          column: id
+          onDelete: RESTRICT
+    - name: name 
+      length: 100
+    - name: description
+      length: 512
+    - name: created_at
+    - name: updated_at
 
   # Table 3 - Posts
   posts:

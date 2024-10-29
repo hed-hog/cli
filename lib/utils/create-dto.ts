@@ -29,6 +29,8 @@ export class DeleteDTO {
 }
 
 function parseFields(fields: string): any[] {
+  console.log({ fields });
+
   return fields.split(',').map((field) => {
     const [name, type, length] = field.split(':');
     return { name, type, length };
