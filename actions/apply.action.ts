@@ -8,8 +8,9 @@ import * as yaml from 'yaml';
 import { readFileSync } from 'fs';
 import { createModule } from '../lib/utils/create-module';
 import { createDTOs } from '../lib/utils/create-dto';
-import { writeFile } from 'fs/promises';
-import { capitalize } from '../lib/utils/formatting';
+import { readFile, writeFile } from 'fs/promises';
+import { capitalize, prettier } from '../lib/utils/formatting';
+import { pluralize } from '../lib/utils/pluralize';
 
 interface Column {
   name: string;
@@ -52,12 +53,30 @@ export class ApplyAction extends AbstractAction {
     const tables = this.parseYamlFile(hedhogFilePath);
 
     for (const table of tables) {
+      if (table.name.endsWith('translations')) {
+        const baseTableName = pluralize(
+          table.name.replace('_translations', ''),
+        );
+
+        await this.updateTranslationServiceAndController(
+          libraryPath,
+          baseTableName,
+          table.name,
+        );
+
+        await this.applyUpdateToService(libraryPath, baseTableName, table.name);
+        continue;
+      }
+
       const fields = table.columns
-        .filter((column) => column.name)
         .map((column) => {
+          const columnName = column.type === 'slug' ? 'slug' : column.name;
+          const columnType = column.type === 'slug' ? 'varchar' : column.type;
+          if (!columnName) return '';
           const lengthPart = column.length ? `${column.length}` : '255';
-          return `${column.name}:${column.type || 'varchar'}:${lengthPart}`;
+          return `${columnName}:${columnType || 'varchar'}:${lengthPart}`;
         })
+        .filter(Boolean)
         .join(',');
 
       await createDTOs(path.join(libraryPath, table.name), fields);
@@ -71,6 +90,143 @@ export class ApplyAction extends AbstractAction {
         path.join(libraryPath, `${libraryName}.module.ts`),
         table.name,
       );
+    }
+  }
+
+  async updateTranslationServiceAndController(
+    libraryPath: string,
+    baseTableName: string,
+    translationTableName: string,
+  ) {
+    const serviceFilePath = path.join(
+      libraryPath,
+      baseTableName,
+      `${baseTableName}.service.ts`,
+    );
+    const controllerFilePath = path.join(
+      libraryPath,
+      baseTableName,
+      `${baseTableName}.controller.ts`,
+    );
+
+    try {
+      let serviceContent = await readFile(serviceFilePath, 'utf-8');
+
+      // Nova implementação da função get
+      const getFunctionReplacement = `
+      async get(locale: string, paginationParams: PaginationDTO) {
+        const OR: any[] = [
+          {
+            name: { contains: paginationParams.search, mode: 'insensitive' },
+          },
+          { id: { equals: +paginationParams.search } },
+        ];
+  
+        const include = {
+          ${baseTableName}: {
+            select: {
+              id: true,
+              ${translationTableName}: {
+                where: {
+                  locales: {
+                    code: locale,
+                  },
+                },
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        };
+  
+        return this.paginationService.paginate(
+          this.prismaService.${translationTableName},
+          paginationParams,
+          {
+            where: {
+              OR,
+            },
+            include,
+          },
+          '${translationTableName}'
+        );
+      }
+      `.trim();
+
+      serviceContent.replace(
+        `async get(paginationParams: PaginationDTO) {`,
+        `async get(locale: string, paginationParams: PaginationDTO) {`,
+      );
+
+      serviceContent.replace(
+        ` return this.${baseTableName}Service.paginate(
+            this.prismaService.${baseTableName},
+            paginationParams,
+            {
+              where: {
+                OR,
+              },
+            },
+          );`,
+        `
+          const include = {
+          ${baseTableName}: {
+            select: {
+              id: true,
+              ${translationTableName}: {
+                where: {
+                  locales: {
+                    code: locale,
+                  },
+                },
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        };
+  
+        return this.paginationService.paginate(
+          this.prismaService.${translationTableName},
+          paginationParams,
+          {
+            where: {
+              OR,
+            },
+            include,
+          },
+          '${translationTableName}'
+        );
+          `,
+      );
+
+      await writeFile(serviceFilePath, serviceContent);
+      await prettier(serviceFilePath);
+    } catch (error) {
+      console.error(`Erro ao modificar service: ${error.message}`);
+    }
+
+    try {
+      let controllerContent = await readFile(controllerFilePath, 'utf-8');
+      const localeDecorator = '@Locale() locale';
+      if (!controllerContent.includes(localeDecorator)) {
+        controllerContent = controllerContent.replace(
+          `async get(@Pagination() paginationParams) {`,
+          `async get(@Pagination() paginationParams, ${localeDecorator}){`,
+        );
+      }
+
+      const importStatement = "import { Locale } from '@hedhog/admin';";
+      if (!controllerContent.includes(importStatement)) {
+        controllerContent = `${importStatement}\n${controllerContent}`;
+      }
+
+      await writeFile(controllerFilePath, controllerContent);
+      await prettier(controllerFilePath);
+    } catch (error) {
+      console.error(`Erro ao modificar controller: ${error.message}`);
     }
   }
 
@@ -114,5 +270,47 @@ export class ApplyAction extends AbstractAction {
         chalk.red(`Error updating parent module: ${error.message}`),
       );
     }
+  }
+
+  private async applyUpdateToService(
+    libraryPath: string,
+    baseTableName: string,
+    translationTableName: string,
+  ) {
+    const serviceFilePath = path.join(
+      libraryPath,
+      baseTableName,
+      `${baseTableName}.service.ts`,
+    );
+    let serviceContent = await readFile(serviceFilePath, 'utf-8');
+
+    const includeLogic = `
+    include: {
+      ${translationTableName}: {
+        select: {
+          id: true,
+          ${translationTableName}: {
+            where: {
+              locales: {
+                code: locale,
+              },
+            },
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  `;
+
+    // Modificar o conteúdo do método GET no service
+    serviceContent = serviceContent.replace(
+      'findMany({',
+      `findMany({ ${includeLogic}`,
+    );
+
+    // Salvar as modificações no arquivo
+    await writeFile(serviceFilePath, serviceContent);
   }
 }
