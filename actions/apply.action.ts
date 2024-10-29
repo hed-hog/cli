@@ -154,53 +154,16 @@ export class ApplyAction extends AbstractAction {
       }
       `.trim();
 
-      serviceContent.replace(
-        `async get(paginationParams: PaginationDTO) {`,
-        `async get(locale: string, paginationParams: PaginationDTO) {`,
+      serviceContent = serviceContent.replace(
+        /async get\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/gm,
+        getFunctionReplacement,
       );
 
-      serviceContent.replace(
-        ` return this.${baseTableName}Service.paginate(
-            this.prismaService.${baseTableName},
-            paginationParams,
-            {
-              where: {
-                OR,
-              },
-            },
-          );`,
-        `
-          const include = {
-          ${baseTableName}: {
-            select: {
-              id: true,
-              ${translationTableName}: {
-                where: {
-                  locales: {
-                    code: locale,
-                  },
-                },
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
-        };
-  
-        return this.paginationService.paginate(
-          this.prismaService.${translationTableName},
-          paginationParams,
-          {
-            where: {
-              OR,
-            },
-            include,
-          },
-          '${translationTableName}'
-        );
-          `,
+      const regexToRemove = new RegExp(
+        `return this\\.paginationService\\.paginate\\(\\s*this\\.prismaService\\.${baseTableName},[\\s\\S]*?\\);\\n\\s*\\}`,
+        'm',
       );
+      serviceContent = serviceContent.replace(regexToRemove, '');
 
       await writeFile(serviceFilePath, serviceContent);
       await prettier(serviceFilePath);
