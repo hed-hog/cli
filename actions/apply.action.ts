@@ -148,7 +148,7 @@ export class ApplyAction extends AbstractAction {
               id: true,
               ${translationTableName}: {
                 where: {
-                  locales: {
+                  locale: {
                     code: locale,
                   },
                 },
@@ -279,7 +279,7 @@ export class ApplyAction extends AbstractAction {
           id: true,
           ${translationTableName}: {
             where: {
-              locales: {
+              locale: {
                 code: locale,
               },
             },

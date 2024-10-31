@@ -20,7 +20,6 @@ import { parseEnvFile } from '../lib/utils/parse-env-file';
 import { EnvFile } from '../lib/types/env-file';
 import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
 import { EntityFactory } from '../lib/entities/entity.factory';
-import { Entity } from '../lib/entities/entity';
 import { AbstractEntity } from '../lib/entities/abstract.entity';
 import { debug } from '../lib/utils/debug';
 import { TableFactory } from '../lib/tables/table.factory';
@@ -271,7 +270,7 @@ export class AddAction extends AbstractAction {
         for (const key in item) {
           if (typeof item[key] === 'object' && item[key] !== null) {
             if (AbstractEntity.isLocale(item, key)) {
-              dependencies.add('locales');
+              dependencies.add('locale');
             } else if (AbstractEntity.isWhere(item, key)) {
               const tableNameDep = await this.db.getTableNameFromForeignKey(
                 tableName,
@@ -407,7 +406,7 @@ export class AddAction extends AbstractAction {
 
             const entity = EntityFactory.create(
               this.db,
-              tableName as Entity,
+              tableName,
               hedhogFile?.data[tableName],
             );
 

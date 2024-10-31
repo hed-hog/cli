@@ -7,17 +7,17 @@ export async function createYaml(libraryPath: string) {
 
   const yamlContent = `
 data: # Application-specific data definitions
-  routes: # List of API routes
+  route: # List of API routes
     - url: /auth/login # Endpoint for user login
       method: POST # HTTP method for the endpoint
-    - url: /posts # Endpoint for retrieving blog posts
+    - url: /post # Endpoint for retrieving blog posts
       method: GET # HTTP method for the endpoint
-    - url: /posts/:id # Endpoint for retrieving a specific post by ID
+    - url: /post/:id # Endpoint for retrieving a specific post by ID
       method: GET # HTTP method for the endpoint
 
 tables: # Definitions for database tables
   # Table 1 - Authors
-  authors:
+  author:
     columns:
       - type: pk # Type PK creates a primary key called id
       - name: name # Column's default values are: type varchar, length 255 and not null
@@ -25,7 +25,7 @@ tables: # Definitions for database tables
     ifNotExists: true # Create this table only if it does not exist
 
   # Table 2 - Categories
-  categories:
+  category:
     columns:
       - type: pk # Indicates this is a primary key
       - type: slug
@@ -33,20 +33,20 @@ tables: # Definitions for database tables
       - name: updated_at
     ifNotExists: true # Create this table only if it does not exist
 
-  category_translations:
+  category_locale:
     columns:
     - name: category_id
       type: fk
       isPrimary: true
       references:
-          table: categories
+          table: category
           column: id
           onDelete: RESTRICT
     - name: locale_id
       type: fk
       isPrimary: true
       references:
-          table: locales
+          table: locale
           column: id
           onDelete: RESTRICT
     - name: name 
@@ -57,7 +57,7 @@ tables: # Definitions for database tables
     - name: updated_at
 
   # Table 3 - Posts
-  posts:
+  post:
     columns:
       - type: pk # Indicates this is a primary key
       - name: title # Title of the post
@@ -66,13 +66,13 @@ tables: # Definitions for database tables
       - name: author_id # Foreign key referencing the author
         type: fk # Foreign key type
         references:
-          table: authors # References the 'authors' table
+          table: author # References the 'authors' table
           column: id # References the 'id' column in 'authors'
           onDelete: CASCADE # Deletes posts if the related author is deleted
       - name: category_id # Foreign key referencing the category
         type: fk # Foreign key type
         references:
-          table: categories # References the 'categories' table
+          table: category # References the 'categories' table
           column: id # References the 'id' column in 'categories'
           onDelete: RESTRICT # Prevents deletion of categories if posts are associated
       - name: created_at # Timestamp for when the post was created

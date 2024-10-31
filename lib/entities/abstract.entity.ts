@@ -2,18 +2,17 @@ import chalk = require('chalk');
 import { AbstractDatabase } from '../databases';
 import { DataType } from '../types/data-type';
 import { Locale } from '../types/locale';
-import { Entity } from './entity';
 import EventEmitter = require('events');
 import { DataHash } from '../types/data-hash';
 import * as bcrypt from 'bcryptjs';
 
 export class AbstractEntity {
-  private locales: { [key: string]: number } = {};
+  private locale: { [key: string]: number } = {};
   private eventEmitter = new EventEmitter();
 
   constructor(
     protected db: AbstractDatabase,
-    protected name: Entity,
+    protected name: string,
     protected data: DataType[],
   ) {}
 
@@ -57,7 +56,7 @@ export class AbstractEntity {
     const mainTableNameSplitted = mainTableName.split('_');
     const lastName = mainTableNameSplitted.pop() as string;
     const firstName = mainTableNameSplitted.join('_');
-    const translations_suffix = 'translations';
+    const translations_suffix = 'locale';
 
     return !firstName
       ? `${lastName}_${translations_suffix}`
@@ -65,20 +64,19 @@ export class AbstractEntity {
   }
 
   private async getLocaleId(code: string) {
-    if (this.locales[code]) {
-      return this.locales[code];
+    if (this.locale[code]) {
+      return this.locale[code];
     }
 
-    const locales = await this.db.query(
-      'SELECT id FROM locales WHERE code = ?',
-      [code],
-    );
+    const locale = await this.db.query('SELECT id FROM locale WHERE code = ?', [
+      code,
+    ]);
 
-    if (!locales.length) {
+    if (!locale.length) {
       throw new Error(`Locale with code "${code}" not found.`);
     }
 
-    return (this.locales[code] = locales[0].id);
+    return (this.locale[code] = locale[0].id);
   }
 
   private parseOperator(operator: string) {
@@ -447,7 +445,7 @@ export class AbstractEntity {
                 relationItems.push(relationItem);
               }
             }
-            await this.insert(relationItems, tableNameRelation as Entity);
+            await this.insert(relationItems, tableNameRelation);
           }
         }
       }
