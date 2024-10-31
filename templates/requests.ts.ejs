@@ -1,13 +1,13 @@
 import { useApp } from '@/hooks/use-app'
 import { HttpMethod } from '@/types/http-method'
 import { Delete } from '@/types/delete'
+import { Pagination } from '@/types/pagination'
 import { <%= tableNamePascalCase %> } from '@/types/models'
 
 export function requests() {
   const { request } = useApp()
 
-  const <%= tableNameCamelCase %>Create = async (params: { data: <%= tableNamePascalCase %> }) => {
-    const { data } = params
+  const <%= tableNameCamelCase %>Create = async (data: <%= tableNamePascalCase %> ) => {
     return request<<%= tableNamePascalCase %>>(
      { 
         url: '/<%= tableNameKebabCase %>',
@@ -17,11 +17,7 @@ export function requests() {
     )
   }
 
-  const <%= tableNameCamelCase %>Update = async (params: {
-    id: number
-    data: <%= tableNamePascalCase %>
-  }) => {
-    const { id, data } = params
+  const <%= tableNameCamelCase %>Update = async (id: number, data: PersonType) => {
     return request<<%= tableNamePascalCase %>>(
       {
         url: `/<%= tableNameKebabCase %>/${id}`,
@@ -31,16 +27,17 @@ export function requests() {
     )
   }
 
-  const <%= tableNameCamelCase %>Delete = async (params: any) => {
+  const <%= tableNameCamelCase %>Delete = async (ids: number[]) => {
     return request<Delete>(
       {
         url: '/<%= tableNameKebabCase %>',
+        data: { ids },
         method: HttpMethod.DELETE,
         data: params}
     )
   }
 
-  const <%= tableNameCamelCase %>List = async (params: any) => {
+  const <%= tableNameCamelCase %>List = async (params: Pagination) => {
     return request<<%= tableNamePascalCase %>>(
       {
         url: '/<%= tableNameKebabCase %>',
@@ -49,8 +46,7 @@ export function requests() {
     )
   }
 
-  const <%= tableNameCamelCase %>Get = async (params: { id: number }) => {
-    const { id } = params
+  const <%= tableNameCamelCase %>Get = async (id: number) => {
     return request<<%= tableNamePascalCase %>>(
       {
         url: `/<%= tableNameKebabCase %>/${id}`
