@@ -29,8 +29,8 @@ import { PaginationModule } from '@hedhog/pagination';
 import { PrismaModule } from '@hedhog/prisma';
 import { forwardRef, Module } from '@nestjs/common';`;
 
-  const serviceName = `${toPascalCase(libraryName)}Service`;
-  const controllerName = `${toPascalCase(libraryName)}Controller`;
+  const serviceName = `${toKebabCase(libraryName)}Service`;
+  const controllerName = `${toKebabCase(libraryName)}Controller`;
 
   const additionalImports = options.importServices
     ? `

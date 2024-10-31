@@ -18,6 +18,7 @@ import {
 import { getRootPath } from '../lib/utils/get-root-path';
 import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
 import { render } from 'ejs';
+import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 
 interface Column {
   name: string;
@@ -124,21 +125,27 @@ export class ApplyAction extends AbstractAction {
       'react-query',
     );
     await mkdir(tableFrontendPath, { recursive: true });
-    const requestsFilePath = path.join(tableFrontendPath, 'requests.ts');
-    const requestsFileContent = render(
-      await readFile(
-        path.join(__dirname, '..', 'templates', 'requests.ts.ejs'),
-        'utf-8',
-      ),
-      {
-        tableNamePascalCase: toPascalCase(tableName),
-        tableNameKebabCase: toKebabCase(tableName),
-        tableNameCamelCase: toCamelCase(tableName),
-      },
-    );
 
-    await writeFile(requestsFilePath, requestsFileContent);
-    await prettier(requestsFilePath);
+    const templates = ['requests.ts.ejs', 'handlers.ts.ejs'];
+    const replacements = {
+      tableNamePascalCase: toPascalCase(tableName),
+      tableNameKebabCase: toKebabCase(tableName),
+      tableNameCamelCase: toCamelCase(tableName),
+    };
+
+    for (const template of templates) {
+      const templatePath = path.join(__dirname, '..', 'templates', template);
+      const fileContent = render(
+        await readFile(templatePath, 'utf-8'),
+        replacements,
+      );
+      const formattedContent = await formatTypeScriptCode(fileContent);
+      const outputFilePath = path.join(
+        tableFrontendPath,
+        template.replace('.ejs', ''),
+      );
+      await writeFile(outputFilePath, formattedContent);
+    }
   }
 
   async updateTranslationServiceAndController(

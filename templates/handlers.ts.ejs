@@ -1,0 +1,19 @@
+import { useDefaultMutation } from '@/hooks/use-default-mutation'
+import { requests } from './requests'
+
+const scope = '<%= tableNameKebabCase %>'
+
+export function use<%= tableNamePascalCase %>Create() {
+  const { <%= tableNameCamelCase %>Create } = requests()
+  return useDefaultMutation(scope, 'create', <%= tableNameCamelCase %>Create)
+}
+
+export function use<%= tableNamePascalCase %>Delete() {
+  const { <%= tableNameCamelCase %>Delete } = requests()
+  return useDefaultMutation(scope, 'delete', <%= tableNameCamelCase %>Delete)
+}
+
+export function use<%= tableNamePascalCase %>Update() {
+  const { <%= tableNameCamelCase %>Update } = requests()
+  return useDefaultMutation(scope, 'update', <%= tableNameCamelCase %>Update)
+}
