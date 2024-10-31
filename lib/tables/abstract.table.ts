@@ -95,7 +95,7 @@ export class AbstractTable {
           name: data.name ?? 'slug',
           type: 'varchar',
           length: 255,
-          unique: true,
+          isUnique: true,
         });
       case 'order':
         return Object.assign({}, data, {
