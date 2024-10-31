@@ -129,24 +129,6 @@ export class AddAction extends AbstractAction {
 
     this.showDebug('Database connection status:', this.isDbConnected);
 
-    this.showDebug(
-      'Primary Key Roles Table',
-      await this.db.getPrimaryKeys('roles'),
-    );
-    this.showDebug(
-      'ForeignKeys Key Roles Table',
-      await this.db.getForeignKeys('roles'),
-    );
-
-    this.showDebug(
-      'Primary Key RoleUsers Table',
-      await this.db.getPrimaryKeys('role_users'),
-    );
-    this.showDebug(
-      'ForeignKeys Key RoleUsers Table',
-      await this.db.getForeignKeys('role_users'),
-    );
-
     /**
      * 3. Get the module name
      */

@@ -34,7 +34,7 @@ export class StartAction extends AbstractAction {
   }
 
   async startProcess(id: string, bin: string, args: string[], cwd: string) {
-    console.log(`Starting ${bin} ${args.join(' ')} in ${cwd}`);
+    console.info(`Starting ${bin} ${args.join(' ')} in ${cwd}`);
     const childProcess = spawn(bin, args, {
       cwd,
       stdio: 'inherit',
@@ -46,7 +46,7 @@ export class StartAction extends AbstractAction {
     });
 
     childProcess.stdout?.on('data', (data) => {
-      console.log(id, data.toString());
+      console.info(id, data.toString());
     });
 
     return childProcess;

@@ -31,11 +31,11 @@ export async function recreateDatabase(
         password,
         port,
       });
-      console.log('recreateDatabase', 'connected');
+      console.info('recreateDatabase', 'connected');
       await connection.query(`DROP DATABASE IF EXISTS \`${database}\`;`);
-      console.log('recreateDatabase', 'dropped');
+      console.info('recreateDatabase', 'dropped');
       await connection.query(`CREATE DATABASE \`${database}\`;`);
-      console.log('recreateDatabase', 'created');
+      console.info('recreateDatabase', 'created');
       await connection.end();
       return true;
     }

@@ -130,12 +130,14 @@ export class AbstractEntity {
             this.db.getWhereWithIn(whereField, operator as 'in' | 'nin', value),
           );
         } else {
-          whereQuery.push(`${whereField} ${this.parseOperator(operator)} ?`);
+          whereQuery.push(
+            `${this.db.getColumnNameWithScaping(whereField)} ${this.parseOperator(operator)} ?`,
+          );
         }
 
         whereFinal.push(value);
       } else {
-        whereQuery.push(`${whereField} = ?`);
+        whereQuery.push(`${this.db.getColumnNameWithScaping(whereField)} = ?`);
         whereFinal.push(whereValue);
       }
     }
@@ -149,7 +151,7 @@ export class AbstractEntity {
     }
 
     const whereResult = await this.db.query(
-      `SELECT ${primaryKeys.join(', ')} FROM ${whereTable} WHERE ${whereQuery.join(' AND ')}`,
+      `SELECT ${primaryKeys.map((pk) => this.db.getColumnNameWithScaping(pk)).join(', ')} FROM ${this.db.getColumnNameWithScaping(whereTable)} WHERE ${whereQuery.join(' AND ')}`,
       whereFinal,
     );
 
@@ -333,7 +335,7 @@ export class AbstractEntity {
 
       const id = (
         await this.db.query(
-          `INSERT INTO ${mainTableName} (${mainFields.map((f) => this.db.getColumnNameWithScaping(f)).join(', ')}) VALUES (${mainValues.map((_) => '?').join(', ')})`,
+          `INSERT INTO ${this.db.getColumnNameWithScaping(mainTableName)} (${mainFields.map((f) => this.db.getColumnNameWithScaping(f)).join(', ')}) VALUES (${mainValues.map((_) => '?').join(', ')})`,
           mainValues,
           {
             returning: primaryKeys,
@@ -381,15 +383,8 @@ export class AbstractEntity {
                     relationN2N,
                   });
 
-                  const query = `INSERT INTO ${relationN2N.tableNameIntermediate} (${this.db.getColumnNameWithScaping(relationN2N.columnNameOrigin)}, ${this.db.getColumnNameWithScaping(relationN2N.columnNameDestination)}) VALUES (?, ?)`;
+                  const query = `INSERT INTO ${this.db.getColumnNameWithScaping(relationN2N.tableNameIntermediate)} (${this.db.getColumnNameWithScaping(relationN2N.columnNameOrigin)}, ${this.db.getColumnNameWithScaping(relationN2N.columnNameDestination)}) VALUES (?, ?)`;
                   const values = [id, foreignId];
-
-                  if (relationN2N.tableNameIntermediate === 'settings') {
-                    console.log({
-                      query,
-                      values,
-                    });
-                  }
 
                   try {
                     await this.db.query(query, values);

@@ -22,7 +22,7 @@ import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
 
 export class ResetAction extends AbstractAction {
   public async handle() {
-    console.log(chalk.yellow('Resetting the project...'));
+    console.info(chalk.yellow('Resetting the project...'));
 
     let directoryPath = '';
 
@@ -40,7 +40,7 @@ export class ResetAction extends AbstractAction {
     await this.checkEnvFile(directoryPath);
     await this.recreateDatabase(directoryPath);
 
-    console.log(chalk.green('Project reset successfully.'));
+    console.info(chalk.green('Project reset successfully.'));
   }
 
   async checkEnvFile(path: string) {

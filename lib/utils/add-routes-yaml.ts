@@ -43,7 +43,7 @@ export const addRoutesToYaml = (
     yamlData.data.routes.push(...newRoutes);
     const newYamlContent = yaml.stringify(yamlData);
     fs.writeFileSync(filePath, newYamlContent, 'utf8');
-    console.log('Routes added successfully.');
+    console.info('Routes added successfully.');
   } catch (error) {
     console.error('Error processing the YAML file:', error);
   }

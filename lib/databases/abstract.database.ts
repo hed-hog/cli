@@ -69,12 +69,12 @@ export class AbstractDatabase {
     switch (this.type) {
       case Database.POSTGRES:
         if (operator === 'in') {
-          return `${columnName} = ANY(?::${this.getArrayType(values) === 'number' ? 'int' : 'text'}[])`;
+          return `${this.getColumnNameWithScaping(columnName)} = ANY(?::${this.getArrayType(values) === 'number' ? 'int' : 'text'}[])`;
         } else {
-          return `${columnName} <> ALL(?::${this.getArrayType(values) === 'number' ? 'int' : 'text'}[])`;
+          return `${this.getColumnNameWithScaping(columnName)} <> ALL(?::${this.getArrayType(values) === 'number' ? 'int' : 'text'}[])`;
         }
       case Database.MYSQL:
-        return `${columnName} ${operator === 'in' ? 'IN' : 'NOT IN'}(${values.map((value) => AbstractDatabase.addSimpleQuotes(value)).join(', ')})`;
+        return `${this.getColumnNameWithScaping(columnName)} ${operator === 'in' ? 'IN' : 'NOT IN'}(${values.map((value) => AbstractDatabase.addSimpleQuotes(value)).join(', ')})`;
     }
   }
 
