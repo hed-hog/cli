@@ -10,7 +10,6 @@ import { createModule } from '../lib/utils/create-module';
 import { createDTOs } from '../lib/utils/create-dto';
 import { readFile, writeFile } from 'fs/promises';
 import { prettier } from '../lib/utils/formatting';
-import { pluralize } from '../lib/utils/pluralize';
 import {
   toCamelCase,
   toKebabCase,
@@ -76,10 +75,8 @@ export class ApplyAction extends AbstractAction {
     const tables = this.parseYamlFile(hedhogFilePath);
 
     for (const table of tables) {
-      if (table.name.endsWith('translations')) {
-        const baseTableName = pluralize(
-          table.name.replace('_translations', ''),
-        );
+      if (table.name.endsWith('locale')) {
+        const baseTableName = table.name.replace('_locale', '');
 
         await this.updateTranslationServiceAndController(
           libraryPath,

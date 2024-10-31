@@ -16,7 +16,6 @@ import {
 import { prettier } from '../lib/utils/formatting';
 import { createYaml } from '../lib/utils/create-yaml';
 import { toKebabCase } from '../lib/utils/convert-string-cases';
-import { get } from 'http';
 import { getRootPath } from '../lib/utils/get-root-path';
 
 export class CreateAction extends AbstractAction {

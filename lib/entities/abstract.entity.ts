@@ -2,7 +2,6 @@ import chalk = require('chalk');
 import { AbstractDatabase } from '../databases';
 import { DataType } from '../types/data-type';
 import { Locale } from '../types/locale';
-import { pluralToSingular } from '../utils/plural-to-singular';
 import { Entity } from './entity';
 import EventEmitter = require('events');
 import { DataHash } from '../types/data-hash';
@@ -56,7 +55,7 @@ export class AbstractEntity {
 
   private getLocaleTableName(mainTableName: string) {
     const mainTableNameSplitted = mainTableName.split('_');
-    const lastName = pluralToSingular(mainTableNameSplitted.pop() as string);
+    const lastName = mainTableNameSplitted.pop() as string;
     const firstName = mainTableNameSplitted.join('_');
     const translations_suffix = 'translations';
 
