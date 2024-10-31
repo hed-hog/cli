@@ -131,20 +131,20 @@ import { ${toPascalCase(tableName)} } from '@/types/models';
     export function requests() {
       const { request } = useApp();
 
-      const list${toPascalCase(tableName)} = async () => {
+      const ${toCamelCase(tableName)}List = async () => {
         return request({
           url: '/${toKebabCase(tableName)}',
         }).then((res) => res.data);
       };
 
-      const get${toPascalCase(tableName)} = async (params: { id: string }) => {
+      const ${toCamelCase(tableName)}Get = async (params: { id: string }) => {
         const { id } = params;
         return request({
           url: \`/${toKebabCase(tableName)}/\${id}\`,
         }).then((res) => res.data);
       };
 
-      const create${toPascalCase(tableName)} = async (data: ${toPascalCase(tableName)}) => {
+      const ${toCamelCase(tableName)}Create = async (data: ${toPascalCase(tableName)}) => {
         if (!data.id) delete (data as any).id;
         return request({
           url: '/${toKebabCase(tableName)}',
@@ -153,7 +153,7 @@ import { ${toPascalCase(tableName)} } from '@/types/models';
         }).then((res) => res.data);
       };
 
-      const delete${toPascalCase(tableName)} = async <T>(ids: T[]) => {
+      const ${toCamelCase(tableName)}Delete = async <T>(ids: T[]) => {
         return request({
           url: '/${toKebabCase(tableName)}',
           data: { ids },
@@ -161,7 +161,7 @@ import { ${toPascalCase(tableName)} } from '@/types/models';
         }).then((res) => res.data);
       };
 
-      const edit${toPascalCase(tableName)} = async (params: { id: string; data: ${toPascalCase(tableName)} }) => {
+      const ${toCamelCase(tableName)}Update = async (params: { id: string; data: ${toPascalCase(tableName)} }) => {
         const { id, data } = params;
         return request({
           url: \`/${toKebabCase(tableName)}/\${id}\`,
@@ -171,11 +171,11 @@ import { ${toPascalCase(tableName)} } from '@/types/models';
       };
 
       return {
-        list${toPascalCase(tableName)},
-        get${toPascalCase(tableName)},
-        create${toPascalCase(tableName)},
-        delete${toPascalCase(tableName)},
-        edit${toPascalCase(tableName)},
+        ${toPascalCase(tableName)}List,
+        ${toPascalCase(tableName)}Get,
+        ${toPascalCase(tableName)}Create,
+        ${toPascalCase(tableName)}Delete,
+        ${toPascalCase(tableName)}Update,
       };
     }
     `;
