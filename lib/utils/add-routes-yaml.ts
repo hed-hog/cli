@@ -9,7 +9,7 @@ interface Route {
 }
 
 interface HedhogData {
-  routes?: Route[];
+  route?: Route[];
 }
 
 interface HedhogYaml {
@@ -29,8 +29,8 @@ export const addRoutesToYaml = (
       yamlData.data = {};
     }
 
-    if (!yamlData.data.routes) {
-      yamlData.data.routes = [];
+    if (!yamlData.data.route) {
+      yamlData.data.route = [];
     }
 
     const newRoutes: Route[] = [
@@ -40,7 +40,7 @@ export const addRoutesToYaml = (
       { url: `/${toKebabCase(tableName)}/:id`, method: 'PATCH' },
       { url: `/${toKebabCase(tableName)}/:id`, method: 'DELETE' },
     ];
-    yamlData.data.routes.push(...newRoutes);
+    yamlData.data.route.push(...newRoutes);
     const newYamlContent = yaml.stringify(yamlData);
     fs.writeFileSync(filePath, newYamlContent, 'utf8');
     console.info('Routes added successfully.');
