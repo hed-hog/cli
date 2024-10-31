@@ -17,6 +17,7 @@ import {
   toPascalCase,
 } from '../lib/utils/convert-string-cases';
 import { getRootPath } from '../lib/utils/get-root-path';
+import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
 
 interface Column {
   name: string;
@@ -108,6 +109,7 @@ export class ApplyAction extends AbstractAction {
         importServices: true,
       });
       await createController(libraryPath, table.name);
+      await addRoutesToYaml(libraryPath, table.name);
       await this.updateParentModule(
         path.join(libraryPath, `${toKebabCase(libraryName)}.module.ts`),
         table.name,
