@@ -18,7 +18,7 @@ export async function createModule(
 ) {
   const modulePath = path.join(
     libraryPath,
-    options.useLibraryNamePath ? libraryName : 'src',
+    options.useLibraryNamePath ? toKebabCase(libraryName) : 'src',
   );
   await fs.mkdir(modulePath, { recursive: true });
 

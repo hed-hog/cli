@@ -16,6 +16,8 @@ import {
 import { prettier } from '../lib/utils/formatting';
 import { createYaml } from '../lib/utils/create-yaml';
 import { toKebabCase } from '../lib/utils/convert-string-cases';
+import { get } from 'http';
+import { getRootPath } from '../lib/utils/get-root-path';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -39,11 +41,15 @@ export class CreateAction extends AbstractAction {
       process.exit(1);
     }
 
+    const rootPath = await getRootPath();
+
     const libraryPath = path.join(
-      process.cwd(),
+      rootPath,
+      'lib',
       'libs',
       toKebabCase(libraryName),
     );
+
     this.createGitignore(libraryPath);
     await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
     await this.createTsconfigProduction(libraryPath);

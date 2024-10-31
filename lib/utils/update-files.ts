@@ -3,9 +3,11 @@ import path = require('path');
 import * as fs from 'fs';
 import { prettier } from './formatting';
 import { toKebabCase } from './convert-string-cases';
+import { getRootPath } from './get-root-path';
 
 export async function updateNestCliJson(libraryName: string) {
-  const nestCliPath = path.join(process.cwd(), 'nest-cli.json');
+  const rootPath = await getRootPath();
+  const nestCliPath = path.join(rootPath, 'lib', 'nest-cli.json');
 
   try {
     const nestCliExists = fs.existsSync(nestCliPath);
@@ -50,7 +52,8 @@ export async function updateNestCliJson(libraryName: string) {
 }
 
 export async function updatePackageJson(libraryName: string) {
-  const packageJsonPath = path.join(process.cwd(), 'package.json');
+  const rootPath = await getRootPath();
+  const packageJsonPath = path.join(rootPath, 'lib', 'package.json');
 
   try {
     const packageJsonExists = fs.existsSync(packageJsonPath);
@@ -93,7 +96,8 @@ export async function updatePackageJson(libraryName: string) {
 }
 
 export async function updateTsconfigPaths(libraryName: string) {
-  const tsconfigPath = path.join(process.cwd(), 'tsconfig.json');
+  const rootPath = await getRootPath();
+  const tsconfigPath = path.join(rootPath, 'lib', 'tsconfig.json');
 
   try {
     const tsconfigExists = fs.existsSync(tsconfigPath);

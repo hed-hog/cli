@@ -1,13 +1,14 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { capitalize, prettier } from './formatting';
+import { toCamelCase, toKebabCase, toPascalCase } from './convert-string-cases';
 
 export async function createService(
   libraryPath: string,
   tableName: string,
   fields: { name: string; type: string }[],
 ) {
-  const servicePath = path.join(libraryPath, tableName);
+  const servicePath = path.join(libraryPath, toKebabCase(tableName));
   await fs.mkdir(servicePath, { recursive: true });
 
   const fieldsForSearch = fields
@@ -28,7 +29,7 @@ import { DeleteDTO } from './dto/delete.dto';
 import { UpdateDTO } from './dto/update.dto';
 
 @Injectable()
-export class ${capitalize(tableName)}Service {
+export class ${toPascalCase(tableName)}Service {
   constructor(
     @Inject(forwardRef(() => PrismaService))
     private readonly prismaService: PrismaService,
@@ -66,9 +67,9 @@ export class ${capitalize(tableName)}Service {
     );
   }
 
-  async getById(${tableName}Id: number) {
+  async getById(${toCamelCase(tableName)}Id: number) {
     return this.prismaService.${tableName}.findUnique({
-      where: { id: ${tableName}Id },
+      where: { id: ${toCamelCase(tableName)}Id },
     });
   }
 
@@ -103,7 +104,10 @@ export class ${capitalize(tableName)}Service {
 }
   `.trim();
 
-  const serviceFilePath = path.join(servicePath, `${tableName}.service.ts`);
+  const serviceFilePath = path.join(
+    servicePath,
+    `${toKebabCase(tableName)}.service.ts`,
+  );
   await fs.writeFile(serviceFilePath, serviceContent);
   await prettier(serviceFilePath);
 }

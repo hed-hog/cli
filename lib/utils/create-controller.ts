@@ -1,9 +1,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { capitalize, prettier } from './formatting';
+import { toCamelCase, toKebabCase, toPascalCase } from './convert-string-cases';
 
 export async function createController(libraryPath: string, tableName: string) {
-  const controllerPath = path.join(libraryPath, tableName);
+  const controllerPath = path.join(libraryPath, toKebabCase(tableName));
   await fs.mkdir(controllerPath, { recursive: true });
 
   const controllerContent = `
@@ -23,30 +24,30 @@ import {
 import { CreateDTO } from './dto/create.dto';
 import { DeleteDTO } from './dto/delete.dto';
 import { UpdateDTO } from './dto/update.dto';
-import { ${capitalize(tableName)}Service } from './${tableName}.service';
+import { ${toPascalCase(tableName)}Service } from './${toKebabCase(tableName)}.service';
 import { Role } from '@hedhog/admin';
 
 @Role()
-@Controller('${tableName}')
-export class ${capitalize(tableName)}Controller {
+@Controller('${toKebabCase(tableName)}')
+export class ${toPascalCase(tableName)}Controller {
   constructor(
-    @Inject(forwardRef(() => ${capitalize(tableName)}Service))
-    private readonly ${tableName}Service: ${capitalize(tableName)}Service,
+    @Inject(forwardRef(() => ${toPascalCase(tableName)}Service))
+    private readonly ${toCamelCase(tableName)}Service: ${toPascalCase(tableName)}Service,
   ) {}
 
   @Get()
   async get(@Pagination() paginationParams) {
-    return this.${tableName}Service.get(paginationParams);
+    return this.${toCamelCase(tableName)}Service.get(paginationParams);
   }
 
   @Get(':id')
   async getById(@Param('id', ParseIntPipe) id: number) {
-    return this.${tableName}Service.getById(id);
+    return this.${toCamelCase(tableName)}Service.getById(id);
   }
 
   @Post()
   create(@Body() data: CreateDTO) {
-    return this.${tableName}Service.create(data);
+    return this.${toCamelCase(tableName)}Service.create(data);
   }
 
   @Patch(':id')
@@ -54,7 +55,7 @@ export class ${capitalize(tableName)}Controller {
     @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateDTO,
   ) {
-    return this.${tableName}Service.update({
+    return this.${toCamelCase(tableName)}Service.update({
       id,
       data,
     });
@@ -62,14 +63,14 @@ export class ${capitalize(tableName)}Controller {
 
   @Delete()
   async delete(@Body() data: DeleteDTO) {
-    return this.${tableName}Service.delete(data);
+    return this.${toCamelCase(tableName)}Service.delete(data);
   }
 }
   `.trim();
 
   const controllerFilePath = path.join(
     controllerPath,
-    `${tableName}.controller.ts`,
+    `${toKebabCase(tableName)}.controller.ts`,
   );
   await fs.writeFile(controllerFilePath, controllerContent);
   await prettier(controllerFilePath);

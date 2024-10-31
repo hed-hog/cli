@@ -9,8 +9,14 @@ import { readFileSync } from 'fs';
 import { createModule } from '../lib/utils/create-module';
 import { createDTOs } from '../lib/utils/create-dto';
 import { readFile, writeFile } from 'fs/promises';
-import { capitalize, prettier } from '../lib/utils/formatting';
+import { prettier } from '../lib/utils/formatting';
 import { pluralize } from '../lib/utils/pluralize';
+import {
+  toCamelCase,
+  toKebabCase,
+  toPascalCase,
+} from '../lib/utils/convert-string-cases';
+import { getRootPath } from '../lib/utils/get-root-path';
 
 interface Column {
   name: string;
@@ -48,8 +54,24 @@ export class ApplyAction extends AbstractAction {
       process.exit(1);
     }
 
-    const hedhogFilePath = path.join(process.cwd(), 'hedhog.yaml');
-    const libraryPath = path.join(process.cwd(), 'src');
+    const rootPath = await getRootPath();
+
+    const hedhogFilePath = path.join(
+      rootPath,
+      'lib',
+      'libs',
+      toKebabCase(libraryName),
+      'hedhog.yaml',
+    );
+
+    const libraryPath = path.join(
+      rootPath,
+      'lib',
+      'libs',
+      toKebabCase(libraryName),
+      'src',
+    );
+
     const tables = this.parseYamlFile(hedhogFilePath);
 
     for (const table of tables) {
@@ -79,7 +101,7 @@ export class ApplyAction extends AbstractAction {
         .filter(Boolean)
         .join(',');
 
-      await createDTOs(path.join(libraryPath, table.name), fields);
+      await createDTOs(path.join(libraryPath, toKebabCase(table.name)), fields);
       await createService(libraryPath, table.name, table.columns);
       await createModule(libraryPath, table.name, {
         useLibraryNamePath: true,
@@ -87,7 +109,7 @@ export class ApplyAction extends AbstractAction {
       });
       await createController(libraryPath, table.name);
       await this.updateParentModule(
-        path.join(libraryPath, `${libraryName}.module.ts`),
+        path.join(libraryPath, `${toKebabCase(libraryName)}.module.ts`),
         table.name,
       );
     }
@@ -100,19 +122,18 @@ export class ApplyAction extends AbstractAction {
   ) {
     const serviceFilePath = path.join(
       libraryPath,
-      baseTableName,
-      `${baseTableName}.service.ts`,
+      toKebabCase(baseTableName),
+      `${toKebabCase(baseTableName)}.service.ts`,
     );
     const controllerFilePath = path.join(
       libraryPath,
-      baseTableName,
-      `${baseTableName}.controller.ts`,
+      toKebabCase(baseTableName),
+      `${toKebabCase(baseTableName)}.controller.ts`,
     );
 
     try {
       let serviceContent = await readFile(serviceFilePath, 'utf-8');
 
-      // Nova implementação da função get
       const getFunctionReplacement = `
       async get(locale: string, paginationParams: PaginationDTO) {
         const OR: any[] = [
@@ -179,6 +200,11 @@ export class ApplyAction extends AbstractAction {
           `async get(@Pagination() paginationParams) {`,
           `async get(@Pagination() paginationParams, ${localeDecorator}){`,
         );
+
+        controllerContent = controllerContent.replace(
+          `return this.${toCamelCase(baseTableName)}Service.get(paginationParams)`,
+          `return this.${toCamelCase(baseTableName)}Service.get(locale, paginationParams)`,
+        );
       }
 
       const importStatement = "import { Locale } from '@hedhog/admin';";
@@ -212,7 +238,7 @@ export class ApplyAction extends AbstractAction {
       return;
     }
 
-    newModuleName = capitalize(newModuleName);
+    newModuleName = toPascalCase(newModuleName);
 
     try {
       let moduleContent = await readFileSync(modulePath, 'utf8');
@@ -242,8 +268,8 @@ export class ApplyAction extends AbstractAction {
   ) {
     const serviceFilePath = path.join(
       libraryPath,
-      baseTableName,
-      `${baseTableName}.service.ts`,
+      toKebabCase(baseTableName),
+      `${toKebabCase(baseTableName)}.service.ts`,
     );
     let serviceContent = await readFile(serviceFilePath, 'utf-8');
 
@@ -267,13 +293,10 @@ export class ApplyAction extends AbstractAction {
     },
   `;
 
-    // Modificar o conteúdo do método GET no service
     serviceContent = serviceContent.replace(
       'findMany({',
       `findMany({ ${includeLogic}`,
     );
-
-    // Salvar as modificações no arquivo
     await writeFile(serviceFilePath, serviceContent);
   }
 }
