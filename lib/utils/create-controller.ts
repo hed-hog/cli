@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { capitalize, prettier } from './formatting';
 import { toCamelCase, toKebabCase, toPascalCase } from './convert-string-cases';
+import { formatTypeScriptCode } from './format-typescript-code';
 
 export async function createController(libraryPath: string, tableName: string) {
   const controllerPath = path.join(libraryPath, toKebabCase(tableName));
@@ -72,6 +73,8 @@ export class ${toPascalCase(tableName)}Controller {
     controllerPath,
     `${toKebabCase(tableName)}.controller.ts`,
   );
-  await fs.writeFile(controllerFilePath, controllerContent);
-  await prettier(controllerFilePath);
+  await fs.writeFile(
+    controllerFilePath,
+    await formatTypeScriptCode(controllerContent),
+  );
 }

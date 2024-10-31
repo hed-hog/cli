@@ -104,6 +104,7 @@ export class CreateAction extends AbstractAction {
       },
       files: [
         'dist/**/*',
+        'frontend/**/*',
         'src/entities/**/*.ts',
         'src/migrations/**/*.ts',
         'src/**/*.ejs',

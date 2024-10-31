@@ -1,7 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { capitalize, prettier } from './formatting';
+import { prettier } from './formatting';
 import { toCamelCase, toKebabCase, toPascalCase } from './convert-string-cases';
+import { formatTypeScriptCode } from './format-typescript-code';
 
 export async function createService(
   libraryPath: string,
@@ -108,6 +109,8 @@ export class ${toPascalCase(tableName)}Service {
     servicePath,
     `${toKebabCase(tableName)}.service.ts`,
   );
-  await fs.writeFile(serviceFilePath, serviceContent);
-  await prettier(serviceFilePath);
+  await fs.writeFile(
+    serviceFilePath,
+    await formatTypeScriptCode(serviceContent),
+  );
 }

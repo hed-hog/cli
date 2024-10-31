@@ -8,7 +8,7 @@ import * as yaml from 'yaml';
 import { readFileSync } from 'fs';
 import { createModule } from '../lib/utils/create-module';
 import { createDTOs } from '../lib/utils/create-dto';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, mkdir, writeFile } from 'fs/promises';
 import { prettier } from '../lib/utils/formatting';
 import {
   toCamelCase,
@@ -111,7 +111,77 @@ export class ApplyAction extends AbstractAction {
         path.join(libraryPath, `${toKebabCase(libraryName)}.module.ts`),
         table.name,
       );
+      await this.createFrontendFiles(libraryPath, table.name);
     }
+  }
+
+  async createFrontendFiles(libraryPath: string, tableName: string) {
+    const frontendPath = path.join(libraryPath, '..', 'frontend');
+    const tableFrontendPath = path.join(
+      frontendPath,
+      toKebabCase(tableName),
+      'react-query',
+    );
+    await mkdir(tableFrontendPath, { recursive: true });
+    const requestsFilePath = path.join(tableFrontendPath, 'requests.ts');
+    const requestsFileContent = `
+    import { useApp } from '@/hooks/use-app';
+import { ${toPascalCase(tableName)} } from '@/types/models';
+
+    export function requests() {
+      const { request } = useApp();
+
+      const list${toPascalCase(tableName)} = async () => {
+        return request({
+          url: '/${toKebabCase(tableName)}',
+        }).then((res) => res.data);
+      };
+
+      const get${toPascalCase(tableName)} = async (params: { id: string }) => {
+        const { id } = params;
+        return request({
+          url: \`/${toKebabCase(tableName)}/\${id}\`,
+        }).then((res) => res.data);
+      };
+
+      const create${toPascalCase(tableName)} = async (data: ${toPascalCase(tableName)}) => {
+        if (!data.id) delete (data as any).id;
+        return request({
+          url: '/${toKebabCase(tableName)}',
+          method: 'post',
+          data,
+        }).then((res) => res.data);
+      };
+
+      const delete${toPascalCase(tableName)} = async <T>(ids: T[]) => {
+        return request({
+          url: '/${toKebabCase(tableName)}',
+          data: { ids },
+          method: 'delete',
+        }).then((res) => res.data);
+      };
+
+      const edit${toPascalCase(tableName)} = async (params: { id: string; data: ${toPascalCase(tableName)} }) => {
+        const { id, data } = params;
+        return request({
+          url: \`/${toKebabCase(tableName)}/\${id}\`,
+          method: 'patch',
+          data,
+        }).then((res) => res.data);
+      };
+
+      return {
+        list${toPascalCase(tableName)},
+        get${toPascalCase(tableName)},
+        create${toPascalCase(tableName)},
+        delete${toPascalCase(tableName)},
+        edit${toPascalCase(tableName)},
+      };
+    }
+    `;
+
+    await writeFile(requestsFilePath, requestsFileContent);
+    await prettier(requestsFilePath);
   }
 
   async updateTranslationServiceAndController(

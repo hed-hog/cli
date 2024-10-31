@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { capitalize, prettier } from './formatting';
 import { toPascalCase, toKebabCase } from './convert-string-cases';
+import { formatTypeScriptCode } from './format-typescript-code';
 
 interface IOption {
   useLibraryNamePath: boolean;
@@ -56,6 +57,5 @@ export class ${toPascalCase(libraryName)}Module {}
     modulePath,
     `${toKebabCase(libraryName)}.module.ts`,
   );
-  await fs.writeFile(moduleFilePath, moduleContent);
-  await prettier(moduleFilePath);
+  await fs.writeFile(moduleFilePath, await formatTypeScriptCode(moduleContent));
 }

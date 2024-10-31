@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { prettier } from './formatting';
+import { formatTypeScriptCode } from './format-typescript-code';
 
 export async function createDTOs(libraryPath: string, fields: string) {
   const dtoPath = path.join(libraryPath, 'dto');
@@ -24,8 +25,10 @@ export class DeleteDTO {
     `.trim();
 
   const deleteDtoFilePath = path.join(dtoPath, 'delete.dto.ts');
-  await fs.writeFile(deleteDtoFilePath, deleteDTOContent);
-  await prettier(deleteDtoFilePath);
+  await fs.writeFile(
+    deleteDtoFilePath,
+    await formatTypeScriptCode(deleteDTOContent),
+  );
 }
 
 function parseFields(fields: string): any[] {
@@ -124,8 +127,10 @@ export class CreateDTO {
   `.trim();
 
   const createDtoFilePath = path.join(dtoPath, 'create.dto.ts');
-  await fs.writeFile(createDtoFilePath, createDTOContent);
-  await prettier(createDtoFilePath);
+  await fs.writeFile(
+    createDtoFilePath,
+    await formatTypeScriptCode(createDTOContent),
+  );
 }
 
 async function createUpdateDTO(dtoPath: string, fields: string) {
@@ -146,6 +151,8 @@ export class UpdateDTO {
   `.trim();
 
   const updateDtoFilePath = path.join(dtoPath, 'update.dto.ts');
-  await fs.writeFile(updateDtoFilePath, updateDTOContent);
-  await prettier(updateDtoFilePath);
+  await fs.writeFile(
+    updateDtoFilePath,
+    await formatTypeScriptCode(updateDTOContent),
+  );
 }
