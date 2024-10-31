@@ -1,7 +1,6 @@
 import { useApp } from '@/hooks/use-app'
 import { HttpMethod } from '@/types/http-method'
-import { Delete } from '@/types/delete'
-import { Pagination } from '@/types/pagination'
+import { Delete, PaginationParams, PaginationResult } from '@/types'
 import { <%= tableNamePascalCase %> } from '@/types/models'
 
 export function requests() {
@@ -37,8 +36,8 @@ export function requests() {
     )
   }
 
-  const <%= tableNameCamelCase %>List = async (params: Pagination) => {
-    return request<<%= tableNamePascalCase %>>(
+  const <%= tableNameCamelCase %>List = async (params: PaginationParams) => {
+    return request<PaginationResult<<%= tableNamePascalCase %>>>(
       {
         url: '/<%= tableNameKebabCase %>',
         params
