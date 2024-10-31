@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { capitalize, prettier } from './formatting';
+import { toPascalCase, toKebabCase } from './convert-string-cases';
 
 interface IOption {
   useLibraryNamePath: boolean;
@@ -27,13 +28,13 @@ import { PaginationModule } from '@hedhog/pagination';
 import { PrismaModule } from '@hedhog/prisma';
 import { forwardRef, Module } from '@nestjs/common';`;
 
-  const serviceName = `${capitalize(libraryName)}Service`;
-  const controllerName = `${capitalize(libraryName)}Controller`;
+  const serviceName = `${toPascalCase(libraryName)}Service`;
+  const controllerName = `${toPascalCase(libraryName)}Controller`;
 
   const additionalImports = options.importServices
     ? `
-import { ${serviceName} } from './${libraryName}.service';
-import { ${controllerName} } from './${libraryName}.controller';`
+import { ${serviceName} } from './${toKebabCase(libraryName)}.service';
+import { ${controllerName} } from './${toKebabCase(libraryName)}.controller';`
     : '';
 
   const moduleContent = `
@@ -48,12 +49,12 @@ ${moduleImports}${additionalImports}
   providers: ${options.importServices ? `[${serviceName}]` : '[]'},
   exports: ${options.importServices ? `[${serviceName}]` : '[]'},
 })
-export class ${capitalize(libraryName ?? libraryName)}Module {}
+export class ${toPascalCase(libraryName)}Module {}
   `.trim();
 
   const moduleFilePath = path.join(
     modulePath,
-    `${libraryName ? libraryName : libraryName}.module.ts`,
+    `${toKebabCase(libraryName)}.module.ts`,
   );
   await fs.writeFile(moduleFilePath, moduleContent);
   await prettier(moduleFilePath);

@@ -2,6 +2,7 @@ import chalk = require('chalk');
 import path = require('path');
 import * as fs from 'fs';
 import { prettier } from './formatting';
+import { toKebabCase } from './convert-string-cases';
 
 export async function updateNestCliJson(libraryName: string) {
   const nestCliPath = path.join(process.cwd(), 'nest-cli.json');
@@ -15,7 +16,7 @@ export async function updateNestCliJson(libraryName: string) {
 
     const nestCliContent = JSON.parse(fs.readFileSync(nestCliPath, 'utf-8'));
 
-    const projectPath = `libs/${libraryName}`;
+    const projectPath = `libs/${toKebabCase(libraryName)}`;
     const newProject = {
       type: 'library',
       root: projectPath,
@@ -26,7 +27,7 @@ export async function updateNestCliJson(libraryName: string) {
       },
     };
 
-    nestCliContent.projects[libraryName] = newProject;
+    nestCliContent.projects[toKebabCase(libraryName)] = newProject;
 
     await fs.promises.writeFile(
       nestCliPath,
@@ -36,7 +37,9 @@ export async function updateNestCliJson(libraryName: string) {
     await prettier(nestCliPath);
 
     console.info(
-      chalk.green(`Updated nest-cli.json with project: ${libraryName}`),
+      chalk.green(
+        `Updated nest-cli.json with project: ${toKebabCase(libraryName)}`,
+      ),
     );
   } catch (error) {
     console.error(
@@ -67,8 +70,8 @@ export async function updatePackageJson(libraryName: string) {
       packageJsonContent.jest.moduleNameMapper = {};
     }
 
-    const newMappingKey = `^@hedhog/${libraryName}(|/.*)$`;
-    const newMappingValue = `<rootDir>/libs/${libraryName}/src/$1`;
+    const newMappingKey = `^@hedhog/${toKebabCase(libraryName)}(|/.*)$`;
+    const newMappingValue = `<rootDir>/libs/${toKebabCase(libraryName)}/src/$1`;
     packageJsonContent.jest.moduleNameMapper[newMappingKey] = newMappingValue;
 
     await fs.promises.writeFile(
@@ -80,7 +83,7 @@ export async function updatePackageJson(libraryName: string) {
 
     console.info(
       chalk.green(
-        `Updated package.json with moduleNameMapper for ${libraryName}`,
+        `Updated package.json with moduleNameMapper for ${toKebabCase(libraryName)}`,
       ),
     );
   } catch (error) {
@@ -104,10 +107,10 @@ export async function updateTsconfigPaths(libraryName: string) {
       tsconfigContent.compilerOptions.paths = {};
     }
 
-    const newPathKey = `@hedhog/${libraryName}`;
-    const newPathKeyWithWildcard = `@hedhog/${libraryName}/*`;
-    const newPathValue = [`libs/${libraryName}/src`];
-    const newPathValueWithWildcard = [`libs/${libraryName}/src/*`];
+    const newPathKey = `@hedhog/${toKebabCase(libraryName)}`;
+    const newPathKeyWithWildcard = `@hedhog/${toKebabCase(libraryName)}/*`;
+    const newPathValue = [`libs/${toKebabCase(libraryName)}/src`];
+    const newPathValueWithWildcard = [`libs/${toKebabCase(libraryName)}/src/*`];
 
     tsconfigContent.compilerOptions.paths[newPathKey] = newPathValue;
     tsconfigContent.compilerOptions.paths[newPathKeyWithWildcard] =
@@ -120,7 +123,11 @@ export async function updateTsconfigPaths(libraryName: string) {
 
     await prettier(tsconfigPath);
 
-    console.info(chalk.green(`Updated tsconfig.json paths for ${libraryName}`));
+    console.info(
+      chalk.green(
+        `Updated tsconfig.json paths for ${toKebabCase(libraryName)}`,
+      ),
+    );
   } catch (error) {
     console.error(
       chalk.red(`Failed to update tsconfig.json: ${error.message}`),

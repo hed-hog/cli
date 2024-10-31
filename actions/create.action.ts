@@ -15,6 +15,7 @@ import {
 } from '../lib/utils/update-files';
 import { prettier } from '../lib/utils/formatting';
 import { createYaml } from '../lib/utils/create-yaml';
+import { toKebabCase } from '../lib/utils/convert-string-cases';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -38,7 +39,11 @@ export class CreateAction extends AbstractAction {
       process.exit(1);
     }
 
-    const libraryPath = path.join(process.cwd(), 'libs', libraryName);
+    const libraryPath = path.join(
+      process.cwd(),
+      'libs',
+      toKebabCase(libraryName),
+    );
     this.createGitignore(libraryPath);
     await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
     await this.createTsconfigProduction(libraryPath);
@@ -82,7 +87,7 @@ export class CreateAction extends AbstractAction {
     removeDefaultDeps: boolean,
   ) {
     const packageJsonContent = {
-      name: `@hedhog/${libraryName}`,
+      name: `@hedhog/${toKebabCase(libraryName)}`,
       version: '0.0.0',
       private: false,
       main: 'dist/index.js',
@@ -198,7 +203,7 @@ export class CreateAction extends AbstractAction {
     }
 
     const indexContent = `
-  export * from './${libraryName}.module';
+  export * from './${toKebabCase(libraryName)}.module';
     `.trim();
 
     const indexFilePath = path.join(srcPath, 'index.ts');
