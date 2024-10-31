@@ -1,0 +1,68 @@
+import { useApp } from '@/hooks/use-app'
+import { HttpMethod } from '@/types/http-method'
+import { Delete } from '@/types/delete'
+import { <%= tableNamePascalCase %> } from '@/types/models'
+
+export function requests() {
+  const { request } = useApp()
+
+  const <%= tableNameCamelCase %>Create = async (params: { data: <%= tableNamePascalCase %> }) => {
+    const { data } = params
+    return request<<%= tableNamePascalCase %>>(
+     { 
+        url: '/<%= tableNameKebabCase %>',
+        method: HttpMethod.POST,
+        data
+      }
+    )
+  }
+
+  const <%= tableNameCamelCase %>Update = async (params: {
+    id: number
+    data: <%= tableNamePascalCase %>
+  }) => {
+    const { id, data } = params
+    return request<<%= tableNamePascalCase %>>(
+      {
+        url: `/<%= tableNameKebabCase %>/${id}`,
+        method: HttpMethod.PATCH,
+        data
+      }
+    )
+  }
+
+  const <%= tableNameCamelCase %>Delete = async (params: any) => {
+    return request<Delete>(
+      {
+        url: '/<%= tableNameKebabCase %>',
+        method: HttpMethod.DELETE,
+        data: params}
+    )
+  }
+
+  const <%= tableNameCamelCase %>List = async (params: any) => {
+    return request<<%= tableNamePascalCase %>>(
+      {
+        url: '/<%= tableNameKebabCase %>',
+        params
+      }
+    )
+  }
+
+  const <%= tableNameCamelCase %>Get = async (params: { id: number }) => {
+    const { id } = params
+    return request<<%= tableNamePascalCase %>>(
+      {
+        url: `/<%= tableNameKebabCase %>/${id}`
+      }
+    )
+  }
+
+  return {
+    <%= tableNameCamelCase %>Create,
+    <%= tableNameCamelCase %>Update,
+    <%= tableNameCamelCase %>Delete,
+    <%= tableNameCamelCase %>List,
+    <%= tableNameCamelCase %>Get,
+  }
+}

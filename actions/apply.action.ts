@@ -17,6 +17,7 @@ import {
 } from '../lib/utils/convert-string-cases';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
+import { render } from 'ejs';
 
 interface Column {
   name: string;
@@ -124,61 +125,17 @@ export class ApplyAction extends AbstractAction {
     );
     await mkdir(tableFrontendPath, { recursive: true });
     const requestsFilePath = path.join(tableFrontendPath, 'requests.ts');
-    const requestsFileContent = `
-    import { useApp } from '@/hooks/use-app';
-import { ${toPascalCase(tableName)} } from '@/types/models';
-
-    export function requests() {
-      const { request } = useApp();
-
-      const ${toCamelCase(tableName)}List = async () => {
-        return request({
-          url: '/${toKebabCase(tableName)}',
-        }).then((res) => res.data);
-      };
-
-      const ${toCamelCase(tableName)}Get = async (params: { id: string }) => {
-        const { id } = params;
-        return request({
-          url: \`/${toKebabCase(tableName)}/\${id}\`,
-        }).then((res) => res.data);
-      };
-
-      const ${toCamelCase(tableName)}Create = async (data: ${toPascalCase(tableName)}) => {
-        if (!data.id) delete (data as any).id;
-        return request({
-          url: '/${toKebabCase(tableName)}',
-          method: 'post',
-          data,
-        }).then((res) => res.data);
-      };
-
-      const ${toCamelCase(tableName)}Delete = async <T>(ids: T[]) => {
-        return request({
-          url: '/${toKebabCase(tableName)}',
-          data: { ids },
-          method: 'delete',
-        }).then((res) => res.data);
-      };
-
-      const ${toCamelCase(tableName)}Update = async (params: { id: string; data: ${toPascalCase(tableName)} }) => {
-        const { id, data } = params;
-        return request({
-          url: \`/${toKebabCase(tableName)}/\${id}\`,
-          method: 'patch',
-          data,
-        }).then((res) => res.data);
-      };
-
-      return {
-        ${toPascalCase(tableName)}List,
-        ${toPascalCase(tableName)}Get,
-        ${toPascalCase(tableName)}Create,
-        ${toPascalCase(tableName)}Delete,
-        ${toPascalCase(tableName)}Update,
-      };
-    }
-    `;
+    const requestsFileContent = render(
+      await readFile(
+        path.join(__dirname, '..', 'templates', 'requests.ts.ejs'),
+        'utf-8',
+      ),
+      {
+        tableNamePascalCase: toPascalCase(tableName),
+        tableNameKebabCase: toKebabCase(tableName),
+        tableNameCamelCase: toCamelCase(tableName),
+      },
+    );
 
     await writeFile(requestsFilePath, requestsFileContent);
     await prettier(requestsFilePath);
