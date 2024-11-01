@@ -159,6 +159,22 @@ export class ApplyAction extends AbstractAction {
       'components',
     );
     await mkdir(tableComponentsPath, { recursive: true });
+    const templates = ['create-panel.ts.ejs', 'update-panel.ts.ejs'];
+    const hasLocale = await hasLocaleYaml(libraryPath, tableName);
+
+    for (const template of templates) {
+      const templatePath = path.join(__dirname, '..', 'templates', template);
+      const fileContent = render(await readFile(templatePath, 'utf-8'), {
+        tableName,
+        hasLocale,
+      });
+      const formattedContent = await formatTypeScriptCode(fileContent);
+      const outputFilePath = path.join(
+        tableComponentsPath,
+        template.replace('.ejs', ''),
+      );
+      await writeFile(outputFilePath, formattedContent);
+    }
   }
 
   async updateTranslationServiceAndController(
