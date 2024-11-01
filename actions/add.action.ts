@@ -34,16 +34,10 @@ interface TableDependency {
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
-  private debug = false;
+
   private db: any = null;
   private isDbConnected: boolean = false;
   private startAt = Date.now();
-
-  showDebug(...args: any[]) {
-    if (this.debug) {
-      debug(...args);
-    }
-  }
 
   public async handle(
     inputs: Input[],

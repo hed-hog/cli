@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { prettier } from './formatting';
 import { toKebabCase } from './convert-string-cases';
 import { getRootPath } from './get-root-path';
+import { formatWithPrettier } from './format-with-prettier';
 
 export async function updateNestCliJson(libraryName: string) {
   const rootPath = await getRootPath();
@@ -35,8 +36,6 @@ export async function updateNestCliJson(libraryName: string) {
       nestCliPath,
       JSON.stringify(nestCliContent, null, 2),
     );
-
-    await prettier(nestCliPath);
 
     console.info(
       chalk.green(
@@ -82,8 +81,6 @@ export async function updatePackageJson(libraryName: string) {
       JSON.stringify(packageJsonContent, null, 2),
     );
 
-    await prettier(packageJsonPath);
-
     console.info(
       chalk.green(
         `Updated package.json with moduleNameMapper for ${toKebabCase(libraryName)}`,
@@ -124,8 +121,6 @@ export async function updateTsconfigPaths(libraryName: string) {
       tsconfigPath,
       JSON.stringify(tsconfigContent, null, 2),
     );
-
-    await prettier(tsconfigPath);
 
     console.info(
       chalk.green(

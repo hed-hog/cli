@@ -5,6 +5,7 @@ import { AbstractAction } from './abstract.action';
 import { Input } from '../commands';
 import { prettier } from '../lib/utils/formatting';
 import { execSync } from 'child_process';
+import { formatWithPrettier } from '../lib/utils/format-with-prettier';
 
 export class RefreshAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -70,7 +71,9 @@ export class RefreshAction extends AbstractAction {
     removeHedhogDeps(packageJson.dependencies);
 
     fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-    await prettier(packageJsonPath);
+    await formatWithPrettier(packageJsonPath, {
+      parser: 'json',
+    });
 
     console.info(
       chalk.blue(

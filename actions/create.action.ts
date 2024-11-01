@@ -17,9 +17,16 @@ import { prettier } from '../lib/utils/formatting';
 import { createYaml } from '../lib/utils/create-yaml';
 import { toKebabCase } from '../lib/utils/convert-string-cases';
 import { getRootPath } from '../lib/utils/get-root-path';
+import { mkdir, writeFile } from 'fs/promises';
+import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
+import { formatWithPrettier } from '../lib/utils/format-with-prettier';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
+    this.debug = options.some(
+      (option) => option.name === 'debug' && option.value === true,
+    );
+
     const libraryName = String(
       inputs.find(({ name }) => name === 'name')?.value,
     ).toLowerCase();
@@ -27,6 +34,8 @@ export class CreateAction extends AbstractAction {
     const removeDefaultDeps =
       Boolean(options.find((i) => i.name === 'remove-default-deps')?.value) ??
       false;
+    const force =
+      Boolean(options.find((i) => i.name === 'force')?.value) ?? false;
 
     if (!libraryName.length) {
       console.error(chalk.red('You must tell a name for the module.'));
@@ -41,6 +50,13 @@ export class CreateAction extends AbstractAction {
     }
 
     const rootPath = await getRootPath();
+
+    this.showDebug({
+      libraryName,
+      removeDefaultDeps,
+      force,
+      rootPath,
+    });
 
     const libraryPath = path.join(
       rootPath,
@@ -73,17 +89,17 @@ export class CreateAction extends AbstractAction {
     console.info(chalk.green(`Library ${libraryName} created successfully!`));
   }
 
-  private createGitignore(libraryPath: string) {
+  private async createGitignore(libraryPath: string) {
     const gitignoreContent = `
 /dist
 /node_modules
     `.trim();
 
     if (!fs.existsSync(libraryPath)) {
-      fs.mkdirSync(libraryPath, { recursive: true });
+      await mkdir(libraryPath, { recursive: true });
     }
 
-    fs.writeFileSync(path.join(libraryPath, '.gitignore'), gitignoreContent);
+    await writeFile(path.join(libraryPath, '.gitignore'), gitignoreContent);
   }
 
   private async createPackageJson(
@@ -114,10 +130,6 @@ export class CreateAction extends AbstractAction {
       author: '',
       license: 'MIT',
       description: '',
-      devDependencies: {
-        'ts-node': '^10.9.1',
-        'typescript': '^5.1.3',
-      },
       peerDependencies: {},
     };
 
@@ -126,12 +138,11 @@ export class CreateAction extends AbstractAction {
 
       for (const devDep of devDeps) {
         (packageJsonContent as any).peerDependencies[devDep] = 'latest';
-        (packageJsonContent.devDependencies as any)[devDep] = 'latest';
       }
     }
 
     const packageFilePath = path.join(libraryPath, 'package.json');
-    fs.writeFileSync(
+    await writeFile(
       packageFilePath,
       JSON.stringify(packageJsonContent, null, 2),
     );
@@ -165,8 +176,6 @@ export class CreateAction extends AbstractAction {
       tsConfigFilePath,
       JSON.stringify(tsconfigProductionContent, null, 2),
     );
-
-    await prettier(tsConfigFilePath);
   }
 
   private async installDependencies(libraryPath: string, options: Input[]) {
@@ -183,13 +192,12 @@ export class CreateAction extends AbstractAction {
         '@hedhog/admin',
         '@hedhog/pagination',
         '@hedhog/prisma',
-        'ts-node',
-        'typescript',
+        '@nestjs/mapped-types',
       ];
 
       const currentDir = process.cwd();
       process.chdir(libraryPath);
-      await packageManager.addProduction(dependencies, 'latest');
+      await packageManager.addDevelopment(dependencies, 'latest');
       process.chdir(currentDir);
 
       console.info(chalk.green('Dependencies installed successfully.'));
@@ -211,7 +219,11 @@ export class CreateAction extends AbstractAction {
     `.trim();
 
     const indexFilePath = path.join(srcPath, 'index.ts');
-    fs.writeFileSync(indexFilePath, indexContent);
-    await prettier(indexFilePath);
+    fs.writeFileSync(
+      indexFilePath,
+      await formatWithPrettier(indexContent, {
+        parser: 'typescript',
+      }),
+    );
   }
 }

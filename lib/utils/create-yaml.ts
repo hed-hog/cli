@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { prettier } from './formatting';
+import { formatWithPrettier } from './format-with-prettier';
 
 export async function createYaml(libraryPath: string) {
   await fs.mkdir(libraryPath, { recursive: true });
@@ -83,6 +83,10 @@ tables: # Definitions for database tables
   `.trim();
 
   const yamlFilePath = path.join(libraryPath, `hedhog.yaml`);
-  await fs.writeFile(yamlFilePath, yamlContent);
-  await prettier(yamlFilePath);
+  await fs.writeFile(
+    yamlFilePath,
+    await formatWithPrettier(yamlContent, {
+      parser: 'yaml',
+    }),
+  );
 }

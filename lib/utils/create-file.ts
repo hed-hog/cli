@@ -1,9 +1,9 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { toKebabCase } from './convert-string-cases';
-import { formatTypeScriptCode } from './format-typescript-code';
 import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
+import { formatWithPrettier } from './format-with-prettier';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -79,5 +79,10 @@ export async function createFile(
     `${toKebabCase(tableName)}.${fileType}.ts`,
   );
 
-  await fs.writeFile(fileFullPath, await formatTypeScriptCode(fileContent));
+  await fs.writeFile(
+    fileFullPath,
+    await formatWithPrettier(fileContent, {
+      parser: 'typescript',
+    }),
+  );
 }

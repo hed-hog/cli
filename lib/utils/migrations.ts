@@ -2,6 +2,7 @@ import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import path = require('path');
 import { prettier } from './formatting';
+import { formatWithPrettier } from './format-with-prettier';
 
 export async function createMigrationDirectory(
   libraryPath: string,
@@ -45,7 +46,9 @@ export class Migrate implements MigrationInterface {
   const migrationFilePath = path.join(migrationPath, 'index.ts');
 
   await writeFile(migrationFilePath, migrationContent);
-  await prettier(migrationFilePath);
+  await formatWithPrettier(migrationFilePath, {
+    parser: 'typescript',
+  });
 }
 
 function generateColumnDefinition(field: any, index: number) {

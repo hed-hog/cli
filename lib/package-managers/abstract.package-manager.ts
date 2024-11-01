@@ -7,6 +7,7 @@ import { MESSAGES } from '../ui';
 import { normalizeToKebabOrSnakeCase } from '../utils/formatting';
 import { PackageManagerCommands } from './package-manager-commands';
 import { ProjectDependency } from './project.dependency';
+import { getNpmPackage } from '../utils/get-npm-package';
 
 export abstract class AbstractPackageManager {
   constructor(protected runner: AbstractRunner) {}
@@ -69,9 +70,13 @@ export abstract class AbstractPackageManager {
     ]
       .filter((i) => i)
       .join(' ');
-    const args: string = dependencies
-      .map((dependency) => `${dependency}@${tag}`)
-      .join(' ');
+
+    const args = [];
+
+    for (const dependency of dependencies) {
+      args.push(`${dependency}@latest`);
+    }
+
     const spinner = ora({
       spinner: {
         interval: 120,
@@ -81,7 +86,7 @@ export abstract class AbstractPackageManager {
     });
     spinner.start();
     try {
-      await this.add(`${command} ${args}`, cwd);
+      await this.add(`${command} ${args.join(' ')}`, cwd);
       spinner.succeed();
       return true;
     } catch {

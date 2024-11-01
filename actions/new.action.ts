@@ -20,17 +20,8 @@ import { rm, writeFile } from 'fs/promises';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { runScript } from '../lib/utils/run-script';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
-import { debug } from '../lib/utils/debug';
 
 export class NewAction extends AbstractAction {
-  private debug = false;
-
-  async showDebug(...args: any[]) {
-    if (this.debug) {
-      debug(chalk.yellow('DEBUG'), ...args);
-    }
-  }
-
   public async handle(inputs: Input[], options: Input[]) {
     this.detectLanguage();
 
