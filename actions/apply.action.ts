@@ -158,7 +158,10 @@ export class ApplyAction extends AbstractAction {
         const formattedContent = await formatTypeScriptCode(fileContent);
         const outputFilePath = path.join(
           taskPath,
-          template.replace('.ejs', ''),
+          template.replace(
+            '.ts.ejs',
+            task.subPath === 'components' ? '.tsx' : '.ts',
+          ),
         );
         await writeFile(outputFilePath, formattedContent);
       }
