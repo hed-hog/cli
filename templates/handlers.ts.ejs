@@ -3,6 +3,7 @@
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
 
 import { useDefaultMutation } from '@/hooks/use-default-mutation'
+import { useQuery } from '@tanstack/react-query'
 import { requests } from './requests'
 
 const scope = '<%= toKebabCase(tableName) %>'
@@ -20,4 +21,12 @@ export function use<%= toPascalCase(tableName) %>Delete() {
 export function use<%= toPascalCase(tableName) %>Update() {
   const { <%= toCamelCase(tableName) %>Update } = requests()
   return useDefaultMutation(scope, 'update', <%= toCamelCase(tableName) %>Update)
+}
+
+export function use<%= tableNamePascalCase %>Get(id: number) {
+  const { <%= tableNameCamelCase %>Get } = requests()
+  return useQuery({
+    queryKey: [scope, 'get'],
+    queryFn: () => <%= tableNameCamelCase %>Get(id),
+  })
 }

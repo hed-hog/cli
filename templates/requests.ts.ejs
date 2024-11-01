@@ -3,9 +3,10 @@
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
 
 import { useApp } from '@/hooks/use-app'
-import { HttpMethod } from '@/types/http-method'
 import { Delete, PaginationParams, PaginationResult } from '@/types'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
+import { HttpMethod } from '@/types/http-method'
+import { formatDataWithLocale } from '@hedhog/utils'
 
 export function requests() {
   const { request } = useApp()
