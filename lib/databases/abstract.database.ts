@@ -103,6 +103,118 @@ export class AbstractDatabase {
     }
   }
 
+  async getTableColumns(tableName: string) {
+    switch (this.type) {
+      case Database.POSTGRES:
+        const columnsPg = await this.query(
+          `SELECT column_name, is_nullable, udt_name AS type, column_default AS default, data_type FROM information_schema.columns WHERE table_name = '${tableName}' AND table_schema = 'public'`,
+        );
+
+        const constraintsPg = await this.query(`
+          SELECT kcu.column_name, ccu.table_name, tc.constraint_type
+          FROM
+          information_schema.table_constraints AS tc
+          JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+          JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
+          WHERE tc.table_name = '${tableName}';
+          `);
+
+        for (let i = 0; i < columnsPg.length; i++) {
+          if (
+            columnsPg[i].data_type === 'USER-DEFINED' &&
+            columnsPg[i].type.split('_')[
+              columnsPg[i].type.split('_').length - 1
+            ] === 'enum'
+          ) {
+            columnsPg[i].enum = await this.query(
+              `
+                SELECT enumlabel AS value
+                FROM pg_enum
+                WHERE enumtypid = '${columnsPg[i].type}'::regtype;
+                `,
+            );
+          }
+        }
+
+        return columnsPg.map((row: any) => ({
+          name: row.column_name,
+          nullable: row.is_nullable === 'YES',
+          type: row.type.replace('int4', 'int'),
+          pk: constraintsPg.find(
+            (constraint: any) =>
+              constraint.column_name === row.column_name &&
+              constraint.constraint_type === 'PRIMARY KEY',
+          )
+            ? true
+            : false,
+          fk:
+            constraintsPg.find(
+              (constraint: any) =>
+                constraint.column_name === row.column_name &&
+                constraint.constraint_type === 'FOREIGN KEY',
+            )?.table_name ?? false,
+          default: row.default !== null && row.default !== undefined,
+          enum: row.enum,
+        }));
+        break;
+
+      case Database.MYSQL:
+        const columnsMySql = await this.query(
+          `SELECT column_name, is_nullable, data_type, column_default AS \`default\`, column_type FROM information_schema.columns WHERE table_name = '${tableName}'`,
+        );
+        const constraintsMySql = await this.query(`
+    SELECT 
+        kcu.column_name, 
+        kcu.table_name, 
+        tc.constraint_type
+    FROM
+        information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+        LEFT JOIN information_schema.referential_constraints AS rc
+            ON rc.constraint_name = tc.constraint_name
+            AND rc.constraint_schema = tc.table_schema
+        LEFT JOIN information_schema.key_column_usage AS ccu
+            ON ccu.constraint_name = rc.unique_constraint_name
+            AND ccu.constraint_schema = rc.unique_constraint_schema
+            AND ccu.ordinal_position = kcu.ordinal_position
+    WHERE 
+        tc.table_name = '${tableName}';
+    `);
+
+        return columnsMySql.map((row: any) => ({
+          name: row.column_name,
+          nullable: row.is_nullable === 'YES',
+          type: row.type.replace('int4', 'int'),
+          pk: constraintsMySql.find(
+            (constraint: any) =>
+              constraint.column_name === row.column_name &&
+              constraint.constraint_type === 'PRIMARY KEY',
+          )
+            ? true
+            : false,
+          fk:
+            constraintsMySql.find(
+              (constraint: any) =>
+                constraint.column_name === row.column_name &&
+                constraint.constraint_type === 'FOREIGN KEY',
+            )?.table_name ?? false,
+          default: row.default !== null && row.default !== undefined,
+          enum: row.column_type.includes('enum(')
+            ? row.column_type
+                .match(/enum\((.*?)\)/)[1]
+                .split(',')
+                .map((e: any) => e.replace(/'/g, ''))
+            : [],
+        }));
+    }
+  }
+
   getTableNameFromQuery(query: string): string | null {
     const match = query.match(/INSERT INTO\s+([`"]?[\w-]+[`"]?)/i);
     if (match && match[1]) {

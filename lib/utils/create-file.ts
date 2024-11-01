@@ -3,6 +3,7 @@ import * as path from 'path';
 import { toKebabCase } from './convert-string-cases';
 import { formatTypeScriptCode } from './format-typescript-code';
 import { render } from 'ejs';
+import { AbstractTable } from '../tables/abstract.table';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -28,17 +29,13 @@ export async function createFile(
     options?.useLibraryNamePath ? toKebabCase(tableName) : 'src',
   );
   await fs.mkdir(filePath, { recursive: true });
-
-  const fieldNamesForSearch = ['name', 'email', 'title'];
-  const availableTypes = ['varchar', 'text'];
   const fieldsForSearch = (options?.fields ?? [])
-    .filter(
-      (field) =>
-        (!field.type && field.name) ||
-        availableTypes.includes(field.type) ||
-        fieldNamesForSearch.includes(field.name),
-    )
+    .map((field) => AbstractTable.getColumnOptions(field))
+    .filter((field) => !['created_at', 'updated_at'].includes(field.name))
+    .filter((field) => !field.references)
     .map((field) => field.name);
+
+  console.log({ fieldsForSearch });
 
   const templatePath = path.join(
     __dirname,
