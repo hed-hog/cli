@@ -1,63 +1,67 @@
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
+<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+
 import { useApp } from '@/hooks/use-app'
 import { HttpMethod } from '@/types/http-method'
 import { Delete, PaginationParams, PaginationResult } from '@/types'
-import { <%= tableNamePascalCase %> } from '@/types/models'
+import { <%= toPascalCase(tableName) %> } from '@/types/models'
 
 export function requests() {
   const { request } = useApp()
 
-  const <%= tableNameCamelCase %>Create = async (data: <%= tableNamePascalCase %> ) => {
-    return request<<%= tableNamePascalCase %>>(
+  const <%= toCamelCase(tableName) %>Create = async (data: <%= toPascalCase(tableName) %> ) => {
+    return request<<%= toPascalCase(tableName) %>>(
      { 
-        url: '/<%= tableNameKebabCase %>',
+        url: '/<%= toKebabCase(tableName) %>',
         method: HttpMethod.POST,
         data
       }
     )
   }
 
-  const <%= tableNameCamelCase %>Update = async (id: number, data: PersonType) => {
-    return request<<%= tableNamePascalCase %>>(
+  const <%= toCamelCase(tableName) %>Update = async (id: number, data: PersonType) => {
+    return request<<%= toPascalCase(tableName) %>>(
       {
-        url: `/<%= tableNameKebabCase %>/${id}`,
+        url: `/<%= toKebabCase(tableName) %>/${id}`,
         method: HttpMethod.PATCH,
         data
       }
     )
   }
 
-  const <%= tableNameCamelCase %>Delete = async (ids: number[]) => {
+  const <%= toCamelCase(tableName) %>Delete = async (ids: number[]) => {
     return request<Delete>(
       {
-        url: '/<%= tableNameKebabCase %>',
+        url: '/<%= toKebabCase(tableName) %>',
         data: { ids },
         method: HttpMethod.DELETE,
         data: params}
     )
   }
 
-  const <%= tableNameCamelCase %>List = async (params: PaginationParams) => {
-    return request<PaginationResult<<%= tableNamePascalCase %>>>(
+  const <%= toCamelCase(tableName) %>List = async (params: PaginationParams) => {
+    return request<PaginationResult<<%= toPascalCase(tableName) %>>>(
       {
-        url: '/<%= tableNameKebabCase %>',
+        url: '/<%= toKebabCase(tableName) %>',
         params
       }
     )
   }
 
-  const <%= tableNameCamelCase %>Get = async (id: number) => {
-    return request<<%= tableNamePascalCase %>>(
+  const <%= toCamelCase(tableName) %>Get = async (id: number) => {
+    return request<<%= toPascalCase(tableName) %>>(
       {
-        url: `/<%= tableNameKebabCase %>/${id}`
+        url: `/<%= toKebabCase(tableName) %>/${id}`
       }
     )
   }
 
   return {
-    <%= tableNameCamelCase %>Create,
-    <%= tableNameCamelCase %>Update,
-    <%= tableNameCamelCase %>Delete,
-    <%= tableNameCamelCase %>List,
-    <%= tableNameCamelCase %>Get,
+    <%= toCamelCase(tableName) %>Create,
+    <%= toCamelCase(tableName) %>Update,
+    <%= toCamelCase(tableName) %>Delete,
+    <%= toCamelCase(tableName) %>List,
+    <%= toCamelCase(tableName) %>Get,
   }
 }

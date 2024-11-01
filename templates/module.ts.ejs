@@ -1,0 +1,32 @@
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+
+<%
+const moduleImports = `
+import { AdminModule } from '@hedhog/admin';
+import { PaginationModule } from '@hedhog/pagination';
+import { PrismaModule } from '@hedhog/prisma';
+import { forwardRef, Module } from '@nestjs/common';`;
+
+const serviceName = `${toPascalCase(libraryName)}Service`;
+const controllerName = `${toPascalCase(libraryName)}Controller`;
+
+const additionalImports = options.importServices
+    ? `
+import { ${serviceName} } from './${toKebabCase(libraryName)}.service';
+import { ${controllerName} } from './${toKebabCase(libraryName)}.controller';`
+    : '';
+%>
+
+<%- moduleImports %><%- additionalImports %>
+@Module({
+    imports: [
+        forwardRef(() => AdminModule),
+        forwardRef(() => PrismaModule),
+        forwardRef(() => PaginationModule),
+    ],
+    controllers: <%= options.importServices ? `[${controllerName}]` : '[]' %>,
+    providers: <%= options.importServices ? `[${serviceName}]` : '[]' %>,
+    exports: <%= options.importServices ? `[${serviceName}]` : '[]' %>,
+})
+export class <%= toPascalCase(libraryName) %>Module {}

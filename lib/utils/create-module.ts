@@ -1,8 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { capitalize, prettier } from './formatting';
-import { toPascalCase, toKebabCase } from './convert-string-cases';
+import { toKebabCase } from './convert-string-cases';
 import { formatTypeScriptCode } from './format-typescript-code';
+import { render } from 'ejs';
 
 interface IOption {
   useLibraryNamePath: boolean;
@@ -23,35 +23,18 @@ export async function createModule(
   );
   await fs.mkdir(modulePath, { recursive: true });
 
-  const moduleImports = `
-import { AdminModule } from '@hedhog/admin';
-import { PaginationModule } from '@hedhog/pagination';
-import { PrismaModule } from '@hedhog/prisma';
-import { forwardRef, Module } from '@nestjs/common';`;
+  const templatePath = path.join(
+    __dirname,
+    '..',
+    '..',
+    'templates',
+    'module.ts.ejs',
+  );
 
-  const serviceName = `${toKebabCase(libraryName)}Service`;
-  const controllerName = `${toKebabCase(libraryName)}Controller`;
-
-  const additionalImports = options.importServices
-    ? `
-import { ${serviceName} } from './${toKebabCase(libraryName)}.service';
-import { ${controllerName} } from './${toKebabCase(libraryName)}.controller';`
-    : '';
-
-  const moduleContent = `
-${moduleImports}${additionalImports}
-@Module({
-  imports: [
-    forwardRef(() => AdminModule),
-    forwardRef(() => PrismaModule),
-    forwardRef(() => PaginationModule),
-  ],
-  controllers: ${options.importServices ? `[${controllerName}]` : '[]'},
-  providers: ${options.importServices ? `[${serviceName}]` : '[]'},
-  exports: ${options.importServices ? `[${serviceName}]` : '[]'},
-})
-export class ${toPascalCase(libraryName)}Module {}
-  `.trim();
+  const moduleContent = render(await fs.readFile(templatePath, 'utf-8'), {
+    libraryName,
+    options,
+  });
 
   const moduleFilePath = path.join(
     modulePath,

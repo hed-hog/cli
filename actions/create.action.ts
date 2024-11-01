@@ -17,6 +17,7 @@ import { prettier } from '../lib/utils/formatting';
 import { createYaml } from '../lib/utils/create-yaml';
 import { toKebabCase } from '../lib/utils/convert-string-cases';
 import { getRootPath } from '../lib/utils/get-root-path';
+import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -135,8 +136,6 @@ export class CreateAction extends AbstractAction {
       packageFilePath,
       JSON.stringify(packageJsonContent, null, 2),
     );
-
-    await prettier(packageFilePath);
   }
 
   private async createTsconfigProduction(libraryPath: string) {

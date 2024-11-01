@@ -9,7 +9,6 @@ import { readFileSync } from 'fs';
 import { createModule } from '../lib/utils/create-module';
 import { createDTOs } from '../lib/utils/create-dto';
 import { readFile, mkdir, writeFile } from 'fs/promises';
-import { prettier } from '../lib/utils/formatting';
 import {
   toCamelCase,
   toKebabCase,
@@ -86,7 +85,6 @@ export class ApplyAction extends AbstractAction {
           table.name,
         );
 
-        await this.applyUpdateToService(libraryPath, baseTableName, table.name);
         continue;
       }
 
@@ -127,18 +125,12 @@ export class ApplyAction extends AbstractAction {
     await mkdir(tableFrontendPath, { recursive: true });
 
     const templates = ['requests.ts.ejs', 'handlers.ts.ejs'];
-    const replacements = {
-      tableNamePascalCase: toPascalCase(tableName),
-      tableNameKebabCase: toKebabCase(tableName),
-      tableNameCamelCase: toCamelCase(tableName),
-    };
 
     for (const template of templates) {
       const templatePath = path.join(__dirname, '..', 'templates', template);
-      const fileContent = render(
-        await readFile(templatePath, 'utf-8'),
-        replacements,
-      );
+      const fileContent = render(await readFile(templatePath, 'utf-8'), {
+        tableName,
+      });
       const formattedContent = await formatTypeScriptCode(fileContent);
       const outputFilePath = path.join(
         tableFrontendPath,
@@ -168,7 +160,7 @@ export class ApplyAction extends AbstractAction {
       let serviceContent = await readFile(serviceFilePath, 'utf-8');
 
       const getFunctionReplacement = `
-      async get(locale: string, paginationParams: PaginationDTO) {
+      async list(locale: string, paginationParams: PaginationDTO) {
         const OR: any[] = [
           {
             name: { contains: paginationParams.search, mode: 'insensitive' },
@@ -209,7 +201,7 @@ export class ApplyAction extends AbstractAction {
       `.trim();
 
       serviceContent = serviceContent.replace(
-        /async get\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/gm,
+        /async list\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/gm,
         getFunctionReplacement,
       );
 
@@ -219,8 +211,8 @@ export class ApplyAction extends AbstractAction {
       );
       serviceContent = serviceContent.replace(regexToRemove, '');
 
-      await writeFile(serviceFilePath, serviceContent);
-      await prettier(serviceFilePath);
+      const formattedContent = await formatTypeScriptCode(serviceContent);
+      await writeFile(serviceFilePath, formattedContent);
     } catch (error) {
       console.error(`Erro ao modificar service: ${error.message}`);
     }
@@ -230,13 +222,13 @@ export class ApplyAction extends AbstractAction {
       const localeDecorator = '@Locale() locale';
       if (!controllerContent.includes(localeDecorator)) {
         controllerContent = controllerContent.replace(
-          `async get(@Pagination() paginationParams) {`,
-          `async get(@Pagination() paginationParams, ${localeDecorator}){`,
+          `async list(@Pagination() paginationParams) {`,
+          `async list(@Pagination() paginationParams, ${localeDecorator}){`,
         );
 
         controllerContent = controllerContent.replace(
-          `return this.${toCamelCase(baseTableName)}Service.get(paginationParams)`,
-          `return this.${toCamelCase(baseTableName)}Service.get(locale, paginationParams)`,
+          `return this.${toCamelCase(baseTableName)}Service.list(paginationParams)`,
+          `return this.${toCamelCase(baseTableName)}Service.list(locale, paginationParams)`,
         );
       }
 
@@ -245,8 +237,8 @@ export class ApplyAction extends AbstractAction {
         controllerContent = `${importStatement}\n${controllerContent}`;
       }
 
-      await writeFile(controllerFilePath, controllerContent);
-      await prettier(controllerFilePath);
+      const formattedContent = await formatTypeScriptCode(controllerContent);
+      await writeFile(controllerFilePath, formattedContent);
     } catch (error) {
       console.error(`Erro ao modificar controller: ${error.message}`);
     }
@@ -276,60 +268,25 @@ export class ApplyAction extends AbstractAction {
     try {
       let moduleContent = await readFileSync(modulePath, 'utf8');
 
-      const importStatement = `import { ${newModuleName}Module } from './${newModuleName}/${newModuleName}.module';`;
+      const importStatement = `import { ${toPascalCase(newModuleName)}Module } from './${toKebabCase(newModuleName)}/${toKebabCase(newModuleName)}.module';`;
       if (!moduleContent.includes(importStatement)) {
-        moduleContent = `${importStatement}\n\n${moduleContent}`;
+        moduleContent = `${importStatement}\n${moduleContent}`;
       }
 
       const moduleImportRegex = /imports:\s*\[(.*?)\]/s;
       moduleContent = moduleContent.replace(moduleImportRegex, (match) => {
-        return match.replace(']', `,\n    ${newModuleName}Module]`);
+        return match.replace(
+          ']',
+          `,\n    ${toPascalCase(newModuleName)}Module]`,
+        );
       });
 
-      await writeFile(modulePath, moduleContent);
+      const formattedContent = await formatTypeScriptCode(moduleContent);
+      await writeFile(modulePath, formattedContent);
     } catch (error) {
       console.error(
         chalk.red(`Error updating parent module: ${error.message}`),
       );
     }
-  }
-
-  private async applyUpdateToService(
-    libraryPath: string,
-    baseTableName: string,
-    translationTableName: string,
-  ) {
-    const serviceFilePath = path.join(
-      libraryPath,
-      toKebabCase(baseTableName),
-      `${toKebabCase(baseTableName)}.service.ts`,
-    );
-    let serviceContent = await readFile(serviceFilePath, 'utf-8');
-
-    const includeLogic = `
-    include: {
-      ${translationTableName}: {
-        select: {
-          id: true,
-          ${translationTableName}: {
-            where: {
-              locale: {
-                code: locale,
-              },
-            },
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-    },
-  `;
-
-    serviceContent = serviceContent.replace(
-      'findMany({',
-      `findMany({ ${includeLogic}`,
-    );
-    await writeFile(serviceFilePath, serviceContent);
   }
 }
