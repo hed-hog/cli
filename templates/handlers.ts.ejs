@@ -23,10 +23,10 @@ export function use<%= toPascalCase(tableName) %>Update() {
   return useDefaultMutation(scope, 'update', <%= toCamelCase(tableName) %>Update)
 }
 
-export function use<%= tableNamePascalCase %>Get(id: number) {
-  const { <%= tableNameCamelCase %>Get } = requests()
+export function use<%= toPascalCase(tableName) %>Get(id: number) {
+  const { <%= toCamelCase(tableName) %>Get } = requests()
   return useQuery({
     queryKey: [scope, 'get'],
-    queryFn: () => <%= tableNameCamelCase %>Get(id),
+    queryFn: () => <%= toCamelCase(tableName) %>Get(id),
   })
 }
