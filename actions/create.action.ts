@@ -7,7 +7,7 @@ import {
   AbstractPackageManager,
   PackageManagerFactory,
 } from '../lib/package-managers';
-import { createModule } from '../lib/utils/create-module';
+import { createFile } from '../lib/utils/create-file';
 import {
   updateNestCliJson,
   updatePackageJson,
@@ -17,7 +17,6 @@ import { prettier } from '../lib/utils/formatting';
 import { createYaml } from '../lib/utils/create-yaml';
 import { toKebabCase } from '../lib/utils/convert-string-cases';
 import { getRootPath } from '../lib/utils/get-root-path';
-import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -54,7 +53,7 @@ export class CreateAction extends AbstractAction {
     await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
     await this.createTsconfigProduction(libraryPath);
 
-    await createModule(libraryPath, libraryName);
+    await createFile(libraryPath, libraryName, 'module');
     await createYaml(libraryPath);
 
     console.info(

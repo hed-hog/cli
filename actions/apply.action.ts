@@ -2,11 +2,8 @@ import chalk = require('chalk');
 import { AbstractAction } from '.';
 import { Input } from '../commands';
 import path = require('path');
-import { createService } from '../lib/utils/create-service';
-import { createController } from '../lib/utils/create-controller';
 import * as yaml from 'yaml';
 import { readFileSync } from 'fs';
-import { createModule } from '../lib/utils/create-module';
 import { createDTOs } from '../lib/utils/create-dto';
 import { readFile, mkdir, writeFile } from 'fs/promises';
 import {
@@ -19,6 +16,7 @@ import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
 import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import hasLocaleYaml from '../lib/utils/has-locale-yaml';
+import { createFile } from '../lib/utils/create-file';
 
 interface Column {
   name: string;
@@ -101,12 +99,18 @@ export class ApplyAction extends AbstractAction {
         .join(',');
 
       await createDTOs(path.join(libraryPath, toKebabCase(table.name)), fields);
-      await createService(libraryPath, table.name, table.columns);
-      await createModule(libraryPath, table.name, {
+      await createFile(libraryPath, table.name, 'service', {
+        fields: table.columns,
+        useLibraryNamePath: true,
+      });
+      console.log('create', table.name);
+      await createFile(libraryPath, table.name, 'module', {
         useLibraryNamePath: true,
         importServices: true,
       });
-      await createController(libraryPath, table.name);
+      await createFile(libraryPath, table.name, 'controller', {
+        useLibraryNamePath: true,
+      });
       await addRoutesToYaml(libraryPath, table.name);
       await this.updateParentModule(
         path.join(libraryPath, `${toKebabCase(libraryName)}.module.ts`),
@@ -117,13 +121,18 @@ export class ApplyAction extends AbstractAction {
   }
 
   async createFrontendFiles(libraryPath: string, tableName: string) {
+    await this.createRequestsFiles(libraryPath, tableName);
+    await this.createComponentFiles(libraryPath, tableName);
+  }
+
+  async createRequestsFiles(libraryPath: string, tableName: string) {
     const frontendPath = path.join(libraryPath, '..', 'frontend');
-    const tableFrontendPath = path.join(
+    const tableRequestsPath = path.join(
       frontendPath,
       toKebabCase(tableName),
       'react-query',
     );
-    await mkdir(tableFrontendPath, { recursive: true });
+    await mkdir(tableRequestsPath, { recursive: true });
     const templates = ['requests.ts.ejs', 'handlers.ts.ejs'];
     const hasLocale = await hasLocaleYaml(libraryPath, tableName);
 
@@ -135,11 +144,21 @@ export class ApplyAction extends AbstractAction {
       });
       const formattedContent = await formatTypeScriptCode(fileContent);
       const outputFilePath = path.join(
-        tableFrontendPath,
+        tableRequestsPath,
         template.replace('.ejs', ''),
       );
       await writeFile(outputFilePath, formattedContent);
     }
+  }
+
+  async createComponentFiles(libraryPath: string, tableName: string) {
+    const frontendPath = path.join(libraryPath, '..', 'frontend');
+    const tableComponentsPath = path.join(
+      frontendPath,
+      toKebabCase(tableName),
+      'components',
+    );
+    await mkdir(tableComponentsPath, { recursive: true });
   }
 
   async updateTranslationServiceAndController(
