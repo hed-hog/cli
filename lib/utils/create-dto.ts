@@ -9,7 +9,7 @@ export async function createDTOs(libraryPath: string, fields: string) {
 
   await createDeleteDTO(dtoPath);
   await createCreateDTO(dtoPath, fields);
-  await createUpdateDTO(dtoPath, fields);
+  await createUpdateDTO(dtoPath);
 }
 
 async function createDeleteDTO(dtoPath: string) {
@@ -133,22 +133,12 @@ export class CreateDTO {
   );
 }
 
-async function createUpdateDTO(dtoPath: string, fields: string) {
-  const parsedFields = parseFields(fields);
-  const decoratorsUsed = new Set<string>();
-  const dtoFields = parsedFields
-    .map((field) => getValidator(field, true, decoratorsUsed))
-    .join('\n\n  ');
-
-  const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';`;
-
+async function createUpdateDTO(dtoPath: string) {
   const updateDTOContent = `
-${imports}
-
-export class UpdateDTO {
-  ${dtoFields}
-}
-  `.trim();
+    import { PartialType } from '@nestjs/mapped-types';
+    import { CreateDTO } from './create.dto';
+    
+    export class UpdateDTO extends PartialType(CreateDTO) {}`.trim();
 
   const updateDtoFilePath = path.join(dtoPath, 'update.dto.ts');
   await fs.writeFile(

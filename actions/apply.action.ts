@@ -87,6 +87,7 @@ export class ApplyAction extends AbstractAction {
       }
 
       const fields = table.columns
+        .filter((column) => column.type !== 'fk' && column.type !== 'pk')
         .map((column) => {
           const columnName = column.type === 'slug' ? 'slug' : column.name;
           const columnType = column.type === 'slug' ? 'varchar' : column.type;

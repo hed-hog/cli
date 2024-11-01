@@ -40,7 +40,7 @@ export class <%= toPascalCase(tableName) %>Controller {
   }
 
   @Post()
-  create(@Body() data: CreateDTO) {
+  async create(@Body() data: CreateDTO) {
     return this.<%= toCamelCase(tableName) %>Service.create(data);
   }
 
