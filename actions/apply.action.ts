@@ -116,13 +116,17 @@ export class ApplyAction extends AbstractAction {
         path.join(libraryPath, `${toKebabCase(libraryName)}.module.ts`),
         table.name,
       );
-      await this.createFrontendFiles(libraryPath, table.name);
+      await this.createFrontendFiles(libraryPath, table.name, table.columns);
     }
   }
 
-  async createFrontendFiles(libraryPath: string, tableName: string) {
+  async createFrontendFiles(
+    libraryPath: string,
+    tableName: string,
+    fields: Column[],
+  ) {
     await this.createRequestsFiles(libraryPath, tableName);
-    await this.createComponentFiles(libraryPath, tableName);
+    await this.createComponentFiles(libraryPath, tableName, fields);
   }
 
   async createRequestsFiles(libraryPath: string, tableName: string) {
@@ -151,7 +155,11 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
-  async createComponentFiles(libraryPath: string, tableName: string) {
+  async createComponentFiles(
+    libraryPath: string,
+    tableName: string,
+    fields: Column[],
+  ) {
     const frontendPath = path.join(libraryPath, '..', 'frontend');
     const tableComponentsPath = path.join(
       frontendPath,
@@ -167,6 +175,7 @@ export class ApplyAction extends AbstractAction {
       const fileContent = render(await readFile(templatePath, 'utf-8'), {
         tableName,
         hasLocale,
+        fields,
       });
       const formattedContent = await formatTypeScriptCode(fileContent);
       const outputFilePath = path.join(

@@ -39,13 +39,15 @@ export const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
             <FormPanel
                 ref={formRef}
                 fields={[
+                    <% fields.filter(field => field.name).forEach((field, index, array) => { %>
                     {
-                        name: 'slug',
-                        label: { text: t('slug', { ns: 'translation' }) },
+                        name: '<%= field.name %>',
+                        label: { text: t('<%= field.name %>', { ns: 'translation' }) },
                         type: EnumFieldType.TEXT,
                         required: true,
-                    },
-                    ...getFieldsLocale([{ name: 'name' }]),
+                    }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
+                    <% }) %>
+                    <%- hasLocale ? '...getFieldsLocale([{ name: "name" }])' : '' %>
                 ]}
                 button={{ text: t('create', { ns: 'actions' }) }}
                 onSubmit={async (data) => {

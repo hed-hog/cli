@@ -45,13 +45,15 @@ import FormPanel, {
                   <FormPanel
                     ref={formRef}
                     fields={[
-                      {
-                        name: 'slug',
-                        label: { text: t('slug', { ns: 'translation' }) },
-                        type: EnumFieldType.TEXT,
-                        required: true,
-                      },
-                      ...getFieldsLocale([{ name: 'name' }]),
+                        <% fields.filter(field => field.name).forEach((field, index, array) => { %>
+                        {
+                            name: '<%= field.name %>',
+                            label: { text: t('<%= field.name %>', { ns: 'translation' }) },
+                            type: EnumFieldType.TEXT,
+                            required: true,
+                        }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
+                        <% }) %>
+                        <%- hasLocale ? '...getFieldsLocale([{ name: "name" }])' : '' %>
                     ]}
                     button={{ text: t('save', { ns: 'actions' }) }}
                     onSubmit={(data) => {
