@@ -18,6 +18,7 @@ import { getRootPath } from '../lib/utils/get-root-path';
 import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
 import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
+import hasLocaleYaml from '../lib/utils/has-locale-yaml';
 
 interface Column {
   name: string;
@@ -123,13 +124,14 @@ export class ApplyAction extends AbstractAction {
       'react-query',
     );
     await mkdir(tableFrontendPath, { recursive: true });
-
     const templates = ['requests.ts.ejs', 'handlers.ts.ejs'];
+    const hasLocale = await hasLocaleYaml(libraryPath, tableName);
 
     for (const template of templates) {
       const templatePath = path.join(__dirname, '..', 'templates', template);
       const fileContent = render(await readFile(templatePath, 'utf-8'), {
         tableName,
+        hasLocale,
       });
       const formattedContent = await formatTypeScriptCode(fileContent);
       const outputFilePath = path.join(

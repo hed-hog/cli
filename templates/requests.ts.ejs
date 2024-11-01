@@ -6,40 +6,10 @@ import { useApp } from '@/hooks/use-app'
 import { Delete, PaginationParams, PaginationResult } from '@/types'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
 import { HttpMethod } from '@/types/http-method'
-import { formatDataWithLocale } from '@hedhog/utils'
+<%- hasLocale ? "import { formatDataWithLocale } from '@hedhog/utils'" : "" %>	
 
 export function requests() {
   const { request } = useApp()
-
-  const <%= toCamelCase(tableName) %>Create = async (data: <%= toPascalCase(tableName) %> ) => {
-    return request<<%= toPascalCase(tableName) %>>(
-     { 
-        url: '/<%= toKebabCase(tableName) %>',
-        method: HttpMethod.POST,
-        data
-      }
-    )
-  }
-
-  const <%= toCamelCase(tableName) %>Update = async (id: number, data: <%= toPascalCase(tableName) %>) => {
-    return request<<%= toPascalCase(tableName) %>>(
-      {
-        url: `/<%= toKebabCase(tableName) %>/${id}`,
-        method: HttpMethod.PATCH,
-        data
-      }
-    )
-  }
-
-  const <%= toCamelCase(tableName) %>Delete = async (ids: number[]) => {
-    return request<Delete>(
-      {
-        url: '/<%= toKebabCase(tableName) %>',
-        data: { ids },
-        method: HttpMethod.DELETE,
-        data: params}
-    )
-  }
 
   const <%= toCamelCase(tableName) %>List = async (params: PaginationParams) => {
     return request<PaginationResult<<%= toPascalCase(tableName) %>>>(
@@ -54,6 +24,36 @@ export function requests() {
     return request<<%= toPascalCase(tableName) %>>(
       {
         url: `/<%= toKebabCase(tableName) %>/${id}`
+      }
+    )
+  }
+
+  const <%= toCamelCase(tableName) %>Create = async (data: <%= toPascalCase(tableName) %> ) => {
+    return request<<%= toPascalCase(tableName) %>>(
+     { 
+        url: '/<%= toKebabCase(tableName) %>',
+        method: HttpMethod.POST,
+        data
+      }
+    )
+  }
+
+  const <%= toCamelCase(tableName) %>Delete = async (ids: number[]) => {
+    return request<Delete>(
+      {
+        url: '/<%= toKebabCase(tableName) %>',
+        data: { ids },
+        method: HttpMethod.DELETE
+      }
+    )
+  }
+
+  const <%= toCamelCase(tableName) %>Update = async (id: number, data: <%= toPascalCase(tableName) %>) => {
+    return request<<%= toPascalCase(tableName) %>>(
+      {
+        url: `/<%= toKebabCase(tableName) %>/${id}`,
+        method: HttpMethod.PATCH,
+        data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>
       }
     )
   }
