@@ -1,0 +1,33 @@
+async list(locale: string, paginationParams: PaginationDTO) {
+  const OR: any[] = [];
+
+  const include = {
+    <%= tableName %>: {
+      select: {
+        id: true,
+        <%= translationTableName %>: {
+          where: {
+            locale: {
+              code: locale,
+            },
+          },
+          select: {
+            name: true,
+          },
+        },
+      },
+    },
+  };
+
+  return this.paginationService.paginate(
+    this.prismaService.<%= translationTableName %>,
+    paginationParams,
+    {
+      where: {
+        OR,
+      },
+      include,
+    },
+    "<%= translationTableName %>"
+  );
+}

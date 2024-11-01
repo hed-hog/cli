@@ -75,13 +75,12 @@ export class ApplyAction extends AbstractAction {
     const tables = this.parseYamlFile(hedhogFilePath);
 
     for (const table of tables) {
-      if (table.name.endsWith('locale')) {
-        const baseTableName = table.name.replace('_locale', '');
+      const baseTableName = table.name.replace('_locale', '');
 
+      if (table.name.endsWith('locale')) {
         await this.updateTranslationServiceAndController(
           libraryPath,
           baseTableName,
-          table.name,
         );
 
         continue;
@@ -99,10 +98,17 @@ export class ApplyAction extends AbstractAction {
         .join(',');
 
       await createDTOs(path.join(libraryPath, toKebabCase(table.name)), fields);
-      await createFile(libraryPath, table.name, 'service', {
-        fields: table.columns,
-        useLibraryNamePath: true,
-      });
+      await createFile(
+        libraryPath,
+        table.name,
+        'service',
+        {
+          fields: table.columns,
+          useLibraryNamePath: true,
+        },
+        hasLocaleYaml(libraryPath, baseTableName),
+      );
+
       await createFile(libraryPath, table.name, 'module', {
         useLibraryNamePath: true,
         importServices: true,
@@ -170,7 +176,6 @@ export class ApplyAction extends AbstractAction {
   async updateTranslationServiceAndController(
     libraryPath: string,
     baseTableName: string,
-    translationTableName: string,
   ) {
     const serviceFilePath = path.join(
       libraryPath,
@@ -182,67 +187,6 @@ export class ApplyAction extends AbstractAction {
       toKebabCase(baseTableName),
       `${toKebabCase(baseTableName)}.controller.ts`,
     );
-
-    try {
-      let serviceContent = await readFile(serviceFilePath, 'utf-8');
-
-      const getFunctionReplacement = `
-      async list(locale: string, paginationParams: PaginationDTO) {
-        const OR: any[] = [
-          {
-            name: { contains: paginationParams.search, mode: 'insensitive' },
-          },
-          { id: { equals: +paginationParams.search } },
-        ];
-  
-        const include = {
-          ${baseTableName}: {
-            select: {
-              id: true,
-              ${translationTableName}: {
-                where: {
-                  locale: {
-                    code: locale,
-                  },
-                },
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
-        };
-  
-        return this.paginationService.paginate(
-          this.prismaService.${translationTableName},
-          paginationParams,
-          {
-            where: {
-              OR,
-            },
-            include,
-          },
-          '${translationTableName}'
-        );
-      }`.trim();
-
-      serviceContent = serviceContent.replace(
-        /async list\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/gm,
-        getFunctionReplacement,
-      );
-
-      const regexToRemove = new RegExp(
-        `return this\\.paginationService\\.paginate\\(\\s*this\\.prismaService\\.${baseTableName},[\\s\\S]*?\\);\\n\\s*\\}`,
-        'm',
-      );
-
-      serviceContent = serviceContent.replace(regexToRemove, '');
-
-      const formattedContent = await formatTypeScriptCode(serviceContent);
-      await writeFile(serviceFilePath, formattedContent);
-    } catch (error) {
-      console.error(`Erro ao modificar service: ${error.message}`);
-    }
 
     try {
       let controllerContent = await readFile(controllerFilePath, 'utf-8');

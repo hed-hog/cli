@@ -23,6 +23,7 @@ export async function createFile(
     useLibraryNamePath: false,
     importServices: false,
   },
+  hasLocale?: boolean,
 ) {
   const filePath = path.join(
     libraryPath,
@@ -35,8 +36,6 @@ export async function createFile(
     .filter((field) => !field.references)
     .map((field) => field.name);
 
-  console.log({ fieldsForSearch });
-
   const templatePath = path.join(
     __dirname,
     '..',
@@ -45,11 +44,34 @@ export async function createFile(
     `${fileType}.ts.ejs`,
   );
 
+  const listFunction = render(
+    await fs.readFile(
+      path.join(
+        __dirname,
+        '..',
+        '..',
+        'templates',
+        Boolean(hasLocale)
+          ? 'list-service-locale.ts.ejs'
+          : 'list-service.ts.ejs',
+      ),
+      'utf-8',
+    ),
+    {
+      tableName,
+      fieldsForSearch,
+      libraryName: tableName,
+      translationTableName: `${tableName}_locale`,
+      options,
+    },
+  );
+
   const fileContent = render(await fs.readFile(templatePath, 'utf-8'), {
     tableName,
     libraryName: tableName,
     fieldsForSearch,
     options,
+    listFunction,
   });
 
   const fileFullPath = path.join(
