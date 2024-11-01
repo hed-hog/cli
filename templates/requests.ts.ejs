@@ -1,6 +1,7 @@
 import { useApp } from '@/hooks/use-app'
-import { HttpMethod } from '@/types/http-method'
 import { Delete, PaginationParams, PaginationResult } from '@/types'
+import { HttpMethod } from '@/types/http-method'
+import { formatDataWithLocale } from '@hedhog/utils'
 import { <%= tableNamePascalCase %> } from '@/types/models'
 
 export function requests() {
