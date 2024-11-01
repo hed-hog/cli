@@ -30,11 +30,12 @@ export async function createFile(
   await fs.mkdir(filePath, { recursive: true });
 
   const fieldNamesForSearch = ['name', 'email', 'title'];
+  const availableTypes = ['varchar', 'text'];
   const fieldsForSearch = (options?.fields ?? [])
     .filter(
       (field) =>
-        field.type === 'varchar' ||
-        field.type === 'text' ||
+        (!field.type && field.name) ||
+        availableTypes.includes(field.type) ||
         fieldNamesForSearch.includes(field.name),
     )
     .map((field) => field.name);

@@ -29,8 +29,8 @@ tables: # Definitions for database tables
     columns:
       - type: pk # Indicates this is a primary key
       - type: slug
-      - name: created_at
-      - name: updated_at
+      - type: created_at
+      - type: updated_at
     ifNotExists: true # Create this table only if it does not exist
 
   category_locale:
@@ -53,8 +53,8 @@ tables: # Definitions for database tables
       length: 100
     - name: description
       length: 512
-    - name: created_at
-    - name: updated_at
+    - type: created_at
+    - type: updated_at
 
   # Table 3 - Posts
   post:
@@ -75,8 +75,8 @@ tables: # Definitions for database tables
           table: category # References the 'categories' table
           column: id # References the 'id' column in 'categories'
           onDelete: RESTRICT # Prevents deletion of categories if posts are associated
-      - name: created_at # Timestamp for when the post was created
-      - name: updated_at # Timestamp for when the post was last updated
+      - type: created_at # Timestamp for when the post was created
+      - type: updated_at # Timestamp for when the post was last updated
     ifNotExists: true # Create this table only if it does not exist
 
 

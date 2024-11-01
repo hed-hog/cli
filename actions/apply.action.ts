@@ -234,8 +234,7 @@ export class ApplyAction extends AbstractAction {
           },
           '${translationTableName}'
         );
-      }
-      `.trim();
+      }`.trim();
 
       serviceContent = serviceContent.replace(
         /async list\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/gm,
