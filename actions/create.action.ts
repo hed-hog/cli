@@ -13,13 +13,12 @@ import {
   updatePackageJson,
   updateTsconfigPaths,
 } from '../lib/utils/update-files';
-import { prettier } from '../lib/utils/formatting';
 import { createYaml } from '../lib/utils/create-yaml';
 import { toKebabCase } from '../lib/utils/convert-string-cases';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { mkdir, writeFile } from 'fs/promises';
-import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';
+import * as inquirer from 'inquirer';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -51,19 +50,22 @@ export class CreateAction extends AbstractAction {
 
     const rootPath = await getRootPath();
 
-    this.showDebug({
-      libraryName,
-      removeDefaultDeps,
-      force,
-      rootPath,
-    });
-
     const libraryPath = path.join(
       rootPath,
       'lib',
       'libs',
       toKebabCase(libraryName),
     );
+
+    this.showDebug({
+      libraryPath,
+      libraryName,
+      removeDefaultDeps,
+      force,
+      rootPath,
+    });
+
+    await this.checkLibraryExistence(libraryPath, force);
 
     this.createGitignore(libraryPath);
     await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
@@ -87,6 +89,34 @@ export class CreateAction extends AbstractAction {
     await this.installDependencies(libraryPath, options);
 
     console.info(chalk.green(`Library ${libraryName} created successfully!`));
+  }
+
+  private async checkLibraryExistence(libraryPath: string, force: boolean) {
+    if (fs.existsSync(libraryPath)) {
+      if (force) {
+        console.warn(
+          chalk.yellow(
+            `Warning: Library path ${libraryPath} already exists. Overwriting due to force option.`,
+          ),
+        );
+      } else {
+        const answer = await inquirer.createPromptModule({
+          output: process.stderr,
+          input: process.stdin,
+        })({
+          type: 'confirm',
+          name: 'exists',
+          message: `Library path ${libraryPath} already exists. Do you want to overwrite it?`,
+        });
+
+        if (!answer.exists) {
+          console.info(chalk.red('Aborting library creation...'));
+          process.exit(0);
+        } else {
+          console.info('Overwriting library path...');
+        }
+      }
+    }
   }
 
   private async createGitignore(libraryPath: string) {
@@ -187,7 +217,7 @@ export class CreateAction extends AbstractAction {
       PackageManagerFactory.create(inputPackageManager);
 
     try {
-      console.info(chalk.blue('Installing production dependencies...'));
+      console.info(chalk.blue('Installing dependencies...'));
       const dependencies = [
         '@hedhog/admin',
         '@hedhog/pagination',
