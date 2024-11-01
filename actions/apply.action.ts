@@ -103,7 +103,6 @@ export class ApplyAction extends AbstractAction {
         fields: table.columns,
         useLibraryNamePath: true,
       });
-      console.log('create', table.name);
       await createFile(libraryPath, table.name, 'module', {
         useLibraryNamePath: true,
         importServices: true,
@@ -236,6 +235,7 @@ export class ApplyAction extends AbstractAction {
         `return this\\.paginationService\\.paginate\\(\\s*this\\.prismaService\\.${baseTableName},[\\s\\S]*?\\);\\n\\s*\\}`,
         'm',
       );
+
       serviceContent = serviceContent.replace(regexToRemove, '');
 
       const formattedContent = await formatTypeScriptCode(serviceContent);
