@@ -125,64 +125,43 @@ export class ApplyAction extends AbstractAction {
     tableName: string,
     fields: Column[],
   ) {
-    await this.createRequestsFiles(libraryPath, tableName);
-    await this.createComponentFiles(libraryPath, tableName, fields);
-  }
-
-  async createRequestsFiles(libraryPath: string, tableName: string) {
     const frontendPath = path.join(libraryPath, '..', 'frontend');
-    const tableRequestsPath = path.join(
-      frontendPath,
-      toKebabCase(tableName),
-      'react-query',
-    );
-    await mkdir(tableRequestsPath, { recursive: true });
-    const templates = ['requests.ts.ejs', 'handlers.ts.ejs'];
     const hasLocale = await hasLocaleYaml(libraryPath, tableName);
 
-    for (const template of templates) {
-      const templatePath = path.join(__dirname, '..', 'templates', template);
-      const fileContent = render(await readFile(templatePath, 'utf-8'), {
-        tableName,
-        hasLocale,
-      });
-      const formattedContent = await formatTypeScriptCode(fileContent);
-      const outputFilePath = path.join(
-        tableRequestsPath,
-        template.replace('.ejs', ''),
-      );
-      await writeFile(outputFilePath, formattedContent);
-    }
-  }
+    const tasks = [
+      {
+        subPath: 'react-query',
+        templates: ['requests.ts.ejs', 'handlers.ts.ejs'],
+        data: { tableName, hasLocale },
+      },
+      {
+        subPath: 'components',
+        templates: ['create-panel.ts.ejs', 'update-panel.ts.ejs'],
+        data: { tableName, hasLocale, fields },
+      },
+    ];
 
-  async createComponentFiles(
-    libraryPath: string,
-    tableName: string,
-    fields: Column[],
-  ) {
-    const frontendPath = path.join(libraryPath, '..', 'frontend');
-    const tableComponentsPath = path.join(
-      frontendPath,
-      toKebabCase(tableName),
-      'components',
-    );
-    await mkdir(tableComponentsPath, { recursive: true });
-    const templates = ['create-panel.ts.ejs', 'update-panel.ts.ejs'];
-    const hasLocale = await hasLocaleYaml(libraryPath, tableName);
-
-    for (const template of templates) {
-      const templatePath = path.join(__dirname, '..', 'templates', template);
-      const fileContent = render(await readFile(templatePath, 'utf-8'), {
-        tableName,
-        hasLocale,
-        fields,
-      });
-      const formattedContent = await formatTypeScriptCode(fileContent);
-      const outputFilePath = path.join(
-        tableComponentsPath,
-        template.replace('.ejs', ''),
+    for (const task of tasks) {
+      const taskPath = path.join(
+        frontendPath,
+        toKebabCase(tableName),
+        task.subPath,
       );
-      await writeFile(outputFilePath, formattedContent);
+      await mkdir(taskPath, { recursive: true });
+
+      for (const template of task.templates) {
+        const templatePath = path.join(__dirname, '..', 'templates', template);
+        const fileContent = render(
+          await readFile(templatePath, 'utf-8'),
+          task.data,
+        );
+        const formattedContent = await formatTypeScriptCode(fileContent);
+        const outputFilePath = path.join(
+          taskPath,
+          template.replace('.ejs', ''),
+        );
+        await writeFile(outputFilePath, formattedContent);
+      }
     }
   }
 
