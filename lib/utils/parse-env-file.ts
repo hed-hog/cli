@@ -1,23 +1,29 @@
-import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
-import { EMOJIS } from '../ui';
+import * as fs from 'fs';
 
-export async function parseEnvFile(envPath: string) {
-  if (existsSync(envPath)) {
-    const envFile = await readFile(envPath, 'utf-8');
-    const envLines = envFile.split('\n');
-
-    const env: any = {};
-
-    for (const line of envLines) {
-      const [key, value] = line.split('=');
-      if (key && value) {
-        env[key.trim()] = value.trim().replace(/['"\r]+/g, '');
-      }
-    }
-
-    return env;
-  } else {
-    throw new Error(`${EMOJIS.ERROR} File .env not found.`);
+export function parseEnvFile(filePath: string): Record<string, string> {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Arquivo .env não encontrado no caminho: ${filePath}`);
   }
+
+  const envContent = fs.readFileSync(filePath, 'utf-8');
+  const envVariables: Record<string, string> = {};
+
+  envContent.split('\n').forEach((line) => {
+    const [key, value] = line.split('=');
+
+    if (key && value) {
+      envVariables[key.trim()] = expandValue(value.trim(), envVariables);
+    }
+  });
+
+  return envVariables;
+}
+
+function expandValue(
+  value: string,
+  envVariables: Record<string, string>,
+): string {
+  return value.replace(/\${(.*?)}/g, (_, varName) => {
+    return envVariables[varName] || process.env[varName] || '';
+  });
 }

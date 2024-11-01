@@ -96,9 +96,11 @@ export class AddAction extends AbstractAction {
     /**
      * 2. Get the database connection
      */
-    let envVars = {} as EnvFile;
+    let envVars: any = {};
     try {
-      envVars = await parseEnvFile(join(directoryPath, 'backend', '.env'));
+      envVars = (await parseEnvFile(
+        join(directoryPath, 'backend', '.env'),
+      )) as EnvFile;
     } catch (error) {
       console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
     }
