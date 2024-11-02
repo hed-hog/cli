@@ -33,7 +33,7 @@ export function requests() {
      { 
         url: '/<%= toKebabCase(tableName) %>',
         method: HttpMethod.POST,
-        data
+        data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>
       }
     )
   }
