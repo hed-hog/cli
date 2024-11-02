@@ -21,7 +21,6 @@ import { EnvFile } from '../lib/types/env-file';
 import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
 import { EntityFactory } from '../lib/entities/entity.factory';
 import { AbstractEntity } from '../lib/entities/abstract.entity';
-import { debug } from '../lib/utils/debug';
 import { TableFactory } from '../lib/tables/table.factory';
 import { AbstractTable } from '../lib/tables/abstract.table';
 
@@ -788,6 +787,7 @@ export class AddAction extends AbstractAction {
 
       if (fileContent[i] === ']') {
         openBracketCount--;
+        startFileContent;
       }
 
       if (openBracketCount === 0) {

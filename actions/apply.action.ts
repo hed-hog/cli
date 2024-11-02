@@ -17,6 +17,8 @@ import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import hasLocaleYaml from '../lib/utils/has-locale-yaml';
 import { createFile } from '../lib/utils/create-file';
+import { formatWithPrettier } from '../lib/utils/format-with-prettier';
+import { EMOJIS } from '../lib/ui';
 
 interface Column {
   name: string;
@@ -37,7 +39,11 @@ interface Table {
 }
 
 export class ApplyAction extends AbstractAction {
-  public async handle(inputs: Input[]) {
+  public async handle(inputs: Input[], options: Input[]) {
+    this.debug = options.some(
+      (option) => option.name === 'debug' && option.value === true,
+    );
+
     const libraryName = String(
       inputs.find(({ name }) => name === 'name')?.value,
     ).toLowerCase();
@@ -69,17 +75,26 @@ export class ApplyAction extends AbstractAction {
       'lib',
       'libs',
       toKebabCase(libraryName),
-      'src',
     );
 
+    const librarySrcPath = path.join(libraryPath, 'src');
+
     const tables = this.parseYamlFile(hedhogFilePath);
+
+    this.showDebug({
+      libraryPath,
+      librarySrcPath,
+      libraryName,
+      rootPath,
+      tables,
+    });
 
     for (const table of tables) {
       const baseTableName = table.name.replace('_locale', '');
 
       if (table.name.endsWith('locale')) {
         await this.updateTranslationServiceAndController(
-          libraryPath,
+          librarySrcPath,
           baseTableName,
         );
 
@@ -98,31 +113,34 @@ export class ApplyAction extends AbstractAction {
         .filter(Boolean)
         .join(',');
 
-      await createDTOs(path.join(libraryPath, toKebabCase(table.name)), fields);
+      await createDTOs(
+        path.join(librarySrcPath, toKebabCase(table.name)),
+        fields,
+      );
       await createFile(
-        libraryPath,
+        librarySrcPath,
         table.name,
         'service',
         {
           fields: table.columns,
           useLibraryNamePath: true,
         },
-        hasLocaleYaml(libraryPath, baseTableName),
+        hasLocaleYaml(librarySrcPath, baseTableName),
       );
 
-      await createFile(libraryPath, table.name, 'module', {
+      await createFile(librarySrcPath, table.name, 'module', {
         useLibraryNamePath: true,
         importServices: true,
       });
-      await createFile(libraryPath, table.name, 'controller', {
+      await createFile(librarySrcPath, table.name, 'controller', {
         useLibraryNamePath: true,
       });
-      await addRoutesToYaml(libraryPath, table.name);
+      await addRoutesToYaml(librarySrcPath, table.name);
       await this.updateParentModule(
-        path.join(libraryPath, `${toKebabCase(libraryName)}.module.ts`),
+        path.join(librarySrcPath, `${toKebabCase(libraryName)}.module.ts`),
         table.name,
       );
-      await this.createFrontendFiles(libraryPath, table.name, table.columns);
+      await this.createFrontendFiles(librarySrcPath, table.name, table.columns);
     }
   }
 
@@ -240,25 +258,125 @@ export class ApplyAction extends AbstractAction {
     try {
       let moduleContent = await readFileSync(modulePath, 'utf8');
 
-      const importStatement = `import { ${toPascalCase(newModuleName)}Module } from './${toKebabCase(newModuleName)}/${toKebabCase(newModuleName)}.module';`;
-      if (!moduleContent.includes(importStatement)) {
-        moduleContent = `${importStatement}\n${moduleContent}`;
-      }
-
-      const moduleImportRegex = /imports:\s*\[(.*?)\]/s;
-      moduleContent = moduleContent.replace(moduleImportRegex, (match) => {
-        return match.replace(
-          ']',
-          `,\n    ${toPascalCase(newModuleName)}Module]`,
-        );
+      moduleContent = await formatWithPrettier(moduleContent, {
+        parser: 'typescript',
+        printWidth: 100000,
+        singleQuote: true,
+        trailingComma: 'all',
+        semi: true,
       });
 
-      const formattedContent = await formatTypeScriptCode(moduleContent);
-      await writeFile(modulePath, formattedContent);
+      const importStatement = this.createImportStatement(newModuleName);
+      if (moduleContent.includes(importStatement)) {
+        return false;
+      }
+      moduleContent = `${importStatement}\n${moduleContent}`;
+
+      const { startImportsIndex, endImportsIndex, importsMatch } =
+        this.extractImportsSection(moduleContent);
+
+      if (!importsMatch) {
+        console.error(
+          chalk.red(
+            `${EMOJIS.ERROR} "imports" property not found in @Module decorator.`,
+          ),
+        );
+        return;
+      }
+
+      const importsList = this.parseImportsList(importsMatch);
+      importsList.push(
+        `forwardRef(() => ${toPascalCase(newModuleName)}Module)`,
+      );
+
+      const startFileContent = moduleContent.substring(0, startImportsIndex);
+      const endFileContent = moduleContent.substring(endImportsIndex - 1);
+
+      const formattedContent = await formatWithPrettier(
+        `${startFileContent}${importsList.join(', ')}${endFileContent}`,
+        {
+          parser: 'typescript',
+          singleQuote: true,
+          trailingComma: 'all',
+          semi: true,
+        },
+      );
+      await writeFile(modulePath, formattedContent, 'utf8');
     } catch (error) {
       console.error(
         chalk.red(`Error updating parent module: ${error.message}`),
       );
     }
+  }
+
+  private createImportStatement(newModuleName: string): string {
+    return `import { ${toPascalCase(newModuleName)}Module } from './${toKebabCase(newModuleName)}/${toKebabCase(newModuleName)}.module';`;
+  }
+
+  private extractImportsSection(moduleContent: string) {
+    const importFind = 'imports: [';
+    const startImportsIndex =
+      moduleContent.indexOf(importFind) + importFind.length;
+    let endImportsIndex = 0;
+    let openBracketCount = 1;
+    let importsMatch = '';
+
+    for (let i = startImportsIndex; i < moduleContent.length; i++) {
+      if (moduleContent[i] === '[') {
+        openBracketCount++;
+      }
+
+      if (moduleContent[i] === ']') {
+        openBracketCount--;
+      }
+
+      if (openBracketCount === 0) {
+        endImportsIndex = i + 1;
+        importsMatch = moduleContent.substring(startImportsIndex, i);
+        break;
+      }
+    }
+
+    return { startImportsIndex, endImportsIndex, importsMatch };
+  }
+
+  private parseImportsList(importsMatch: string): string[] {
+    const importsList: string[] = [];
+    let openBracketCount = 0;
+    let openBracesCount = 0;
+
+    for (let i = 0; i < importsMatch.length; i++) {
+      if (importsMatch[i] === '[') {
+        openBracketCount++;
+      }
+
+      if (importsMatch[i] === ']') {
+        openBracketCount--;
+      }
+
+      if (importsMatch[i] === '{') {
+        openBracesCount++;
+      }
+
+      if (importsMatch[i] === '}') {
+        openBracesCount--;
+      }
+
+      if (openBracketCount === 0 && openBracesCount === 0) {
+        if (importsMatch[i] === ',') {
+          if (importsMatch.substring(0, i).trim()) {
+            importsList.push(importsMatch.substring(0, i).trim());
+          }
+          importsMatch = importsMatch.substring(i + 1);
+          i = 0;
+        }
+      }
+    }
+
+    if (importsMatch.trim()) {
+      importsList.push(importsMatch.trim());
+    }
+
+    return importsList;
   }
 }

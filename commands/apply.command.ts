@@ -10,16 +10,23 @@ export class ApplyCommand extends AbstractCommand {
       .description(
         'Transform the Hedhog YAML file into inserts on database and init the new Hedhog library.',
       )
+      .option('--debug', 'Show debug information.', false)
       .argument('<string>', 'library name')
-      .action(async (name) => {
+      .action(async (name, command) => {
         try {
           if (!name) {
             throw new Error('Library name is required');
           }
 
+          const options: Input[] = [];
+          options.push({
+            name: 'debug',
+            value: command.debug,
+          });
+
           const inputs: Input[] = [];
           inputs.push({ name: 'name', value: name });
-          await this.action.handle(inputs);
+          await this.action.handle(inputs, options);
         } catch (error) {
           throwError(error.message);
         }
