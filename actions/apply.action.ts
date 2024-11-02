@@ -101,6 +101,13 @@ export class ApplyAction extends AbstractAction {
         continue;
       }
 
+      const hasLocale = hasLocaleYaml(librarySrcPath, baseTableName);
+
+      this.showDebug({
+        table,
+        hasLocale,
+      });
+
       const fields = table.columns
         .filter((column) => column.type !== 'fk' && column.type !== 'pk')
         .map((column) => {
@@ -116,6 +123,7 @@ export class ApplyAction extends AbstractAction {
       await createDTOs(
         path.join(librarySrcPath, toKebabCase(table.name)),
         fields,
+        hasLocale,
       );
       await createFile(
         librarySrcPath,
@@ -125,7 +133,7 @@ export class ApplyAction extends AbstractAction {
           fields: table.columns,
           useLibraryNamePath: true,
         },
-        hasLocaleYaml(librarySrcPath, baseTableName),
+        hasLocale,
       );
 
       await createFile(librarySrcPath, table.name, 'module', {

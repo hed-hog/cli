@@ -1,14 +1,17 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { prettier } from './formatting';
 import { formatTypeScriptCode } from './format-typescript-code';
 
-export async function createDTOs(libraryPath: string, fields: string) {
+export async function createDTOs(
+  libraryPath: string,
+  fields: string,
+  hasLocale: boolean,
+) {
   const dtoPath = path.join(libraryPath, 'dto');
   await fs.mkdir(dtoPath, { recursive: true });
 
   await createDeleteDTO(dtoPath);
-  await createCreateDTO(dtoPath, fields);
+  await createCreateDTO(dtoPath, fields, hasLocale);
   await createUpdateDTO(dtoPath);
 }
 
@@ -27,7 +30,12 @@ export class DeleteDTO {
   const deleteDtoFilePath = path.join(dtoPath, 'delete.dto.ts');
   await fs.writeFile(
     deleteDtoFilePath,
-    await formatTypeScriptCode(deleteDTOContent),
+    await formatTypeScriptCode(deleteDTOContent, {
+      parser: 'typescript',
+      singleQuote: true,
+      trailingComma: 'all',
+      semi: true,
+    }),
   );
 }
 
@@ -109,19 +117,23 @@ function getValidator(
   return `${validations.join('\n  ')}\n  ${name}${isOptional && !field.name.includes('?') ? '?' : ''}: ${type === 'fk' ? 'number' : getPrimitiveType(type)};`;
 }
 
-async function createCreateDTO(dtoPath: string, fields: string) {
+async function createCreateDTO(
+  dtoPath: string,
+  fields: string,
+  hasLocale: boolean,
+) {
   const parsedFields = parseFields(fields);
   const decoratorsUsed = new Set<string>();
   const dtoFields = parsedFields
     .map((field) => getValidator(field, false, decoratorsUsed))
     .join('\n\n  ');
 
-  const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';`;
+  const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';${hasLocale ? "import { WithLocaleDTO } from '@hedhog/admin';" : ''}`;
 
   const createDTOContent = `
 ${imports}
 
-export class CreateDTO {
+export class CreateDTO ${hasLocale ? 'extends WithLocaleDTO' : ''} {
   ${dtoFields}
 }
   `.trim();
@@ -129,7 +141,12 @@ export class CreateDTO {
   const createDtoFilePath = path.join(dtoPath, 'create.dto.ts');
   await fs.writeFile(
     createDtoFilePath,
-    await formatTypeScriptCode(createDTOContent),
+    await formatTypeScriptCode(createDTOContent, {
+      parser: 'typescript',
+      singleQuote: true,
+      trailingComma: 'all',
+      semi: true,
+    }),
   );
 }
 
@@ -143,6 +160,11 @@ async function createUpdateDTO(dtoPath: string) {
   const updateDtoFilePath = path.join(dtoPath, 'update.dto.ts');
   await fs.writeFile(
     updateDtoFilePath,
-    await formatTypeScriptCode(updateDTOContent),
+    await formatTypeScriptCode(updateDTOContent, {
+      parser: 'typescript',
+      singleQuote: true,
+      trailingComma: 'all',
+      semi: true,
+    }),
   );
 }

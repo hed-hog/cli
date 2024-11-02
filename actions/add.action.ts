@@ -787,7 +787,6 @@ export class AddAction extends AbstractAction {
 
       if (fileContent[i] === ']') {
         openBracketCount--;
-        startFileContent;
       }
 
       if (openBracketCount === 0) {
