@@ -4,7 +4,7 @@
 
 import FormPanel, {
     FormPanelRef,
-    getFieldsLocale,
+    <%- hasLocale ? 'getFieldsLocale,' : '' %>
 } from '@/components/custom/form-panel'
 import { EnumFieldType } from '@/enums/EnumFieldType'
 import { use<%= toPascalCase(tableName) %>Create } from '@/features/person-type'

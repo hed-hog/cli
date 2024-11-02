@@ -4,7 +4,7 @@
 
 import FormPanel, {
     FormPanelRef,
-    getFieldsLocale,
+    <%- hasLocale ? 'getFieldsLocale,' : '' %>
   } from '@/components/custom/form-panel'
   import { Overlay } from '@/components/custom/overlay'
   import { TabPanel } from '@/components/custom/tab-panel'
