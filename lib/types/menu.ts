@@ -5,7 +5,8 @@ export type Menu = {
   icon: string;
   name: Locale;
   slug: string;
-  order: string;
-  menus: Menu[];
+  order?: string;
+  menus?: Menu[];
   menu_id?: number | null | Partial<Menu>;
+  relations?: any;
 };
