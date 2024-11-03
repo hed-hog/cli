@@ -12,8 +12,8 @@ import FormPanel, {
   import { use<%= toPascalCase(tableName) %>Get, use<%= toPascalCase(tableName) %>Update } from '@/features/<%= toKebabCase(tableName) %>'
   import useEffectAfterFirstUpdate from '@/hooks/use-effect-after-first-update'
   import { <%= toPascalCase(tableName) %> } from '@/types/models'
-  import { t } from 'i18next'
   import { forwardRef, useImperativeHandle, useRef } from 'react'
+  import { useTranslation } from 'react-i18next'
   
   export type <%= toPascalCase(tableName) %>UpdatePanelProps = {
     data: <%= toPascalCase(tableName) %>
@@ -22,6 +22,7 @@ import FormPanel, {
   
   export const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
     ({ data, onUpdated }: <%= toPascalCase(tableName) %>UpdatePanelProps, ref) => {
+      const { t } = useTranslation(['person-types', 'actions'])
       const { data: item, isLoading } = use<%= toPascalCase(tableName) %>Get(data.id as number)
       const { mutate: <%= toCamelCase(tableName) %>Update } = use<%= toPascalCase(tableName) %>Update()
       const formRef = useRef<FormPanelRef>(null)
