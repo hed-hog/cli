@@ -2,7 +2,7 @@ import chalk = require('chalk');
 import { version } from '../../package.json';
 import { getNpmPackage } from './get-npm-package';
 import { mkdir, readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { join, sep } from 'path';
 import { tmpdir } from 'os';
 import { existsSync } from 'fs';
 
@@ -26,9 +26,9 @@ export const checkOnlineVersion = async () => {
 };
 
 export const mkdirRecursive = async (dir: string) => {
-  const parts = dir.split('/');
+  const parts = dir.split(sep);
   for (let i = 1; i <= parts.length; i++) {
-    const path = parts.slice(0, i).join('/');
+    const path = parts.slice(0, i).join(sep);
 
     if (!existsSync(path)) {
       await mkdir(path);

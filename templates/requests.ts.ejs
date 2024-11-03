@@ -48,7 +48,8 @@ export function requests() {
     )
   }
 
-  const <%= toCamelCase(tableName) %>Update = async (id: number, data: <%= toPascalCase(tableName) %>) => {
+  const <%= toCamelCase(tableName) %>Update = async (params: {id: number; data: <%= toPascalCase(tableName) %>}) => {
+    const { id, data } = params
     return request<<%= toPascalCase(tableName) %>>(
       {
         url: `/<%= toKebabCase(tableName) %>/${id}`,

@@ -56,6 +56,9 @@ export class AddAction extends AbstractAction {
       return console.error(chalk.red('Directory is not a hedhog project.'));
     }
 
+    const backendPath = join(directoryPath, 'backend');
+    const adminPath = join(directoryPath, 'admin');
+
     let migrateRun = false;
     const silentComplete =
       options.find(({ name }) => name === 'silentComplete')?.value || false;
@@ -67,34 +70,33 @@ export class AddAction extends AbstractAction {
       (option) => option.name === 'debug' && option.value === true,
     );
 
-    const appModulePath = join(
-      directoryPath,
-      'backend',
-      'src',
-      'app.module.ts',
-    );
+    const appModulePath = join(backendPath, 'src', 'app.module.ts');
     const addModuleName = `${this.capitalizeFirstLetter(module)}Module`;
     const packageName = `@hedhog/${module}`;
     const nodeModulePath = join(
-      directoryPath,
-      `backend`,
+      backendPath,
       `node_modules`,
       `@hedhog`,
       `${module}`,
     );
 
-    this.showDebug('Root path:', directoryPath);
-    this.showDebug('App module path:', appModulePath);
-    this.showDebug('Add module name:', addModuleName);
+    this.showDebug({
+      directoryPath,
+      module,
+      appModulePath,
+      addModuleName,
+      packageName,
+      nodeModulePath,
+      backendPath,
+      adminPath,
+    });
 
     /**
      * 2. Get the database connection
      */
     let envVars: any = {};
     try {
-      envVars = (await parseEnvFile(
-        join(directoryPath, 'backend', '.env'),
-      )) as EnvFile;
+      envVars = (await parseEnvFile(join(backendPath, '.env'))) as EnvFile;
     } catch (error) {
       console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
     }
@@ -134,9 +136,13 @@ export class AddAction extends AbstractAction {
     this.showDebug('Packages added:', this.packagesAdded);
 
     /* *********************************************************************** */
-
-    if (!this.checkIfDirectoryIsPackage(directoryPath)) {
-      console.error(chalk.red('This directory is not a package 22.'));
+    try {
+      if (!this.checkIfDirectoryIsPackage(directoryPath)) {
+        console.error(chalk.red('This directory is not a package.'));
+        return;
+      }
+    } catch (error) {
+      console.error(chalk.red('This directory is not a package.', error));
       return;
     }
 
@@ -234,29 +240,45 @@ export class AddAction extends AbstractAction {
         const updatePanelPath = join(componentsPath, `update-panel.tsx`);
         const handlersPath = join(reactQueryPath, 'handlers.ts');
         const requestsPath = join(reactQueryPath, 'requests.ts');
-
-        if (!existsSync(handlersPath)) {
+        const featuresExports = [];
+        if (existsSync(handlersPath)) {
+          await mkdirRecursive(join(frontendFeaturesDestPath, dir));
           await copyFile(
             handlersPath,
             join(frontendFeaturesDestPath, dir, 'handlers.ts'),
           );
+          featuresExports.push(`export * from './handlers';`);
         }
 
-        if (!existsSync(requestsPath)) {
+        if (existsSync(requestsPath)) {
+          await mkdirRecursive(join(frontendFeaturesDestPath, dir));
           await copyFile(
             requestsPath,
             join(frontendFeaturesDestPath, dir, 'requests.ts'),
           );
+          featuresExports.push(`export * from './requests';`);
         }
 
-        if (!existsSync(screenPath)) {
+        if (featuresExports.length > 0) {
+          const featuresExportsPath = join(
+            frontendFeaturesDestPath,
+            dir,
+            'index.ts',
+          );
+          const featuresExportsContent = featuresExports.join('\n');
+          await writeFile(featuresExportsPath, featuresExportsContent, 'utf-8');
+        }
+
+        if (existsSync(screenPath)) {
+          await mkdirRecursive(join(frontendPagesDestPath, dir));
           await copyFile(
             screenPath,
             join(frontendPagesDestPath, dir, 'index.ts'),
           );
         }
 
-        if (!existsSync(createPanelPath)) {
+        if (existsSync(createPanelPath)) {
+          await mkdirRecursive(join(frontendPagesDestPath, dir, 'components'));
           await copyFile(
             createPanelPath,
             join(
@@ -268,7 +290,8 @@ export class AddAction extends AbstractAction {
           );
         }
 
-        if (!existsSync(updatePanelPath)) {
+        if (existsSync(updatePanelPath)) {
+          await mkdirRecursive(join(frontendPagesDestPath, dir, 'components'));
           await copyFile(
             updatePanelPath,
             join(
@@ -554,6 +577,7 @@ export class AddAction extends AbstractAction {
   }
 
   async getModuleDependencies(modulePath: string) {
+    console.log('getModuleDependencies', modulePath);
     const packageJsonPath = join(modulePath, 'package.json');
 
     if (!existsSync(packageJsonPath)) {
@@ -1030,13 +1054,12 @@ export class AddAction extends AbstractAction {
           'Directory is not a hedhog project beacaue backend folder not found.',
         );
       }
-      /*
+
       if (!existsSync(join(directory, 'admin'))) {
         throw new Error(
           'Directory is not a hedhog project beacaue admin folder not found.',
         );
       }
-      */
 
       return packageJson;
     } catch (error) {
