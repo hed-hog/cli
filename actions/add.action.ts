@@ -271,7 +271,7 @@ export class AddAction extends AbstractAction {
           await mkdirRecursive(join(frontendPagesDestPath, dir));
           await copyFile(
             screenPath,
-            join(frontendPagesDestPath, dir, 'index.ts'),
+            join(frontendPagesDestPath, dir, 'index.tsx'),
           );
         }
 
