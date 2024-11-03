@@ -187,9 +187,7 @@ export class AddAction extends AbstractAction {
       );
     }
 
-    console.log('====================================');
     await this.copyFrontEndFiles(directoryPath, nodeModulePath, module);
-    console.log('====================================');
 
     if (!silentComplete) {
       await this.updateLibsPrisma(directoryPath);
@@ -577,7 +575,6 @@ export class AddAction extends AbstractAction {
   }
 
   async getModuleDependencies(modulePath: string) {
-    console.log('getModuleDependencies', modulePath);
     const packageJsonPath = join(modulePath, 'package.json');
 
     if (!existsSync(packageJsonPath)) {
