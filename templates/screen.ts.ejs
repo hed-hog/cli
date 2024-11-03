@@ -12,7 +12,7 @@ import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import <%= toPascalCase(tableName) %>CreatePanel from './components/<%= toKebabCase(tableName) %>-create-panel'
-import { <%= toPascalCase(tableName) %>UpdatePanel } from './components/<%= toKebabCase(tableName) %>-update-panel'
+import <%= toPascalCase(tableName) %>UpdatePanel from './components/<%= toKebabCase(tableName) %>-update-panel'
 
 export default function Page() {
   const [selectedItems, setSelectedItems] = useState<<%= toPascalCase(tableName) %>[]>([])
