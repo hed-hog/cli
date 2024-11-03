@@ -3,7 +3,7 @@
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
 
 import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
-import { EnumFieldType } from '@/enums/EnumFieldType'
+<% if (fields.length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
 import { use<%= toPascalCase(tableName) %>Create } from '@/features/blog/<%= toKebabCase(tableName) %>'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
