@@ -20,7 +20,7 @@ export type <%= toPascalCase(tableName) %>UpdatePanelProps = {
   onUpdated?: (data: <%= toPascalCase(tableName) %>) => void
 }
 
-export const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
+const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
   ({ data, onUpdated }: <%= toPascalCase(tableName) %>UpdatePanelProps, ref) => {
     const { t } = useTranslation(['person-types', 'actions'])
     const { data: item, isLoading } = use<%= toPascalCase(tableName) %>Get(data.id as number)

@@ -2,16 +2,17 @@
 <% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
 
-import DataPanel from '@/components/panels/data-panel'
 import { PageTitle } from '@/components/custom/page-title'
-import { use<%= toPascalCase(tableName) %>Delete } from '@/features/<%= toKebabCase(tableName) %>'
+import DataPanel from '@/components/panels/data-panel'
+import { use<%= toPascalCase(tableName) %>Delete } from '@/features/blog/<%= toKebabCase(tableName) %>'
 import { useApp } from '@/hooks/use-app'
 import { isPlural } from '@/lib/utils'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
 import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { <%= toPascalCase(tableName) %>CreatePanel, <%= toPascalCase(tableName) %>UpdatePanel } from './components'
+import <%= toPascalCase(tableName) %>CreatePanel from './components/<%= toKebabCase(tableName) %>-create-panel'
+import { <%= toPascalCase(tableName) %>UpdatePanel } from './components/<%= toKebabCase(tableName) %>-update-panel'
 
 export default function Page() {
   const [selectedItems, setSelectedItems] = useState<<%= toPascalCase(tableName) %>[]>([])
