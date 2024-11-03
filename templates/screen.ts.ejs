@@ -1,0 +1,110 @@
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
+<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+
+import DataPanel from '@/components/panels/data-panel'
+import { PageTitle } from '@/components/custom/page-title'
+import { use<%= toPascalCase(tableName) %>Delete } from '@/features/<%= toKebabCase(tableName) %>'
+import { useApp } from '@/hooks/use-app'
+import { isPlural } from '@/lib/utils'
+import { <%= toPascalCase(tableName) %> } from '@/types/models'
+import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { <%= toPascalCase(tableName) %>CreatePanel, <%= toPascalCase(tableName) %>UpdatePanel } from './components'
+
+export default function Page() {
+  const [selectedItems, setSelectedItems] = useState<<%= toPascalCase(tableName) %>[]>([])
+  const { mutate: delete<%= toPascalCase(tableName) %> } = use<%= toPascalCase(tableName) %>Delete()
+  const { openSheet, confirm, closeSheet } = useApp()
+  const { t } = useTranslation(['<%= toKebabCase(tableName) %>', 'modules', 'actions'])
+
+  const openCreate = () => {
+    const id = openSheet({
+      title: t('create', { ns: 'actions' }),
+      description: t('createText', { ns: '<%= toKebabCase(tableName) %>' }),
+      children: () => (
+        <<%= toPascalCase(tableName) %>CreatePanel onCreated={() => closeSheet(id)} />
+      ),
+    })
+
+    return id
+  }
+
+  const openDelete = (items: <%= toPascalCase(tableName) %>[]) => {
+    return confirm({
+      title: `${t('delete', { ns: 'actions' })} ${items.length} ${isPlural(items.length) ? t('items', { ns: 'actions' }) : t('item', { ns: 'actions' })}`,
+      description: t('deleteText', { ns: '<%= toKebabCase(tableName) %>' }),
+    })
+      .then(() =>
+        delete<%= toPascalCase(tableName) %>(
+          items.map((item) => item.id).filter((id) => id !== undefined)
+        )
+      )
+      .catch(() => setSelectedItems(items))
+  }
+
+  const openUpdate = (item: <%= toPascalCase(tableName) %>) => {
+    const id = openSheet({
+      children: () => (
+        <<%= toPascalCase(tableName) %>UpdatePanel data={item} onUpdated={() => closeSheet(id)} />
+      ),
+      title: t('edit', { ns: '<%= toKebabCase(tableName) %>' }),
+      description: t('editText', { ns: '<%= toKebabCase(tableName) %>' }),
+    })
+
+    return id
+  }
+
+  return (
+    <>
+      <PageTitle title={t('<%= toCamelCase(tableName) %>', { ns: 'modules' })} />
+      <DataPanel
+        url='/<%= toKebabCase(tableName) %>'
+        layout='table'
+        id='<%= toKebabCase(tableName) %>'
+        selectable
+        columns={[
+          { key: 'id', header: 'ID', width: 64 },
+          { key: 'name', header: t('name', { ns: '<%= toKebabCase(tableName) %>' }) },
+        ]}
+        selected={selectedItems as <%= toPascalCase(tableName) %>[]}
+        multiple
+        hasSearch
+        sortable
+        onItemDoubleClick={(item) => openUpdate(item)}
+        menuActions={[
+          {
+            icon: <IconEdit className='mr-1 w-8 cursor-pointer' />,
+            label: t('edit', { ns: 'actions' }),
+            tooltip: t('editTooltip', { ns: '<%= toKebabCase(tableName) %>' }),
+            handler: (items: <%= toPascalCase(tableName) %>[]) => {
+              if (items.length === 1) openUpdate(items[0])
+            },
+            show: 'once',
+          },
+          {
+            icon: <IconTrash className='mr-1 w-8 cursor-pointer' />,
+            label: t('delete', { ns: 'actions' }),
+            tooltip: t('deleteTooltip', { ns: '<%= toKebabCase(tableName) %>' }),
+            variant: 'destructive',
+            handler: (items: <%= toPascalCase(tableName) %>[]) => {
+              openDelete(items)
+            },
+            show: 'some',
+          },
+          {
+            icon: <IconPlus className='mr-1 w-8 cursor-pointer' />,
+            label: t('create', { ns: 'actions' }),
+            tooltip: t('createTooltip', { ns: '<%= toKebabCase(tableName) %>' }),
+            variant: 'default',
+            handler: () => {
+              openCreate()
+            },
+            show: 'none',
+          },
+        ]}
+      />
+    </>
+  )
+}

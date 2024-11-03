@@ -19,6 +19,7 @@ import hasLocaleYaml from '../lib/utils/has-locale-yaml';
 import { createFile } from '../lib/utils/create-file';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';
 import { EMOJIS } from '../lib/ui';
+import { createScreen } from '../lib/utils/create-screen';
 
 interface Column {
   name: string;
@@ -78,6 +79,7 @@ export class ApplyAction extends AbstractAction {
     );
 
     const librarySrcPath = path.join(libraryPath, 'src');
+    const libraryFrontEndPath = path.join(libraryPath, 'frontend');
 
     const tables = this.parseYamlFile(hedhogFilePath);
 
@@ -140,9 +142,15 @@ export class ApplyAction extends AbstractAction {
         useLibraryNamePath: true,
         importServices: true,
       });
+
       await createFile(librarySrcPath, table.name, 'controller', {
         useLibraryNamePath: true,
       });
+
+      await createScreen(libraryFrontEndPath, table.name, 'screen', {
+        useLibraryNamePath: true,
+      });
+
       await addRoutesToYaml(librarySrcPath, table.name);
       await this.updateParentModule(
         path.join(librarySrcPath, `${toKebabCase(libraryName)}.module.ts`),

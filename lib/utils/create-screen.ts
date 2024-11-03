@@ -15,20 +15,16 @@ interface IFields {
   name: string;
   type: string;
 }
-export async function createFile(
+export async function createScreen(
   libraryPath: string,
   tableName: string,
-  fileType: 'controller' | 'service' | 'module' | 'screen',
+  fileType: 'screen',
   options: IOption = {
-    useLibraryNamePath: false,
     importServices: false,
   },
   hasLocale?: boolean,
 ) {
-  const filePath = path.join(
-    libraryPath,
-    options?.useLibraryNamePath ? toKebabCase(tableName) : 'src',
-  );
+  const filePath = path.join(libraryPath, toKebabCase(tableName), 'components');
   await fs.mkdir(filePath, { recursive: true });
   const fieldsForSearch = (options?.fields ?? [])
     .map((field) => AbstractTable.getColumnOptions(field))
@@ -44,38 +40,11 @@ export async function createFile(
     `${fileType}.ts.ejs`,
   );
 
-  let listFunction = '';
-
-  if (fileType === 'service') {
-    listFunction = render(
-      await fs.readFile(
-        path.join(
-          __dirname,
-          '..',
-          '..',
-          'templates',
-          Boolean(hasLocale)
-            ? 'list-service-locale.ts.ejs'
-            : 'list-service.ts.ejs',
-        ),
-        'utf-8',
-      ),
-      {
-        tableName,
-        fieldsForSearch,
-        libraryName: tableName,
-        translationTableName: `${tableName}_locale`,
-        options,
-      },
-    );
-  }
-
   const fileContent = render(await fs.readFile(templatePath, 'utf-8'), {
     tableName,
     libraryName: tableName,
     fieldsForSearch,
     options,
-    listFunction,
   });
 
   const fileFullPath = path.join(

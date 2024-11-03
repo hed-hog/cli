@@ -197,7 +197,7 @@ export class CreateAction extends AbstractAction {
         esModuleInterop: true,
         emitDecoratorMetadata: true,
       },
-      exclude: ['node_modules', 'dist'],
+      exclude: ['node_modules', 'dist', 'frontend'],
     };
 
     const tsConfigFilePath = path.join(libraryPath, 'tsconfig.production.json');

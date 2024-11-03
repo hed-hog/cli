@@ -180,6 +180,10 @@ export class AddAction extends AbstractAction {
       );
     }
 
+    console.log('====================================');
+    await this.copyFrontEndFiles(directoryPath, nodeModulePath, module);
+    console.log('====================================');
+
     if (!silentComplete) {
       await this.updateLibsPrisma(directoryPath);
       await this.complete(module, migrateRun);
@@ -195,6 +199,33 @@ export class AddAction extends AbstractAction {
     return {
       packagesAdded,
     };
+  }
+
+  async copyFrontEndFiles(
+    directoryPath: string,
+    nodeModulePath: string,
+    module: string,
+  ) {
+    this.showDebug('copyFrontEndFiles', {
+      directoryPath,
+      nodeModulePath,
+      module,
+    });
+
+    if (existsSync(join(nodeModulePath, 'frontend'))) {
+      //const spinner = ora('Copying frontend files...').start();
+      const frontendPath = join(nodeModulePath, 'frontend');
+      const frontendDestPath = join(directoryPath, 'admin');
+
+      for (const dir of await readdir(frontendPath)) {
+        this.showDebug('Copy frontend dir:', dir);
+      }
+
+      this.showDebug({
+        frontendPath,
+        frontendDestPath,
+      });
+    }
   }
 
   secondsToHuman(seconds: number) {
