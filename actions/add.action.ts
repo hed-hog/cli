@@ -4,7 +4,7 @@ import { PackageManagerFactory } from '../lib/package-managers';
 import { AbstractAction } from './abstract.action';
 import * as ora from 'ora';
 import { existsSync } from 'fs';
-import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import { copyFile, mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { join, sep } from 'path';
 import { Runner, RunnerFactory } from '../lib/runners';
@@ -23,6 +23,7 @@ import { EntityFactory } from '../lib/entities/entity.factory';
 import { AbstractEntity } from '../lib/entities/abstract.entity';
 import { TableFactory } from '../lib/tables/table.factory';
 import { AbstractTable } from '../lib/tables/abstract.table';
+import { toKebabCase } from '../lib/utils/convert-string-cases';
 
 interface TableDependency {
   tableName: string;
@@ -215,10 +216,69 @@ export class AddAction extends AbstractAction {
     if (existsSync(join(nodeModulePath, 'frontend'))) {
       //const spinner = ora('Copying frontend files...').start();
       const frontendPath = join(nodeModulePath, 'frontend');
-      const frontendDestPath = join(directoryPath, 'admin');
+      const frontendDestPath = join(directoryPath, 'admin', 'src');
+      const frontendPagesDestPath = join(frontendDestPath, 'pages', module);
+      const frontendFeaturesDestPath = join(
+        frontendDestPath,
+        'features',
+        module,
+      );
 
       for (const dir of await readdir(frontendPath)) {
         this.showDebug('Copy frontend dir:', dir);
+
+        const componentsPath = join(frontendPath, dir, 'components');
+        const reactQueryPath = join(frontendPath, dir, 'react-query');
+        const screenPath = join(componentsPath, `${dir}.screen.ts`);
+        const createPanelPath = join(componentsPath, `create-panel.tsx`);
+        const updatePanelPath = join(componentsPath, `update-panel.tsx`);
+        const handlersPath = join(reactQueryPath, 'handlers.ts');
+        const requestsPath = join(reactQueryPath, 'requests.ts');
+
+        if (!existsSync(handlersPath)) {
+          await copyFile(
+            handlersPath,
+            join(frontendFeaturesDestPath, dir, 'handlers.ts'),
+          );
+        }
+
+        if (!existsSync(requestsPath)) {
+          await copyFile(
+            requestsPath,
+            join(frontendFeaturesDestPath, dir, 'requests.ts'),
+          );
+        }
+
+        if (!existsSync(screenPath)) {
+          await copyFile(
+            screenPath,
+            join(frontendPagesDestPath, dir, 'index.ts'),
+          );
+        }
+
+        if (!existsSync(createPanelPath)) {
+          await copyFile(
+            createPanelPath,
+            join(
+              frontendPagesDestPath,
+              dir,
+              'components',
+              `${toKebabCase(dir)}-create-panel.tsx`,
+            ),
+          );
+        }
+
+        if (!existsSync(updatePanelPath)) {
+          await copyFile(
+            updatePanelPath,
+            join(
+              frontendPagesDestPath,
+              dir,
+              'components',
+              `${toKebabCase(dir)}-update-panel.tsx`,
+            ),
+          );
+        }
       }
 
       this.showDebug({
