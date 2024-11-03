@@ -273,6 +273,8 @@ export class AddAction extends AbstractAction {
             screenPath,
             join(frontendPagesDestPath, dir, 'index.tsx'),
           );
+
+          await this.addScreenRouterFile(frontendDestPath, module, dir);
         }
 
         if (existsSync(createPanelPath)) {
@@ -307,6 +309,82 @@ export class AddAction extends AbstractAction {
         frontendDestPath,
       });
     }
+  }
+
+  async extractArrayFromStringFile(
+    fileContent: string,
+    searchOpenBracket: string,
+  ) {
+    fileContent = await formatTypeScriptCode(fileContent, {
+      printWidth: 100000,
+      singleQuote: true,
+      trailingComma: 'all',
+      semi: true,
+    });
+    let startIndex = fileContent.indexOf(searchOpenBracket);
+    startIndex += searchOpenBracket.length - 1;
+    let endIndex = 0;
+    let openBracketCount = 0;
+
+    for (let i = startIndex; i < fileContent.length; i++) {
+      if (fileContent[i] === '[') {
+        openBracketCount++;
+      }
+
+      if (fileContent[i] === ']') {
+        openBracketCount--;
+      }
+
+      if (openBracketCount === 0) {
+        endIndex = i + 1;
+        break;
+      }
+    }
+
+    return {
+      array: fileContent.substring(startIndex, endIndex),
+      start: startIndex,
+      end: endIndex,
+    };
+  }
+
+  async addScreenRouterFile(path: string, module: string, screen: string) {
+    console.log('addScreenRouterFile', { path, module, screen });
+    const routesJSONPath = join(path, 'routes.json');
+
+    if (!existsSync(routesJSONPath)) {
+      await writeFile(routesJSONPath, '{"routes":[]}', 'utf-8');
+    }
+
+    const routesJSON = require(routesJSONPath);
+
+    if (!routesJSON.routes.find((route: any) => route.path === `${module}`)) {
+      routesJSON.routes.push({
+        path: `${module}`,
+        children: [],
+      });
+    }
+
+    for (let i = 0; i < routesJSON.routes.length; i++) {
+      if (routesJSON.routes[i].path === `${module}`) {
+        if (
+          !routesJSON.routes[i].children.find(
+            (child: any) => child.path === screen,
+          )
+        ) {
+          routesJSON.routes[i].children.push({
+            path: screen,
+            component: `${module}/${screen}/index.tsx`,
+          });
+        }
+      }
+    }
+
+    await writeFile(
+      routesJSONPath,
+      JSON.stringify(routesJSON, null, 2),
+      'utf-8',
+    );
   }
 
   secondsToHuman(seconds: number) {
