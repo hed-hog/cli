@@ -2,12 +2,12 @@
 <% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
 
-import FormPanel, {
-    FormPanelRef,
-    <%- hasLocale ? 'getFieldsLocale,' : '' %>
-} from '@/components/custom/form-panel'
+import { Overlay } from '@/components/custom/overlay'
+import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
+import { TabPanel } from '@/components/panels/tab-panel'
 import { EnumFieldType } from '@/enums/EnumFieldType'
-import { use<%= toPascalCase(tableName) %>Create } from '@/features/person-type'
+import { use<%= toPascalCase(tableName) %>Get, use<%= toPascalCase(tableName) %>Update } from '@/features/blog/<%= toKebabCase(tableName) %>'
+import useEffectAfterFirstUpdate from '@/hooks/use-effect-after-first-update'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
