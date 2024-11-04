@@ -49,7 +49,7 @@ export async function createScreen(
 
   const fileFullPath = path.join(
     filePath,
-    `${toKebabCase(tableName)}.${fileType}.ts`,
+    `${toKebabCase(tableName)}.${fileType}.tsx`,
   );
 
   console.log('Creating file:', fileFullPath);
