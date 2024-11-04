@@ -28,7 +28,7 @@ export const addRoutesToYaml = (
   try {
     const filePath = path.join(libraryPath, '..', 'hedhog.yaml');
     const fileContents = fs.readFileSync(filePath, 'utf8');
-    let yamlData: HedhogYaml = yaml.parse(fileContents) as HedhogYaml;
+    const yamlData: HedhogYaml = yaml.parse(fileContents) as HedhogYaml;
 
     const relations = {
       role: [
@@ -110,12 +110,7 @@ export const addRoutesToYaml = (
       }
     }
 
-    const cleanedYamlString = yaml
-      .stringify(yamlData)
-      .replace(/&\w+|\*\w+/g, '');
-    yamlData = yaml.parse(cleanedYamlString) as HedhogYaml;
     const newYamlContent = yaml.stringify(yamlData);
-
     fs.writeFileSync(filePath, newYamlContent, 'utf8');
     console.info(`Routes added to ${filePath}`);
   } catch (error) {
