@@ -34,6 +34,7 @@ export async function createFile(
     .map((field) => AbstractTable.getColumnOptions(field))
     .filter((field) => !['created_at', 'updated_at'].includes(field.name))
     .filter((field) => !field.references)
+    .filter((field) => !field.isPrimary)
     .map((field) => field.name);
 
   const templatePath = path.join(

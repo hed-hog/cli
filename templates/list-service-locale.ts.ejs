@@ -1,5 +1,9 @@
 async list(locale: string, paginationParams: PaginationDTO) {
-  const OR: any[] = [];
+  const fields = <%- JSON.stringify(fieldsForSearch) %>;
+  const OR: any[] = this.prismaService.createInsensitiveSearch(
+    fields,
+    paginationParams,
+  );
 
   const include = {
     <%= tableName %>: {

@@ -212,11 +212,6 @@ export class ApplyAction extends AbstractAction {
     libraryPath: string,
     baseTableName: string,
   ) {
-    const serviceFilePath = path.join(
-      libraryPath,
-      toKebabCase(baseTableName),
-      `${toKebabCase(baseTableName)}.service.ts`,
-    );
     const controllerFilePath = path.join(
       libraryPath,
       toKebabCase(baseTableName),
