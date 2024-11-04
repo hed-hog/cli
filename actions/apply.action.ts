@@ -151,14 +151,13 @@ export class ApplyAction extends AbstractAction {
     const rootPath = await getRootPath();
     const localesFolder = path.join(rootPath, 'admin', 'src', 'locales');
     const folders = await readdir(localesFolder, { withFileTypes: true });
-    const folderCount = folders.filter((dirent) => dirent.isDirectory()).length;
 
     for (const folder of folders) {
       if (folder.isDirectory()) {
         const folderPath = path.join(localesFolder, folder.name);
         const filePath = path.join(
           folderPath,
-          `${libraryName}.${tableName}.json`,
+          `${libraryName}.${toKebabCase(tableName)}.json`,
         );
         const templatePath = path.join(
           __dirname,
@@ -170,7 +169,15 @@ export class ApplyAction extends AbstractAction {
           tableName,
           libraryName,
         });
-        await writeFile(filePath, fileContent, 'utf-8');
+        await writeFile(
+          filePath,
+          await formatWithPrettier(fileContent, {
+            parser: 'json',
+            singleQuote: true,
+            trailingComma: 'all',
+          }),
+          'utf-8',
+        );
       }
     }
   }

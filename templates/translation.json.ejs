@@ -1,4 +1,5 @@
 <% const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1) %>
+<% const spacing = (s) => s.replace(/[_-]/g, ' ') %>
 <% const pluralize = (s) => {
     if (s.endsWith("y")) {
         return s.slice(0, -1) + "ies";
@@ -6,13 +7,13 @@
     return s + "s";
 }
 %>{
-    "create": "Create <%= capitalize(tableName) %>",
-    "createText": "Fill the <%= tableName %> informations.",
-    "createTooltip": "Create new <%= tableName %>",
-    "delete": "Delete <%= capitalize(tableName) %>",
-    "deleteText": "Are you sure to delete these <%= pluralize(tableName) %>?",
-    "deleteTooltip": "Delete the selected <%= pluralize(tableName) %>",
-    "edit": "Edit <%= capitalize(tableName) %>",
-    "editText": "View and edit <%= tableName %> information.",
-    "editTooltip": "Edit the selected <%= pluralize(tableName) %>"
+    "create": "Create <%= capitalize(spacing(tableName)) %>",
+    "createText": "Fill the <%= spacing(tableName) %> informations.",
+    "createTooltip": "Create new <%= spacing(tableName) %>",
+    "delete": "Delete <%= capitalize(spacing(tableName)) %>",
+    "deleteText": "Are you sure to delete these <%= pluralize(spacing(tableName)) %>?",
+    "deleteTooltip": "Delete the selected <%= pluralize(spacing(tableName)) %>",
+    "edit": "Edit <%= capitalize(spacing(tableName)) %>",
+    "editText": "View and edit <%= spacing(tableName) %> information.",
+    "editTooltip": "Edit the selected <%= pluralize(spacing(tableName)) %>"
 }
