@@ -19,7 +19,7 @@ export type <%= toPascalCase(tableName) %>UpdatePanelProps = {
 
 const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
   ({ data, onUpdated }: <%= toPascalCase(tableName) %>UpdatePanelProps, ref) => {
-    const { t } = useTranslation(['person-types', 'actions'])
+    const { t } = useTranslation(['actions'])
     const { data: item, isLoading } = use<%= toPascalCase(tableName) %>Get(data.id as number)
     const { mutate: <%= toCamelCase(tableName) %>Update } = use<%= toPascalCase(tableName) %>Update()
     const formRef = useRef<FormPanelRef>(null)

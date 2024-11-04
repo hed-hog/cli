@@ -20,7 +20,7 @@ export type <%= toPascalCase(tableName) %>CreatePanelProps = {
 const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
     ({ onCreated }: <%= toPascalCase(tableName) %>CreatePanelProps, ref) => {
         const formRef = useRef<FormPanelRef>(null)
-        const { t } = useTranslation(['<%= toKebabCase(tableName) %>', 'actions'])
+        const { t } = useTranslation(['actions'])
         const { mutateAsync: create<%= toPascalCase(tableName) %> } = use<%= toPascalCase(tableName) %>Create()
 
         useImperativeHandle(
