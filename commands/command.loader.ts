@@ -1,6 +1,12 @@
 import * as chalk from 'chalk';
 import { Command } from '@commander-js/extra-typings';
-import { AddAction, CreateAction, InfoAction, NewAction } from '../actions';
+import {
+  AddAction,
+  ConfigureAction,
+  CreateAction,
+  InfoAction,
+  NewAction,
+} from '../actions';
 import { AddCommand } from './add.command';
 import { NewCommand } from './new.command';
 import { ERROR_PREFIX } from '../lib/ui';
@@ -14,6 +20,7 @@ import { ResetCommand } from './reset.command';
 import { ResetAction } from '../actions/reset.action';
 import { ApplyCommand } from './apply.command';
 import { ApplyAction } from '../actions/apply.action';
+import { ConfigureCommand } from './configure.command';
 export class CommandLoader {
   public static async load(program: Command): Promise<void> {
     new NewCommand(new NewAction()).load(program);
@@ -24,6 +31,7 @@ export class CommandLoader {
     new RefreshCommand(new RefreshAction()).load(program);
     new ResetCommand(new ResetAction()).load(program);
     new ApplyCommand(new ApplyAction()).load(program);
+    new ConfigureCommand(new ConfigureAction()).load(program);
 
     this.handleInvalidCommand(program);
   }
