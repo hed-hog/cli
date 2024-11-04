@@ -39,8 +39,39 @@ export class ResetAction extends AbstractAction {
     await this.recreatePrismaSchema(directoryPath);
     await this.checkEnvFile(directoryPath);
     await this.recreateDatabase(directoryPath);
+    await this.resetAdminFrontEnd(directoryPath);
 
     console.info(chalk.green('Project reset successfully.'));
+  }
+
+  async resetAdminFrontEnd(path: string) {
+    const spinner = ora('Reset Admin Frontend...').start();
+    const adminPath = join(path, '..', 'admin');
+
+    if (existsSync(adminPath)) {
+      const routesPath = join(adminPath, 'src', 'routes.json');
+      const routesJSON = require(routesPath);
+      const adminRoutes = (routesJSON?.routes ?? [])
+        .map((route: any) => route?.path ?? '')
+        .filter((route: string) => route !== '');
+
+      for (const module of adminRoutes) {
+        for (const dir of ['pages', 'features']) {
+          spinner.info(`Clearing ${dir}/${module}...`);
+          this.unlinkDirectoryRecursive(join(adminPath, 'src', dir, module));
+        }
+      }
+
+      await writeFile(
+        routesPath,
+        JSON.stringify({ routes: [] }, null, 2),
+        'utf-8',
+      );
+
+      spinner.succeed('Admin Frontend cleared.');
+    } else {
+      spinner.warn('No Admin Frontend found.');
+    }
   }
 
   async checkEnvFile(path: string) {
