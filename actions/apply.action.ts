@@ -5,7 +5,7 @@ import path = require('path');
 import * as yaml from 'yaml';
 import { readFileSync } from 'fs';
 import { createDTOs } from '../lib/utils/create-dto';
-import { readFile, mkdir, writeFile } from 'fs/promises';
+import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
 import {
   toCamelCase,
   toKebabCase,
@@ -83,14 +83,6 @@ export class ApplyAction extends AbstractAction {
 
     const tables = this.parseYamlFile(hedhogFilePath);
 
-    this.showDebug({
-      libraryPath,
-      librarySrcPath,
-      libraryName,
-      rootPath,
-      tables,
-    });
-
     for (const table of tables) {
       const baseTableName = table.name.replace('_locale', '');
 
@@ -100,16 +92,11 @@ export class ApplyAction extends AbstractAction {
           baseTableName,
         );
 
+        await this.createTranslationFiles(baseTableName, libraryName);
         continue;
       }
 
       const hasLocale = hasLocaleYaml(librarySrcPath, baseTableName);
-
-      this.showDebug({
-        table,
-        hasLocale,
-      });
-
       const fields = table.columns
         .filter((column) => column.type !== 'fk' && column.type !== 'pk')
         .map((column) => {
@@ -157,6 +144,34 @@ export class ApplyAction extends AbstractAction {
         table.name,
       );
       await this.createFrontendFiles(librarySrcPath, table.name, table.columns);
+    }
+  }
+
+  async createTranslationFiles(tableName: string, libraryName: string) {
+    const rootPath = await getRootPath();
+    const localesFolder = path.join(rootPath, 'admin', 'src', 'locales');
+    const folders = await readdir(localesFolder, { withFileTypes: true });
+    const folderCount = folders.filter((dirent) => dirent.isDirectory()).length;
+
+    for (const folder of folders) {
+      if (folder.isDirectory()) {
+        const folderPath = path.join(localesFolder, folder.name);
+        const filePath = path.join(
+          folderPath,
+          `${libraryName}.${tableName}.json`,
+        );
+        const templatePath = path.join(
+          __dirname,
+          '..',
+          'templates',
+          'translation.json.ejs',
+        );
+        const fileContent = render(await readFile(templatePath, 'utf-8'), {
+          tableName,
+          libraryName,
+        });
+        await writeFile(filePath, fileContent, 'utf-8');
+      }
     }
   }
 

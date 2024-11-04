@@ -1,0 +1,18 @@
+<% const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1) %>
+<% const pluralize = (s) => {
+    if (s.endsWith("y")) {
+        return s.slice(0, -1) + "ies";
+    }
+    return s + "s";
+}
+%>{
+    "create": "Create <%= capitalize(tableName) %>",
+    "createText": "Fill the <%= tableName %> informations.",
+    "createTooltip": "Create new <%= tableName %>",
+    "delete": "Delete <%= capitalize(tableName) %>",
+    "deleteText": "Are you sure to delete these <%= pluralize(tableName) %>?",
+    "deleteTooltip": "Delete the selected <%= pluralize(tableName) %>",
+    "edit": "Edit <%= capitalize(tableName) %>",
+    "editText": "View and edit <%= tableName %> information.",
+    "editTooltip": "Edit the selected <%= pluralize(tableName) %>"
+}

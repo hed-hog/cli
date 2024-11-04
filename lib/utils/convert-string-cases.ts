@@ -25,3 +25,7 @@ export function toPascalCase(str: string): string {
     match.replace(/[-_]/, '').toUpperCase(),
   );
 }
+
+export function capitalize(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
