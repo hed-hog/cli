@@ -387,7 +387,7 @@ export class AddAction extends AbstractAction {
         ) {
           routesJSON.routes[i].children.push({
             path: screen,
-            component: `${module}/${screen}/index.tsx`,
+            component: `${module}/${screen}`,
           });
         }
       }
