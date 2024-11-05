@@ -128,7 +128,7 @@ async function createCreateDTO(
     .map((field) => getValidator(field, false, decoratorsUsed))
     .join('\n\n  ');
 
-  const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';${hasLocale ? "import { WithLocaleDTO } from '@hedhog/admin';" : ''}`;
+  const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';${hasLocale ? "import { WithLocaleDTO } from '@hedhog/locale';" : ''}`;
 
   const createDTOContent = `
 ${imports}
