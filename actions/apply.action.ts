@@ -23,6 +23,7 @@ import { createScreen } from '../lib/utils/create-screen';
 import { getConfig } from '../lib/utils/get-config';
 import OpenAI from 'openai';
 import * as ora from 'ora';
+import { mkdirRecursive } from '../lib/utils/checkVersion';
 
 interface Column {
   name: string;
@@ -89,13 +90,13 @@ export class ApplyAction extends AbstractAction {
     for (const table of tables) {
       const baseTableName = table.name.replace('_locale', '');
 
+      await this.createTranslationFiles(baseTableName, libraryName);
+
       if (table.name.endsWith('locale')) {
         await this.updateTranslationServiceAndController(
           librarySrcPath,
           baseTableName,
         );
-
-        await this.createTranslationFiles(baseTableName, libraryName);
         continue;
       }
 
@@ -158,14 +159,29 @@ export class ApplyAction extends AbstractAction {
     const spinner = ora(`Create translation files...`).start();
 
     const rootPath = await getRootPath();
-    const localesFolder = path.join(rootPath, 'admin', 'src', 'locales');
-    const folders = await readdir(localesFolder, { withFileTypes: true });
+    const localesAdminFolder = path.join(rootPath, 'admin', 'src', 'locales');
+    const localesFolder = path.join(
+      rootPath,
+      'lib',
+      'libs',
+      libraryName,
+      'frontend',
+    );
+    const folders = await readdir(localesAdminFolder, { withFileTypes: true });
 
     for (const folder of folders) {
       if (folder.isDirectory()) {
         spinner.info(`Creating translation file for ${folder.name}...`);
 
-        const folderPath = path.join(localesFolder, folder.name);
+        const folderPath = path.join(
+          localesFolder,
+          toKebabCase(tableName),
+          'locales',
+          folder.name,
+        );
+
+        await mkdirRecursive(folderPath);
+
         const filePath = path.join(
           folderPath,
           `${libraryName}.${toKebabCase(tableName)}.json`,
