@@ -20,6 +20,8 @@ import { createFile } from '../lib/utils/create-file';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';
 import { EMOJIS } from '../lib/ui';
 import { createScreen } from '../lib/utils/create-screen';
+import { getConfig } from '../lib/utils/get-config';
+import OpenAI from 'openai';
 
 interface Column {
   name: string;
@@ -147,6 +149,10 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
+  async getOpenIAToken() {
+    return await getConfig('tokens.OPENIA');
+  }
+
   async createTranslationFiles(tableName: string, libraryName: string) {
     const rootPath = await getRootPath();
     const localesFolder = path.join(rootPath, 'admin', 'src', 'locales');
@@ -169,6 +175,16 @@ export class ApplyAction extends AbstractAction {
           tableName,
           libraryName,
         });
+
+        const token = await this.getOpenIAToken();
+
+        if (token) {
+          await this.messageToOpenIaAssistent(
+            `asst_3CyLCZY0lRbp5DCk4NgSeJYY`,
+            `Idioma: ${folder} Coisa: ${tableName.replaceAll('_', ' ')}`,
+          );
+        }
+
         await writeFile(
           filePath,
           await formatWithPrettier(fileContent, {
@@ -179,6 +195,41 @@ export class ApplyAction extends AbstractAction {
           'utf-8',
         );
       }
+    }
+  }
+
+  async messageToOpenIaAssistent(assistantId: string, content: string) {
+    const apiKey = await this.getOpenIAToken();
+    const client = new OpenAI({
+      apiKey,
+    });
+
+    try {
+      const thread = await client.beta.threads.create({
+        messages: [
+          {
+            role: 'user',
+            content,
+          },
+        ],
+      });
+
+      const threadId = thread.id;
+
+      let response = '';
+
+      const run = client.beta.threads.runs
+        .stream(threadId, {
+          assistant_id: assistantId,
+        })
+        .on('textDelta', (_delta, snapshot) => {
+          response = snapshot.value;
+        });
+      await run.finalRun();
+
+      return response;
+    } catch (e) {
+      console.error(chalk.red(`Error sending message to OpenAI: ${e.message}`));
     }
   }
 

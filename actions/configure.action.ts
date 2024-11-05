@@ -10,6 +10,10 @@ import { existsSync } from 'fs';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
 import { readFile, writeFile } from 'fs/promises';
 import { parse, stringify } from 'yaml';
+import { createOpenIAAssistent } from '../lib/utils/create-openia-assistent';
+import { render } from 'ejs';
+import { saveConfig } from '../lib/utils/save-config';
+import { getConfig } from '../lib/utils/get-config';
 
 export class ConfigureAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -64,37 +68,57 @@ export class ConfigureAction extends AbstractAction {
   }
 
   async saveConfig(openiaToken: string) {
-    const spinner = ora('Saving configuration').start();
+    //const spinner = ora('Saving configuration').start();
 
     try {
       await this.createDirecotyDotHedhog();
 
-      if (!existsSync(this.getConfigPath())) {
-        await writeFile(
-          this.getConfigPath(),
-          stringify({ tokens: {} }, { indent: 2 }),
+      const assistenteInstructions = render(
+        await readFile(
+          join(__dirname, '..', 'templates', 'assistent.ejs'),
           'utf-8',
+        ),
+      );
+
+      await saveConfig({ tokens: { OPENIA: openiaToken } });
+
+      const currentAssistentApplyLocaleId = await getConfig(
+        'assistents.applyLocale',
+      );
+
+      if (currentAssistentApplyLocaleId) {
+        try {
+          await createOpenIAAssistent(currentAssistentApplyLocaleId);
+        } catch (error) {
+          console.error(
+            chalk.red(`Could not create OpenIA assistent: ${error.message}`),
+          );
+        }
+      }
+
+      try {
+        const assistent = await createOpenIAAssistent({
+          description: 'Hedhog CLI - Locales',
+          instructions: assistenteInstructions,
+          name: 'hedhog-cli',
+          response_format: {
+            type: 'json_object',
+          },
+          model: 'gpt-4o-mini',
+        });
+
+        await saveConfig({ assistents: { applyLocale: assistent.id } });
+      } catch (error) {
+        console.error(
+          chalk.red(`Could not create OpenIA assistent: ${error.message}`),
         );
       }
 
-      const currentConfig = parse(
-        await readFile(this.getConfigPath(), 'utf-8'),
-      );
-
-      await writeFile(
-        this.getConfigPath(),
-        stringify(
-          Object.assign({}, currentConfig, { tokens: { OPENIA: openiaToken } }),
-          { indent: 2 },
-        ),
-        'utf-8',
-      );
-
-      spinner.succeed(`Configuration saved to ${this.getConfigPath()}`);
+      //spinner.succeed(`Configuration saved to ${this.getConfigPath()}`);
     } catch (error) {
-      spinner.fail();
+      //spinner.fail();
       return console.error(
-        chalk.red('Could not save configuration to .hedhog directory.'),
+        chalk.red(`Could not save configuration: ${error.message}`),
       );
     }
   }
