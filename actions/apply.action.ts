@@ -22,6 +22,7 @@ import { EMOJIS } from '../lib/ui';
 import { createScreen } from '../lib/utils/create-screen';
 import { getConfig } from '../lib/utils/get-config';
 import OpenAI from 'openai';
+import * as ora from 'ora';
 
 interface Column {
   name: string;
@@ -154,12 +155,16 @@ export class ApplyAction extends AbstractAction {
   }
 
   async createTranslationFiles(tableName: string, libraryName: string) {
+    const spinner = ora(`Create translation files...`).start();
+
     const rootPath = await getRootPath();
     const localesFolder = path.join(rootPath, 'admin', 'src', 'locales');
     const folders = await readdir(localesFolder, { withFileTypes: true });
 
     for (const folder of folders) {
       if (folder.isDirectory()) {
+        spinner.info(`Creating translation file for ${folder.name}...`);
+
         const folderPath = path.join(localesFolder, folder.name);
         const filePath = path.join(
           folderPath,
@@ -171,7 +176,7 @@ export class ApplyAction extends AbstractAction {
           'templates',
           'translation.json.ejs',
         );
-        const fileContent = render(await readFile(templatePath, 'utf-8'), {
+        let fileContent = render(await readFile(templatePath, 'utf-8'), {
           tableName,
           libraryName,
         });
@@ -179,10 +184,15 @@ export class ApplyAction extends AbstractAction {
         const token = await this.getOpenIAToken();
 
         if (token) {
-          await this.messageToOpenIaAssistent(
-            `asst_3CyLCZY0lRbp5DCk4NgSeJYY`,
-            `Idioma: ${folder} Coisa: ${tableName.replaceAll('_', ' ')}`,
+          spinner.info(`Requesting translation for ${folder.name} with IA...`);
+          const assistentId = await getConfig('assistents.applyLocale');
+          const response = await this.messageToOpenIaAssistent(
+            assistentId,
+            `Idioma: ${folder.name} Coisa: ${tableName.replaceAll('_', ' ')}`,
           );
+          if (response) {
+            fileContent = response;
+          }
         }
 
         await writeFile(
@@ -194,6 +204,8 @@ export class ApplyAction extends AbstractAction {
           }),
           'utf-8',
         );
+
+        spinner.succeed(`Translation file for ${folder.name} created.`);
       }
     }
   }

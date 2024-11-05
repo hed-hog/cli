@@ -8,12 +8,12 @@ import { createPromptModule } from 'inquirer';
 import { homedir } from 'os';
 import { existsSync } from 'fs';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
-import { readFile, writeFile } from 'fs/promises';
-import { parse, stringify } from 'yaml';
+import { readFile } from 'fs/promises';
 import { createOpenIAAssistent } from '../lib/utils/create-openia-assistent';
 import { render } from 'ejs';
 import { saveConfig } from '../lib/utils/save-config';
 import { getConfig } from '../lib/utils/get-config';
+import { dropOpenIAAssistent } from '../lib/utils/drop-openia-assistent';
 
 export class ConfigureAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -68,7 +68,7 @@ export class ConfigureAction extends AbstractAction {
   }
 
   async saveConfig(openiaToken: string) {
-    //const spinner = ora('Saving configuration').start();
+    const spinner = ora('Saving configuration').start();
 
     try {
       await this.createDirecotyDotHedhog();
@@ -88,11 +88,9 @@ export class ConfigureAction extends AbstractAction {
 
       if (currentAssistentApplyLocaleId) {
         try {
-          await createOpenIAAssistent(currentAssistentApplyLocaleId);
+          await dropOpenIAAssistent(currentAssistentApplyLocaleId);
         } catch (error) {
-          console.error(
-            chalk.red(`Could not create OpenIA assistent: ${error.message}`),
-          );
+          spinner.warn(`Could not drop OpenIA assistent: ${error.message}`);
         }
       }
 
@@ -114,9 +112,9 @@ export class ConfigureAction extends AbstractAction {
         );
       }
 
-      //spinner.succeed(`Configuration saved to ${this.getConfigPath()}`);
+      spinner.succeed(`Configuration saved to ${this.getConfigPath()}`);
     } catch (error) {
-      //spinner.fail();
+      spinner.fail();
       return console.error(
         chalk.red(`Could not save configuration: ${error.message}`),
       );
