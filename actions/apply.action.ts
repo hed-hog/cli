@@ -320,7 +320,7 @@ export class ApplyAction extends AbstractAction {
           taskPath,
           template.replace(
             '.ts.ejs',
-            task.subPath === 'components' ? '.tsx' : '.ts',
+            task.subPath === 'components' ? '.tsx.ejs' : '.ts.ejs',
           ),
         );
         await writeFile(outputFilePath, formattedContent);
