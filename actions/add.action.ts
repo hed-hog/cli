@@ -232,6 +232,7 @@ export class AddAction extends AbstractAction {
         this.showDebug('Copy frontend dir:', dir);
 
         const componentsPath = join(frontendPath, dir, 'components');
+        const localesPath = join(frontendPath, dir, 'locales');
         const reactQueryPath = join(frontendPath, dir, 'react-query');
         const screenPath = join(componentsPath, `${dir}.screen.ts`);
         const createPanelPath = join(componentsPath, `create-panel.tsx`);
@@ -255,6 +256,18 @@ export class AddAction extends AbstractAction {
             join(frontendFeaturesDestPath, dir, 'requests.ts'),
           );
           featuresExports.push(`export * from './requests';`);
+        }
+
+        if (existsSync(localesPath)) {
+          await mkdirRecursive(join(frontendDestPath, 'locales'));
+          for (const localeCode of await readdir(localesPath)) {
+            for (const file of await readdir(join(localesPath, localeCode))) {
+              await copyFile(
+                join(localesPath, localeCode, file),
+                join(frontendDestPath, 'locales', localeCode, file),
+              );
+            }
+          }
         }
 
         if (featuresExports.length > 0) {
