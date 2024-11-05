@@ -94,7 +94,7 @@ export class ApplyAction extends AbstractAction {
 
       await this.createTranslationFiles(baseTableName, libraryName);
 
-      if (table.name.endsWith('locale')) {
+      if (table.name.endsWith('_locale')) {
         await this.updateTranslationServiceAndController(
           librarySrcPath,
           baseTableName,
