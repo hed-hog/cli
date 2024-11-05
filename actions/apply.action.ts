@@ -3,7 +3,7 @@ import { AbstractAction } from '.';
 import { Input } from '../commands';
 import path = require('path');
 import * as yaml from 'yaml';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { createDTOs } from '../lib/utils/create-dto';
 import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
 import {
@@ -24,6 +24,8 @@ import { getConfig } from '../lib/utils/get-config';
 import OpenAI from 'openai';
 import * as ora from 'ora';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
+import { homedir } from 'os';
+import { createHash } from 'crypto';
 
 interface Column {
   name: string;
@@ -201,6 +203,7 @@ export class ApplyAction extends AbstractAction {
 
         if (token) {
           spinner.info(`Requesting translation for ${folder.name} with IA...`);
+
           const assistentId = await getConfig('assistents.applyLocale');
           const response = await this.messageToOpenIaAssistent(
             assistentId,
@@ -227,6 +230,19 @@ export class ApplyAction extends AbstractAction {
   }
 
   async messageToOpenIaAssistent(assistantId: string, content: string) {
+    const hash = createHash('sha256').update(content).digest('hex');
+    const cacheDirPath = path.join(
+      homedir(),
+      '.hedhog',
+      'cache',
+      `assistant-${assistantId}`,
+    );
+    const cacheFilePath = path.join(cacheDirPath, hash);
+
+    if (existsSync(cacheFilePath)) {
+      return await readFile(cacheFilePath, 'utf-8');
+    }
+
     const apiKey = await this.getOpenIAToken();
     const client = new OpenAI({
       apiKey,
@@ -254,6 +270,9 @@ export class ApplyAction extends AbstractAction {
           response = snapshot.value;
         });
       await run.finalRun();
+
+      await mkdirRecursive(cacheDirPath);
+      await writeFile(cacheFilePath, response, 'utf-8');
 
       return response;
     } catch (e) {
