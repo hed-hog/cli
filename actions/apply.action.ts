@@ -353,7 +353,7 @@ export class ApplyAction extends AbstractAction {
         );
       }
 
-      const importStatement = "import { Locale } from '@hedhog/admin';";
+      const importStatement = "import { Locale } from '@hedhog/locale';";
       if (!controllerContent.includes(importStatement)) {
         controllerContent = `${importStatement}\n${controllerContent}`;
       }
