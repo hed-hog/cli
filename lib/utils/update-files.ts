@@ -1,10 +1,8 @@
 import chalk = require('chalk');
 import path = require('path');
 import * as fs from 'fs';
-import { prettier } from './formatting';
 import { toKebabCase } from './convert-string-cases';
 import { getRootPath } from './get-root-path';
-import { formatWithPrettier } from './format-with-prettier';
 
 export async function updateNestCliJson(libraryName: string) {
   const rootPath = await getRootPath();
@@ -89,6 +87,54 @@ export async function updatePackageJson(libraryName: string) {
   } catch (error) {
     console.error(chalk.red(`Failed to update package.json: ${error.message}`));
     process.exit(1);
+  }
+}
+
+export async function addPackageJsonPeerDependencies(
+  libraryName: string,
+  dependencies: string[],
+) {
+  const rootPath = await getRootPath();
+  const packageJsonPath = path.join(
+    rootPath,
+    'lib',
+    'libs',
+    libraryName,
+    'package.json',
+  );
+
+  try {
+    const packageJsonExists = fs.existsSync(packageJsonPath);
+    if (!packageJsonExists) {
+      console.info(chalk.red('Error: package.json not found!'));
+      return;
+    }
+
+    const packageJsonContent = JSON.parse(
+      fs.readFileSync(packageJsonPath, 'utf-8'),
+    );
+
+    if (!packageJsonContent.peerDependencies) {
+      packageJsonContent.peerDependencies = {};
+    }
+
+    dependencies.forEach((dependency) => {
+      packageJsonContent.peerDependencies[dependency] = 'latest';
+    });
+
+    await fs.promises.writeFile(
+      packageJsonPath,
+      JSON.stringify(packageJsonContent, null, 2),
+    );
+
+    console.info(
+      chalk.green(
+        `Updated package.json with peerDependencies for ${dependencies.join(', ')}`,
+      ),
+    );
+  } catch (error) {
+    console.error(chalk.red(`Failed to update package.json: ${error.message}`));
+    return;
   }
 }
 

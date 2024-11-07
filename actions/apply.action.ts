@@ -26,6 +26,7 @@ import * as ora from 'ora';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
 import { homedir } from 'os';
 import { createHash } from 'crypto';
+import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
 
 interface Column {
   name: string;
@@ -120,6 +121,15 @@ export class ApplyAction extends AbstractAction {
         fields,
         hasLocale,
       );
+
+      const dependencyTables = await this.checkRelationsTable(tables);
+      await this.installDependencies(
+        libraryPath,
+        [{ name: '', value: '' }],
+        dependencyTables,
+      );
+      await addPackageJsonPeerDependencies(libraryName, dependencyTables);
+
       await createFile(
         librarySrcPath,
         table.name,
@@ -155,6 +165,45 @@ export class ApplyAction extends AbstractAction {
 
   async getOpenIAToken() {
     return await getConfig('tokens.OPENIA');
+  }
+
+  async checkRelationsTable(tables: any[]) {
+    const relationTables = tables
+      .flatMap((table) => table.columns)
+      .filter((column) => column.type === 'fk')
+      .map((column) => column.references.table)
+      .filter((table) => !tables.map((table) => table.name).includes(table));
+
+    const tablesFromLibs = await this.getTablesFromLibs();
+    const dependencyModuleNames = new Set<string>();
+
+    for (const relationTable of relationTables) {
+      for (const libTables of Object.keys(tablesFromLibs)) {
+        if (
+          tablesFromLibs[libTables]
+            .map((table: any) => table.name)
+            .includes(relationTable)
+        ) {
+          dependencyModuleNames.add(`@hedhog/${libTables}`);
+        }
+      }
+    }
+
+    return Array.from(dependencyModuleNames);
+  }
+
+  async getTablesFromLibs() {
+    const tables = {} as any;
+    const rootPath = await getRootPath();
+    const hedhogLibsPath = path.join(rootPath, 'lib', 'libs');
+    for (const folder of await readdir(hedhogLibsPath)) {
+      const hedhogFilePath = path.join(hedhogLibsPath, folder, 'hedhog.yaml');
+      if (existsSync(hedhogFilePath)) {
+        const hedhogFile = this.parseYamlFile(hedhogFilePath);
+        tables[folder] = hedhogFile;
+      }
+    }
+    return tables;
   }
 
   async createTranslationFiles(tableName: string, libraryName: string) {

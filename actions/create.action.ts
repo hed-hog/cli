@@ -86,7 +86,12 @@ export class CreateAction extends AbstractAction {
     await updatePackageJson(libraryName);
     await updateTsconfigPaths(libraryName);
 
-    await this.installDependencies(libraryPath, options);
+    await this.installDependencies(libraryPath, options, [
+      '@hedhog/admin',
+      '@hedhog/pagination',
+      '@hedhog/prisma',
+      '@nestjs/mapped-types',
+    ]);
 
     console.info(chalk.green(`Library ${libraryName} created successfully!`));
   }
@@ -206,35 +211,6 @@ export class CreateAction extends AbstractAction {
       tsConfigFilePath,
       JSON.stringify(tsconfigProductionContent, null, 2),
     );
-  }
-
-  private async installDependencies(libraryPath: string, options: Input[]) {
-    const inputPackageManager = options.find(
-      (option) => option.name === 'packageManager',
-    )!.value as string;
-
-    const packageManager: AbstractPackageManager =
-      PackageManagerFactory.create(inputPackageManager);
-
-    try {
-      console.info(chalk.blue('Installing dependencies...'));
-      const dependencies = [
-        '@hedhog/admin',
-        '@hedhog/pagination',
-        '@hedhog/prisma',
-        '@nestjs/mapped-types',
-      ];
-
-      const currentDir = process.cwd();
-      process.chdir(libraryPath);
-      await packageManager.addDevelopment(dependencies, 'latest');
-      process.chdir(currentDir);
-
-      console.info(chalk.green('Dependencies installed successfully.'));
-    } catch (error) {
-      console.info(chalk.red('Error installing dependencies:', error));
-      process.exit(1);
-    }
   }
 
   private async createIndexFile(libraryPath: string, libraryName: string) {
