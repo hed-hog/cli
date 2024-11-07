@@ -24,6 +24,7 @@ interface HedhogYaml {
 export const addRoutesToYaml = (
   libraryPath: string,
   tableName: string,
+  hasRelationsWith?: string,
 ): void => {
   try {
     const filePath = path.join(libraryPath, '..', 'hedhog.yaml');
@@ -48,13 +49,40 @@ export const addRoutesToYaml = (
       yamlData.data.route = [];
     }
 
-    const newRoutes: Route[] = [
-      { url: `/${toKebabCase(tableName)}`, method: 'GET', relations },
-      { url: `/${toKebabCase(tableName)}`, method: 'POST', relations },
-      { url: `/${toKebabCase(tableName)}/:id`, method: 'GET', relations },
-      { url: `/${toKebabCase(tableName)}/:id`, method: 'PATCH', relations },
-      { url: `/${toKebabCase(tableName)}/:id`, method: 'DELETE', relations },
-    ];
+    const newRoutes: Route[] = hasRelationsWith
+      ? [
+          {
+            url: `/${hasRelationsWith}/${hasRelationsWith}Id/${tableName.split('_')[1]}`,
+            method: 'GET',
+            relations,
+          },
+          {
+            url: `/${hasRelationsWith}/${hasRelationsWith}Id/${tableName.split('_')[1]}`,
+            method: 'POST',
+            relations,
+          },
+          {
+            url: `/${hasRelationsWith}/${hasRelationsWith}Id/${tableName.split('_')[1]}/${tableName.split('_')[1]}Id`,
+            method: 'PATCH',
+            relations,
+          },
+          {
+            url: `/${hasRelationsWith}/${hasRelationsWith}Id/${tableName.split('_')[1]}/${tableName.split('_')[1]}Id`,
+            method: 'DELETE',
+            relations,
+          },
+        ]
+      : [
+          { url: `/${toKebabCase(tableName)}`, method: 'GET', relations },
+          { url: `/${toKebabCase(tableName)}`, method: 'POST', relations },
+          { url: `/${toKebabCase(tableName)}/:id`, method: 'GET', relations },
+          { url: `/${toKebabCase(tableName)}/:id`, method: 'PATCH', relations },
+          {
+            url: `/${toKebabCase(tableName)}/:id`,
+            method: 'DELETE',
+            relations,
+          },
+        ];
 
     for (const route of newRoutes) {
       if (

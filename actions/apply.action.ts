@@ -179,7 +179,7 @@ export class ApplyAction extends AbstractAction {
         useLibraryNamePath: true,
       });
 
-      await addRoutesToYaml(librarySrcPath, table.name);
+      await addRoutesToYaml(librarySrcPath, table.name, screenWithRelations);
       await this.updateParentModule(
         path.join(librarySrcPath, `${toKebabCase(libraryName)}.module.ts`),
         table.name,
