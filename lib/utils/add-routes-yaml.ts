@@ -78,7 +78,7 @@ export const addRoutesToYaml = (
           { url: `/${toKebabCase(tableName)}/:id`, method: 'GET', relations },
           { url: `/${toKebabCase(tableName)}/:id`, method: 'PATCH', relations },
           {
-            url: `/${toKebabCase(tableName)}/:id`,
+            url: `/${toKebabCase(tableName)}`,
             method: 'DELETE',
             relations,
           },
