@@ -1,9 +1,11 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as yaml from 'yaml';
 import { toKebabCase } from './convert-string-cases';
 import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from './format-with-prettier';
+import { filterScreenCreation } from './filter-screen-creation';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -24,6 +26,10 @@ export async function createScreen(
   },
   hasLocale?: boolean,
 ) {
+  if (!(await filterScreenCreation(libraryPath, tableName))) {
+    return;
+  }
+
   const filePath = path.join(libraryPath, toKebabCase(tableName), 'components');
   await fs.mkdir(filePath, { recursive: true });
   const fieldsForSearch = (options?.fields ?? [])

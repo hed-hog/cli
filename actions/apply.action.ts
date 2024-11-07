@@ -27,6 +27,7 @@ import { mkdirRecursive } from '../lib/utils/checkVersion';
 import { homedir } from 'os';
 import { createHash } from 'crypto';
 import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
+import { filterScreenCreation } from '../lib/utils/filter-screen-creation';
 
 interface Column {
   name: string;
@@ -351,11 +352,16 @@ export class ApplyAction extends AbstractAction {
     ];
 
     for (const task of tasks) {
+      if (!(await filterScreenCreation(libraryPath, tableName, task))) {
+        continue;
+      }
+
       const taskPath = path.join(
         frontendPath,
         toKebabCase(tableName),
         task.subPath,
       );
+
       await mkdir(taskPath, { recursive: true });
 
       for (const template of task.templates) {
