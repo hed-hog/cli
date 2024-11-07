@@ -52,22 +52,22 @@ export const addRoutesToYaml = (
     const newRoutes: Route[] = hasRelationsWith
       ? [
           {
-            url: `/${hasRelationsWith}/${hasRelationsWith}Id/${tableName.split('_')[1]}`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}`,
             method: 'GET',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/${hasRelationsWith}Id/${tableName.split('_')[1]}`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}`,
             method: 'POST',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/${hasRelationsWith}Id/${tableName.split('_')[1]}/${tableName.split('_')[1]}Id`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}/${tableName.split('_')[1]}Id`,
             method: 'PATCH',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/${hasRelationsWith}Id/${tableName.split('_')[1]}/${tableName.split('_')[1]}Id`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}/${tableName.split('_')[1]}Id`,
             method: 'DELETE',
             relations,
           },
