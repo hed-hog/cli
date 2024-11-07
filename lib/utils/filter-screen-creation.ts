@@ -12,7 +12,8 @@ export const filterScreenCreation = async (
   const taskCondition = !task ? false : task.subPath === 'react-query';
 
   return (
-    (hedhogFile.screens && hedhogFile.screens.includes(tableName)) ||
+    (hedhogFile.screens &&
+      Object.keys(hedhogFile.screens).includes(tableName)) ||
     taskCondition
   );
 };

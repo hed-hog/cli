@@ -3,7 +3,7 @@
 <% const getFirstWord = (str) => str.split('_')[0]; %>
 <% const getSecondWord = (str) => str.split('_')[1]; %>
 
-import { Role } from '@hedhog/utils';
+import { Role, OptionalParseIntPipe } from '@hedhog/utils';
 import {
   Body,
   Controller,
@@ -15,7 +15,6 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { OptionalParseIntPipe } from '../pipes/optional-parse-int.pipe';
 import { <%= toPascalCase(tableName) %>Service } from './<%= toKebabCase(tableName) %>.service';
 import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
@@ -23,7 +22,7 @@ import { UpdateDTO } from './dto/update.dto';
 @Role()
 @Controller('<%= getFirstWord(tableName) %>/:<%= getFirstWord(tableName) %>Id/<%= getSecondWord(tableName) %>')
 export class <%= toPascalCase(tableName) %>Controller {
-  constructor(private readonly <%= getSecondWord(tableName) %>tService: <%= toPascalCase(tableName) %>Service) {}
+  constructor(private readonly <%= getSecondWord(tableName) %>Service: <%= toPascalCase(tableName) %>Service) {}
   @Post()
   create(
     @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,

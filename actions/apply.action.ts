@@ -92,14 +92,29 @@ export class ApplyAction extends AbstractAction {
     const tables = this.parseYamlFile(hedhogFilePath);
 
     for (const table of tables) {
-      const baseTableName = table.name.replace('_locale', '');
+      const findTableWithRelation = (
+        tableName: string,
+        tablesWithRelations: any[],
+      ) => {
+        return tablesWithRelations
+          .filter((item) => item.relations.includes(tableName))
+          .map((item) => item.name)[0];
+      };
 
+      const tablesWithRelations = await this.screensWithRelations(libraryPath);
+      const screenWithRelations = findTableWithRelation(
+        table.name.replace('_locale', ''),
+        tablesWithRelations as any[],
+      );
+
+      const baseTableName = table.name.replace('_locale', '');
       await this.createTranslationFiles(baseTableName, libraryName);
 
       if (table.name.endsWith('_locale')) {
         await this.updateTranslationServiceAndController(
           librarySrcPath,
           baseTableName,
+          screenWithRelations,
         );
         continue;
       }
@@ -118,7 +133,11 @@ export class ApplyAction extends AbstractAction {
         .join(',');
 
       await createDTOs(
-        path.join(librarySrcPath, toKebabCase(table.name)),
+        path.join(
+          librarySrcPath,
+          screenWithRelations ?? '',
+          toKebabCase(table.name),
+        ),
         fields,
         hasLocale,
       );
@@ -138,6 +157,7 @@ export class ApplyAction extends AbstractAction {
         {
           fields: table.columns,
           useLibraryNamePath: true,
+          hasRelationsWith: screenWithRelations,
         },
         hasLocale,
       );
@@ -145,10 +165,12 @@ export class ApplyAction extends AbstractAction {
       await createFile(librarySrcPath, table.name, 'module', {
         useLibraryNamePath: true,
         importServices: true,
+        hasRelationsWith: screenWithRelations,
       });
 
       await createFile(librarySrcPath, table.name, 'controller', {
         useLibraryNamePath: true,
+        hasRelationsWith: screenWithRelations,
       });
 
       await createScreen(libraryFrontEndPath, table.name, 'screen', {
@@ -162,6 +184,28 @@ export class ApplyAction extends AbstractAction {
       );
       await this.createFrontendFiles(librarySrcPath, table.name, table.columns);
     }
+  }
+
+  async screensWithRelations(libraryPath: string) {
+    const hedhogFilePath = path.join(libraryPath, 'hedhog.yaml');
+    if (!existsSync(hedhogFilePath)) {
+      console.error(
+        chalk.red(`hedhog.yaml file not found at ${hedhogFilePath}`),
+      );
+      return;
+    }
+
+    const hedhogFile = yaml.parse(await readFile(hedhogFilePath, 'utf-8'));
+    const screens = hedhogFile.screens || {};
+    return Object.keys(screens)
+      .filter(
+        (screen) =>
+          screens[screen].relations && screens[screen].relations.length > 0,
+      )
+      .map((screen) => ({
+        name: screen,
+        relations: screens[screen].relations,
+      }));
   }
 
   async getOpenIAToken() {
@@ -386,9 +430,11 @@ export class ApplyAction extends AbstractAction {
   async updateTranslationServiceAndController(
     libraryPath: string,
     baseTableName: string,
+    hasRelationsWith: string,
   ) {
     const controllerFilePath = path.join(
       libraryPath,
+      hasRelationsWith ?? '',
       toKebabCase(baseTableName),
       `${toKebabCase(baseTableName)}.controller.ts`,
     );

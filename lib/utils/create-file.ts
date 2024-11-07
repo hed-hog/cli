@@ -8,6 +8,7 @@ import { formatWithPrettier } from './format-with-prettier';
 interface IOption {
   useLibraryNamePath?: boolean;
   importServices?: boolean;
+  hasRelationsWith?: string;
   fields?: IFields[];
 }
 
@@ -15,6 +16,7 @@ interface IFields {
   name: string;
   type: string;
 }
+
 export async function createFile(
   libraryPath: string,
   tableName: string,
@@ -22,11 +24,13 @@ export async function createFile(
   options: IOption = {
     useLibraryNamePath: false,
     importServices: false,
+    hasRelationsWith: '',
   },
   hasLocale?: boolean,
 ) {
   const filePath = path.join(
     libraryPath,
+    options?.hasRelationsWith ?? '',
     options?.useLibraryNamePath ? toKebabCase(tableName) : 'src',
   );
   await fs.mkdir(filePath, { recursive: true });
@@ -43,6 +47,14 @@ export async function createFile(
     '..',
     'templates',
     `${fileType}.ts.ejs`,
+  );
+
+  const templateRelationsPath = path.join(
+    __dirname,
+    '..',
+    '..',
+    'templates',
+    `${fileType}-related.ts.ejs`,
   );
 
   let listFunction = '';
@@ -71,13 +83,21 @@ export async function createFile(
     );
   }
 
-  const fileContent = render(await fs.readFile(templatePath, 'utf-8'), {
-    tableName,
-    libraryName: tableName,
-    fieldsForSearch,
-    options,
-    listFunction,
-  });
+  const fileContent = render(
+    await fs.readFile(
+      options.hasRelationsWith && fileType !== 'module'
+        ? templateRelationsPath
+        : templatePath,
+      'utf-8',
+    ),
+    {
+      tableName,
+      libraryName: tableName,
+      fieldsForSearch,
+      options,
+      listFunction,
+    },
+  );
 
   const fileFullPath = path.join(
     filePath,
