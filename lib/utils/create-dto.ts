@@ -10,33 +10,8 @@ export async function createDTOs(
   const dtoPath = path.join(libraryPath, 'dto');
   await fs.mkdir(dtoPath, { recursive: true });
 
-  await createDeleteDTO(dtoPath);
   await createCreateDTO(dtoPath, fields, hasLocale);
   await createUpdateDTO(dtoPath);
-}
-
-async function createDeleteDTO(dtoPath: string) {
-  const deleteDTOContent = `
-import { ArrayMinSize, IsArray, IsInt } from 'class-validator';
-
-export class DeleteDTO {
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsInt({ each: true })
-  ids: number[];
-}
-    `.trim();
-
-  const deleteDtoFilePath = path.join(dtoPath, 'delete.dto.ts');
-  await fs.writeFile(
-    deleteDtoFilePath,
-    await formatTypeScriptCode(deleteDTOContent, {
-      parser: 'typescript',
-      singleQuote: true,
-      trailingComma: 'all',
-      semi: true,
-    }),
-  );
 }
 
 function parseFields(fields: string): any[] {
