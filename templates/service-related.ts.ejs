@@ -1,0 +1,91 @@
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+<% const getFirstWord = (str) => str.split('_')[0]; %>
+<% const getSecondWord = (str) => str.split('_')[1]; %>
+
+import { PaginationService } from '@hedhog/pagination';
+import { PrismaService } from '@hedhog/prisma';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+
+@Injectable()
+export class <%= toPascalCase(tableName) %>Service {
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly paginationService: PaginationService,
+  ) {}
+
+  async create(<%= getFirstWord(tableName) %>Id: number, data: CreateDTO) {
+    return this.prismaService.<%= tableName %>.create({
+      data: {
+        <%= getFirstWord(tableName) %>_id: <%= getFirstWord(tableName) %>Id,
+        ...data,
+      },
+    });
+  }
+
+  async list(<%= getFirstWord(tableName) %>Id?: number, typeId?: number, <%= getSecondWord(tableName) %>Id?: number) {
+    const where: any = {};
+    if (<%= getFirstWord(tableName) %>Id !== undefined) where.<%= getFirstWord(tableName) %>_id = <%= getFirstWord(tableName) %>Id;
+    if (typeId !== undefined) where.type_id = typeId;
+    if (<%= getSecondWord(tableName) %>Id !== undefined) where.id = <%= getSecondWord(tableName) %>Id;
+
+    const <%= getSecondWord(tableName) %>s = await this.prismaService.<%= tableName %>.findMany({
+      where,
+      include: {
+        <%= tableName %>_type: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (Boolean(<%= getSecondWord(tableName) %>Id) && <%= getSecondWord(tableName) %>s.length === 0) {
+      throw new NotFoundException(`<%= getSecondWord(tableName) %> with ID ${<%= getSecondWord(tableName) %>Id} not found`);
+    }
+
+    if (Boolean(typeId) && <%= getSecondWord(tableName) %>s.length === 0) {
+      throw new NotFoundException(`Type with ID ${typeId} not found`);
+    }
+
+    return this.paginationService.paginate(
+      this.prismaService.<%= tableName %>,
+      {
+        fields: 'id,<%= getFirstWord(tableName) %>_id,type_id,primary,value',
+      },
+      {
+        where,
+        include: {
+          <%= tableName %>_type: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    );
+  }
+
+  async update(<%= getSecondWord(tableName) %>Id: number, data: UpdateDTO) {
+    return this.prismaService.<%= tableName %>.update({
+      where: { id: <%= getSecondWord(tableName) %>Id },
+      data,
+    });
+  }
+
+  async delete(<%= getSecondWord(tableName) %>Id: number) {
+    return this.prismaService.<%= tableName %>
+      .delete({
+        where: {
+          id: <%= getSecondWord(tableName) %>Id,
+        },
+      })
+      .then(() => {
+        return { count: 1 };
+      });
+  }
+}

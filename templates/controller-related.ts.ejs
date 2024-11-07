@@ -1,0 +1,62 @@
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+<% const getFirstWord = (str) => str.split('_')[0]; %>
+<% const getSecondWord = (str) => str.split('_')[1]; %>
+
+import { Role } from '@hedhog/utils';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { OptionalParseIntPipe } from '../pipes/optional-parse-int.pipe';
+import { <%= toPascalCase(tableName) %>Service } from './<%= toKebabCase(tableName) %>.service';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+
+@Role()
+@Controller('<%= getFirstWord(tableName) %>/:<%= getFirstWord(tableName) %>Id/<%= getSecondWord(tableName) %>')
+export class <%= toPascalCase(tableName) %>Controller {
+  constructor(private readonly <%= getSecondWord(tableName) %>tService: <%= toPascalCase(tableName) %>Service) {}
+  @Post()
+  create(
+    @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,
+    @Body() data: CreateDTO,
+  ) {
+    return this.<%= getSecondWord(tableName) %>Service.create(<%= getFirstWord(tableName) %>Id, data);
+  }
+
+  @Get()
+  list(
+    @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,
+    @Query('typeId', OptionalParseIntPipe) typeId?: number,
+    @Query('id', OptionalParseIntPipe) <%= getSecondWord(tableName) %>Id?: number,
+  ) {
+    if (<%= getSecondWord(tableName) %>Id) {
+      return this.<%= getSecondWord(tableName) %>Service.list(<%= getFirstWord(tableName) %>Id, null, <%= getSecondWord(tableName) %>Id);
+    }
+    if (typeId) {
+      return this.<%= getSecondWord(tableName) %>Service.list(<%= getFirstWord(tableName) %>Id, typeId);
+    }
+    return this.<%= getSecondWord(tableName) %>Service.list(<%= getFirstWord(tableName) %>Id);
+  }
+
+  @Patch(':<%= getSecondWord(tableName) %>Id')
+  update(
+    @Param('<%= getSecondWord(tableName) %>Id', ParseIntPipe) id: number,
+    @Body() data: UpdateDTO,
+  ) {
+    return this.<%= getSecondWord(tableName) %>Service.update(id, data);
+  }
+
+  @Delete(':<%= getSecondWord(tableName) %>Id')
+  delete(@Param('<%= getSecondWord(tableName) %>Id', ParseIntPipe) <%= getSecondWord(tableName) %>Id: number) {
+    return this.<%= getSecondWord(tableName) %>Service.delete(<%= getSecondWord(tableName) %>Id);
+  }
+}
