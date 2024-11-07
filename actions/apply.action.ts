@@ -102,13 +102,15 @@ export class ApplyAction extends AbstractAction {
       };
 
       const tablesWithRelations = await this.screensWithRelations(libraryPath);
+      const baseTableName = table.name.replace('_locale', '');
       const screenWithRelations = findTableWithRelation(
-        table.name.replace('_locale', ''),
+        baseTableName,
         tablesWithRelations as any[],
       );
 
-      const baseTableName = table.name.replace('_locale', '');
-      await this.createTranslationFiles(baseTableName, libraryName);
+      if (!screenWithRelations) {
+        await this.createTranslationFiles(baseTableName, libraryName);
+      }
 
       if (table.name.endsWith('_locale')) {
         await this.updateTranslationServiceAndController(
@@ -181,6 +183,7 @@ export class ApplyAction extends AbstractAction {
       await this.updateParentModule(
         path.join(librarySrcPath, `${toKebabCase(libraryName)}.module.ts`),
         table.name,
+        screenWithRelations,
       );
       await this.createFrontendFiles(librarySrcPath, table.name, table.columns);
     }
@@ -479,7 +482,11 @@ export class ApplyAction extends AbstractAction {
     return tables;
   }
 
-  private async updateParentModule(modulePath: string, newModuleName: string) {
+  private async updateParentModule(
+    modulePath: string,
+    newModuleName: string,
+    hasRelationsWith: string,
+  ) {
     if (!modulePath) {
       console.error(chalk.red(`Parent module file not found.`));
       return;
@@ -498,7 +505,10 @@ export class ApplyAction extends AbstractAction {
         semi: true,
       });
 
-      const importStatement = this.createImportStatement(newModuleName);
+      const importStatement = this.createImportStatement(
+        newModuleName,
+        hasRelationsWith,
+      );
       if (moduleContent.includes(importStatement)) {
         return false;
       }
@@ -541,7 +551,13 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
-  private createImportStatement(newModuleName: string): string {
+  private createImportStatement(
+    newModuleName: string,
+    hasRelationsWith: string,
+  ): string {
+    if (hasRelationsWith) {
+      return `import { ${toPascalCase(newModuleName)}Module } from './${hasRelationsWith}/${toKebabCase(newModuleName)}/${toKebabCase(newModuleName)}.module';`;
+    }
     return `import { ${toPascalCase(newModuleName)}Module } from './${toKebabCase(newModuleName)}/${toKebabCase(newModuleName)}.module';`;
   }
 
