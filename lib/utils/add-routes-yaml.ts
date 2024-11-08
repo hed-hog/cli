@@ -62,12 +62,12 @@ export const addRoutesToYaml = (
             relations,
           },
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}/${tableName.split('_')[1]}Id`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}/:${tableName.split('_')[1]}Id`,
             method: 'PATCH',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}/${tableName.split('_')[1]}Id`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}`,
             method: 'DELETE',
             relations,
           },
@@ -83,6 +83,8 @@ export const addRoutesToYaml = (
             relations,
           },
         ];
+
+    console.log(newRoutes);
 
     for (const route of newRoutes) {
       if (
