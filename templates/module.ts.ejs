@@ -27,6 +27,6 @@ import { ${controllerName} } from './${toKebabCase(libraryName)}.controller';`
     ],
     controllers: <%= options.importServices ? `[${controllerName}]` : '[]' %>,
     providers: <%= options.importServices ? `[${serviceName}]` : '[]' %>,
-    exports: <%= options.importServices ? `[${serviceName}]` : '[]' %>,
+    exports: <%- options.importServices ? `[forwardRef(() => ${serviceName})]` : '[]' %>,
 })
 export class <%= toPascalCase(libraryName) %>Module {}

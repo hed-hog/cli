@@ -185,10 +185,8 @@ export class ApplyAction extends AbstractAction {
         await this.updateParentModule(
           path.join(librarySrcPath, `${toKebabCase(libraryName)}.module.ts`),
           table.name,
-          screenWithRelations,
         );
       }
-
       await this.createFrontendFiles(librarySrcPath, table.name, table.columns);
     }
   }
@@ -483,11 +481,7 @@ export class ApplyAction extends AbstractAction {
     return tables;
   }
 
-  private async updateParentModule(
-    modulePath: string,
-    newModuleName: string,
-    hasRelationsWith: string,
-  ) {
+  private async updateParentModule(modulePath: string, newModuleName: string) {
     if (!modulePath) {
       console.error(chalk.red(`Parent module file not found.`));
       return;
@@ -506,10 +500,7 @@ export class ApplyAction extends AbstractAction {
         semi: true,
       });
 
-      const importStatement = this.createImportStatement(
-        newModuleName,
-        hasRelationsWith,
-      );
+      const importStatement = this.createImportStatement(newModuleName);
       if (moduleContent.includes(importStatement)) {
         return false;
       }
@@ -552,13 +543,7 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
-  private createImportStatement(
-    newModuleName: string,
-    hasRelationsWith: string,
-  ): string {
-    if (hasRelationsWith) {
-      return `import { ${toPascalCase(newModuleName)}Module } from './${hasRelationsWith}/${toKebabCase(newModuleName)}/${toKebabCase(newModuleName)}.module';`;
-    }
+  private createImportStatement(newModuleName: string): string {
     return `import { ${toPascalCase(newModuleName)}Module } from './${toKebabCase(newModuleName)}/${toKebabCase(newModuleName)}.module';`;
   }
 
