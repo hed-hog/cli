@@ -5,9 +5,10 @@
 
 import { PaginationService } from '@hedhog/pagination';
 import { PrismaService } from '@hedhog/prisma';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
+import { DeleteDTO } from '@hedhog/utils';
 
 @Injectable()
 export class <%= toPascalCase(tableName) %>Service {
@@ -70,22 +71,30 @@ export class <%= toPascalCase(tableName) %>Service {
     );
   }
 
-  async update(<%= getSecondWord(tableName) %>Id: number, data: UpdateDTO) {
+  async update(<%= getFirstWord(tableName) %>Id: number, <%= getSecondWord(tableName) %>Id: number, data: UpdateDTO) {
     return this.prismaService.<%= tableName %>.update({
-      where: { id: <%= getSecondWord(tableName) %>Id },
+      where: { 
+        <%= getFirstWord(tableName) %>_id: <%= getFirstWord(tableName) %>Id,
+        id: <%= getSecondWord(tableName) %>Id
+      },
       data,
     });
   }
 
-  async delete(<%= getSecondWord(tableName) %>Id: number) {
-    return this.prismaService.<%= tableName %>
-      .delete({
-        where: {
-          id: <%= getSecondWord(tableName) %>Id,
+  async delete(<%= getFirstWord(tableName) %>Id: number, { ids }: DeleteDTO) {
+    if (ids == undefined || ids == null) {
+      throw new BadRequestException(
+        'You must select at least one item to delete.',
+      );
+    }
+
+    return this.prismaService.<%= tableName %>.deleteMany({
+      where: {
+        <%= getFirstWord(tableName) %>_id: <%= getFirstWord(tableName) %>Id,
+        id: {
+          in: ids,
         },
-      })
-      .then(() => {
-        return { count: 1 };
-      });
+      },
+    });
   }
 }

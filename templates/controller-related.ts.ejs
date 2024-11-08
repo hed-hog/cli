@@ -18,6 +18,7 @@ import {
 import { <%= toPascalCase(tableName) %>Service } from './<%= toKebabCase(tableName) %>.service';
 import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
+import { DeleteDTO } from '@hedhog/utils';
 
 @Role()
 @Controller('<%= getFirstWord(tableName) %>/:<%= getFirstWord(tableName) %>Id/<%= getSecondWord(tableName) %>')
@@ -48,14 +49,18 @@ export class <%= toPascalCase(tableName) %>Controller {
 
   @Patch(':<%= getSecondWord(tableName) %>Id')
   update(
-    @Param('<%= getSecondWord(tableName) %>Id', ParseIntPipe) id: number,
+    @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,
+    @Param('<%= getSecondWord(tableName) %>Id', ParseIntPipe) <%= getSecondWord(tableName) %>Id: number,
     @Body() data: UpdateDTO,
   ) {
-    return this.<%= getSecondWord(tableName) %>Service.update(id, data);
+    return this.<%= getSecondWord(tableName) %>Service.update(<%= getFirstWord(tableName) %>Id, <%= getSecondWord(tableName) %>Id, data);
   }
 
-  @Delete(':<%= getSecondWord(tableName) %>Id')
-  delete(@Param('<%= getSecondWord(tableName) %>Id', ParseIntPipe) <%= getSecondWord(tableName) %>Id: number) {
-    return this.<%= getSecondWord(tableName) %>Service.delete(<%= getSecondWord(tableName) %>Id);
+  @Delete()
+  delete(
+    @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,
+    @Body() { ids }: DeleteDTO,
+  ) {
+    return this.<%= getSecondWord(tableName) %>Service.delete(<%= getFirstWord(tableName) %>Id, { ids });
   }
 }
