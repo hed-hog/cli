@@ -201,13 +201,10 @@ export class ApplyAction extends AbstractAction {
     const hedhogFile = yaml.parse(await readFile(hedhogFilePath, 'utf-8'));
     const screens = hedhogFile.screens || {};
     return Object.keys(screens)
-      .filter(
-        (screen) =>
-          screens[screen].relations && screens[screen].relations.length > 0,
-      )
+      .filter((screen) => screens[screen].relations)
       .map((screen) => ({
         name: screen,
-        relations: screens[screen].relations,
+        relations: Object.keys(screens[screen].relations),
       }));
   }
 
