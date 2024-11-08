@@ -1,9 +1,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { toKebabCase } from './convert-string-cases';
+import { toKebabCase, toPascalCase } from './convert-string-cases';
 import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from './format-with-prettier';
+import { formatTypeScriptCode } from './format-typescript-code';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -33,6 +34,34 @@ export async function createFile(
     options?.hasRelationsWith ?? '',
     options?.useLibraryNamePath ? toKebabCase(tableName) : 'src',
   );
+
+  if (options.hasRelationsWith && fileType === 'module') {
+    const parentModulePath = path.join(
+      libraryPath,
+      options.hasRelationsWith,
+      `${options.hasRelationsWith}.module.ts`,
+    );
+    const parentModuleContent = await fs.readFile(parentModulePath, 'utf-8');
+    const updatedModuleContent = parentModuleContent
+      .replace(
+        /(controllers:\s*\[)([^\]]*)(\])/,
+        `$1$2, ${toPascalCase(tableName)}Controller$3`,
+      )
+      .replace(
+        /(providers:\s*\[)([^\]]*)(\])/,
+        `$1$2, ${toPascalCase(tableName)}Service$3`,
+      )
+      .replace(
+        /(import\s*\{[^\}]*\}\s*from\s*['"][^'"]*['"])/,
+        `$1\nimport { ${toPascalCase(tableName)}Controller } from './${toKebabCase(tableName)}/${toKebabCase(tableName)}.controller';\nimport { ${toPascalCase(tableName)}Service } from './${toKebabCase(tableName)}/${toKebabCase(tableName)}.service';`,
+      );
+    await fs.writeFile(
+      parentModulePath,
+      await formatTypeScriptCode(updatedModuleContent),
+    );
+    return;
+  }
+
   await fs.mkdir(filePath, { recursive: true });
   const fieldsForSearch = (options?.fields ?? [])
     .map((field) => AbstractTable.getColumnOptions(field))

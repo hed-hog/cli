@@ -164,14 +164,14 @@ export class ApplyAction extends AbstractAction {
         hasLocale,
       );
 
-      await createFile(librarySrcPath, table.name, 'module', {
+      await createFile(librarySrcPath, table.name, 'controller', {
         useLibraryNamePath: true,
-        importServices: true,
         hasRelationsWith: screenWithRelations,
       });
 
-      await createFile(librarySrcPath, table.name, 'controller', {
+      await createFile(librarySrcPath, table.name, 'module', {
         useLibraryNamePath: true,
+        importServices: true,
         hasRelationsWith: screenWithRelations,
       });
 
@@ -180,11 +180,15 @@ export class ApplyAction extends AbstractAction {
       });
 
       await addRoutesToYaml(librarySrcPath, table.name, screenWithRelations);
-      await this.updateParentModule(
-        path.join(librarySrcPath, `${toKebabCase(libraryName)}.module.ts`),
-        table.name,
-        screenWithRelations,
-      );
+
+      if (!screenWithRelations) {
+        await this.updateParentModule(
+          path.join(librarySrcPath, `${toKebabCase(libraryName)}.module.ts`),
+          table.name,
+          screenWithRelations,
+        );
+      }
+
       await this.createFrontendFiles(librarySrcPath, table.name, table.columns);
     }
   }
