@@ -187,7 +187,12 @@ export class ApplyAction extends AbstractAction {
           table.name,
         );
       }
-      await this.createFrontendFiles(librarySrcPath, table.name, table.columns);
+      await this.createFrontendFiles(
+        librarySrcPath,
+        libraryName,
+        table.name,
+        table.columns,
+      );
     }
   }
 
@@ -378,6 +383,7 @@ export class ApplyAction extends AbstractAction {
 
   async createFrontendFiles(
     libraryPath: string,
+    libraryName: string,
     tableName: string,
     fields: Column[],
   ) {
@@ -388,7 +394,7 @@ export class ApplyAction extends AbstractAction {
       {
         subPath: 'react-query',
         templates: ['requests.ts.ejs', 'handlers.ts.ejs'],
-        data: { tableName, hasLocale, libraryName: path.basename(libraryPath) },
+        data: { tableName, hasLocale, libraryName },
       },
       {
         subPath: 'components',
@@ -396,7 +402,7 @@ export class ApplyAction extends AbstractAction {
         data: {
           tableName,
           hasLocale,
-          libraryName: path.basename(libraryPath),
+          libraryName,
           fields,
         },
       },
