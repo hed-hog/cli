@@ -4,7 +4,7 @@
 
 import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
 <% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
-import { use<%= toPascalCase(tableName) %>Create } from '@/features/blog/<%= toKebabCase(tableName) %>'
+import { use<%= toPascalCase(tableName) %>Create } from '@/features/<%= libraryName %>/<%= toKebabCase(tableName) %>'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { useTranslation } from 'react-i18next'

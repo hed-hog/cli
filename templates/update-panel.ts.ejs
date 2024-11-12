@@ -6,7 +6,7 @@ import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } f
 import { Overlay } from '@/components/custom/overlay'
 import { TabPanel } from '@/components/panels/tab-panel'
 <% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
-import { use<%= toPascalCase(tableName) %>Get, use<%= toPascalCase(tableName) %>Update } from '@/features/blog/<%= toKebabCase(tableName) %>'
+import { use<%= toPascalCase(tableName) %>Get, use<%= toPascalCase(tableName) %>Update } from '@/features/<%= libraryName %>/<%= toKebabCase(tableName) %>'
 import useEffectAfterFirstUpdate from '@/hooks/use-effect-after-first-update'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
 import { forwardRef, useImperativeHandle, useRef } from 'react'

@@ -5,7 +5,7 @@
 
 import { PageTitle } from '@/components/custom/page-title'
 import DataPanel from '@/components/panels/data-panel'
-import { use<%= toPascalCase(tableName) %>Delete } from '@/features/<%= getFirstPiece(tableName) %>/<%= toKebabCase(tableName) %>'
+import { use<%= toPascalCase(tableName) %>Delete } from '@/features/<%= libraryName %>/<%= toKebabCase(tableName) %>'
 import { useApp } from '@/hooks/use-app'
 import { isPlural } from '@/lib/utils'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'

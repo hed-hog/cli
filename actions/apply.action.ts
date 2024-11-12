@@ -382,18 +382,23 @@ export class ApplyAction extends AbstractAction {
     fields: Column[],
   ) {
     const frontendPath = path.join(libraryPath, '..', 'frontend');
-    const hasLocale = await hasLocaleYaml(libraryPath, tableName);
+    const hasLocale = hasLocaleYaml(libraryPath, tableName);
 
     const tasks = [
       {
         subPath: 'react-query',
         templates: ['requests.ts.ejs', 'handlers.ts.ejs'],
-        data: { tableName, hasLocale },
+        data: { tableName, hasLocale, libraryName: path.basename(libraryPath) },
       },
       {
         subPath: 'components',
         templates: ['create-panel.ts.ejs', 'update-panel.ts.ejs'],
-        data: { tableName, hasLocale, fields },
+        data: {
+          tableName,
+          hasLocale,
+          libraryName: path.basename(libraryPath),
+          fields,
+        },
       },
     ];
 

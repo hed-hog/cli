@@ -147,9 +147,7 @@ export class AddAction extends AbstractAction {
     }
 
     await this.installPackage(directoryPath, packageName);
-
     await this.checkDependences(directoryPath, module, nodeModulePath);
-
     await this.checkIfModuleExists(module, nodeModulePath);
 
     const installedModule = await this.modifyAppModule(
