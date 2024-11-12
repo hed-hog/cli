@@ -192,6 +192,7 @@ export class ApplyAction extends AbstractAction {
         libraryName,
         table.name,
         table.columns,
+        tablesWithRelations as any[],
       );
     }
   }
@@ -386,6 +387,7 @@ export class ApplyAction extends AbstractAction {
     libraryName: string,
     tableName: string,
     fields: Column[],
+    tablesWithRelations: any[],
   ) {
     const frontendPath = path.join(libraryPath, '..', 'frontend');
     const hasLocale = hasLocaleYaml(libraryPath, tableName);
@@ -393,7 +395,11 @@ export class ApplyAction extends AbstractAction {
     const tasks = [
       {
         subPath: 'react-query',
-        templates: ['requests.ts.ejs', 'handlers.ts.ejs'],
+        templates: [
+          'requests.ts.ejs',
+          'requests-related.ts.ejs',
+          'handlers.ts.ejs',
+        ],
         data: { tableName, hasLocale, libraryName },
       },
       {
@@ -422,20 +428,37 @@ export class ApplyAction extends AbstractAction {
       await mkdir(taskPath, { recursive: true });
 
       for (const template of task.templates) {
-        const templatePath = path.join(__dirname, '..', 'templates', template);
-        const fileContent = render(
-          await readFile(templatePath, 'utf-8'),
-          task.data,
-        );
-        const formattedContent = await formatTypeScriptCode(fileContent);
-        const outputFilePath = path.join(
-          taskPath,
-          template.replace(
-            '.ts.ejs',
-            task.subPath === 'components' ? '.tsx.ejs' : '.ts.ejs',
-          ),
-        );
-        await writeFile(outputFilePath, formattedContent);
+        const hasRelations = tablesWithRelations.map((t) =>
+          t.relations.includes(tableName),
+        )[0];
+
+        if (
+          (hasRelations && template === 'requests-related.ts.ejs') ||
+          (!hasRelations && template === 'requests.ts.ejs') ||
+          !template.includes('requests')
+        ) {
+          const templatePath = path.join(
+            __dirname,
+            '..',
+            'templates',
+            template,
+          );
+          const fileContent = render(
+            await readFile(templatePath, 'utf-8'),
+            task.data,
+          );
+          const formattedContent = await formatTypeScriptCode(fileContent);
+          const outputFilePath = path.join(
+            taskPath,
+            template
+              .replace('-related', '')
+              .replace(
+                '.ts.ejs',
+                task.subPath === 'components' ? '.tsx.ejs' : '.ts.ejs',
+              ),
+          );
+          await writeFile(outputFilePath, formattedContent);
+        }
       }
     }
   }
