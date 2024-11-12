@@ -1,10 +1,11 @@
 <% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
 <% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+<% const getFirstPiece = (str) => str.split('_')[0]; %>
 
 import { PageTitle } from '@/components/custom/page-title'
 import DataPanel from '@/components/panels/data-panel'
-import { use<%= toPascalCase(tableName) %>Delete } from '@/features/blog/<%= toKebabCase(tableName) %>'
+import { use<%= toPascalCase(tableName) %>Delete } from '@/features/<%= getFirstPiece(tableName) %>/<%= toKebabCase(tableName) %>'
 import { useApp } from '@/hooks/use-app'
 import { isPlural } from '@/lib/utils'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
