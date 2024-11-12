@@ -1,0 +1,36 @@
+<% const getFirstName = (str) => str.split('_')[0] %>
+<% const getSecondName = (str) => str.split('_')[1] %>
+<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()) %>
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>
+<% const toKebabCase = (str) => str.replace(/_/g, '-') %>
+
+{
+  title: t('<%= getSecondName(tableName) %>', { ns: 'modules' }),
+  children: (
+    <DataPanel
+      ref={<%= toCamelCase(tableName) %>Ref}
+      selectable
+      multiple
+      layout='list'
+      id={`<%= toKebabCase(tableName) %>-${item.id}`}
+      url={`/<%= getFirstName(tableName) %>/${item.id}/<%= getSecondName(tableName) %>`}
+      render={(item: <%= toPascalCase(tableName) %>) => (
+        <div className='flex flex-row gap-2'>
+          <span className='relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold'>
+            {<%= mainField %>}: {item.<%= mainField %>}
+          </span>
+        </div>
+      )}
+      checked={(item: <%= toPascalCase(tableName) %>) => {
+        return false
+      }}
+    />
+  ),
+  buttons: [
+    {
+      text: t('apply', { ns: 'actions' }),
+      variant: 'default',
+      onClick: () => {},
+    },
+  ],
+},

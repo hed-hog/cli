@@ -192,6 +192,7 @@ export class ApplyAction extends AbstractAction {
         libraryName,
         table.name,
         table.columns,
+        tables,
         tablesWithRelations as any[],
       );
     }
@@ -387,10 +388,43 @@ export class ApplyAction extends AbstractAction {
     libraryName: string,
     tableName: string,
     fields: Column[],
+    tables: any,
     tablesWithRelations: any[],
   ) {
     const frontendPath = path.join(libraryPath, '..', 'frontend');
     const hasLocale = hasLocaleYaml(libraryPath, tableName);
+    const extraTabs: any[] = [];
+    const relatedItems = tablesWithRelations.flatMap((item) => item.name);
+    const relationOfItems = tablesWithRelations
+      .filter((i) => i.name.includes(relatedItems))
+      .flatMap((i) => i.relations);
+
+    if (relatedItems.includes(tableName)) {
+      const templateContent = await readFile(
+        path.join(__dirname, '..', 'templates', 'tab-panel-item.ts.ejs'),
+        'utf-8',
+      );
+
+      for (const relatedTable of relationOfItems) {
+        const table: Table = tables.find(
+          (t: Column) => t.name === relatedTable,
+        );
+
+        const mainField = table.columns.find((f) => f.name === 'name') ||
+          table.columns.find((f) => f.name === 'title') ||
+          table.columns.find((f) => f.type === 'slug') ||
+          table.columns.find((f) => f.type === 'varchar') || {
+            name: 'id',
+            ...table.columns.find((f) => f.type === 'pk'),
+          };
+
+        const renderedContent = render(templateContent, {
+          mainField: mainField?.name,
+          tableName: relatedTable,
+        });
+        extraTabs.push(renderedContent);
+      }
+    }
 
     const tasks = [
       {
@@ -400,7 +434,7 @@ export class ApplyAction extends AbstractAction {
           'requests-related.ts.ejs',
           'handlers.ts.ejs',
         ],
-        data: { tableName, hasLocale, libraryName },
+        data: { tableName, hasLocale, libraryName, fields },
       },
       {
         subPath: 'components',
@@ -410,6 +444,7 @@ export class ApplyAction extends AbstractAction {
           hasLocale,
           libraryName,
           fields,
+          extraTabs,
         },
       },
     ];
@@ -428,9 +463,9 @@ export class ApplyAction extends AbstractAction {
       await mkdir(taskPath, { recursive: true });
 
       for (const template of task.templates) {
-        const hasRelations = tablesWithRelations.map((t) =>
+        const hasRelations = tablesWithRelations.find((t) =>
           t.relations.includes(tableName),
-        )[0];
+        );
 
         if (
           (hasRelations && template === 'requests-related.ts.ejs') ||
