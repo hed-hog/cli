@@ -206,6 +206,10 @@ export class AddAction extends AbstractAction {
     };
   }
 
+  removeEjsExtension(file: string) {
+    return file.replace('.ejs', '');
+  }
+
   async copyFrontEndFiles(
     directoryPath: string,
     nodeModulePath: string,
@@ -234,31 +238,39 @@ export class AddAction extends AbstractAction {
         const componentsPath = join(frontendPath, dir, 'components');
         const localesPath = join(frontendPath, dir, 'locales');
         const reactQueryPath = join(frontendPath, dir, 'react-query');
-        const screenPath = join(componentsPath, `${dir}.screen.ts`);
-        const createPanelPath = join(componentsPath, `create-panel.tsx`);
-        const updatePanelPath = join(componentsPath, `update-panel.tsx`);
-        const handlersPath = join(reactQueryPath, 'handlers.ts');
-        const requestsPath = join(reactQueryPath, 'requests.ts');
+        const screenPath = join(componentsPath, `${dir}.screen.tsx.ejs`);
+        const createPanelPath = join(componentsPath, `create-panel.tsx.ejs`);
+        const updatePanelPath = join(componentsPath, `update-panel.tsx.ejs`);
+        const handlersPath = join(reactQueryPath, 'handlers.ts.ejs');
+        const requestsPath = join(reactQueryPath, 'requests.ts.ejs');
         const featuresExports = [];
+
         if (existsSync(handlersPath)) {
+          this.showDebug('handlersPath', handlersPath);
           await mkdirRecursive(join(frontendFeaturesDestPath, dir));
           await copyFile(
             handlersPath,
-            join(frontendFeaturesDestPath, dir, 'handlers.ts'),
+            this.removeEjsExtension(
+              join(frontendFeaturesDestPath, dir, 'handlers.ts'),
+            ),
           );
           featuresExports.push(`export * from './handlers';`);
         }
 
         if (existsSync(requestsPath)) {
+          this.showDebug('requestsPath', requestsPath);
           await mkdirRecursive(join(frontendFeaturesDestPath, dir));
           await copyFile(
             requestsPath,
-            join(frontendFeaturesDestPath, dir, 'requests.ts'),
+            this.removeEjsExtension(
+              join(frontendFeaturesDestPath, dir, 'requests.ts'),
+            ),
           );
           featuresExports.push(`export * from './requests';`);
         }
 
         if (existsSync(localesPath)) {
+          this.showDebug('localesPath', localesPath);
           await mkdirRecursive(join(frontendDestPath, 'locales'));
           for (const localeCode of await readdir(localesPath)) {
             for (const file of await readdir(join(localesPath, localeCode))) {
@@ -281,6 +293,7 @@ export class AddAction extends AbstractAction {
         }
 
         if (existsSync(screenPath)) {
+          this.showDebug('screenPath', screenPath);
           await mkdirRecursive(join(frontendPagesDestPath, dir));
           await copyFile(
             screenPath,
@@ -291,6 +304,7 @@ export class AddAction extends AbstractAction {
         }
 
         if (existsSync(createPanelPath)) {
+          this.showDebug('createPanelPath', createPanelPath);
           await mkdirRecursive(join(frontendPagesDestPath, dir, 'components'));
           await copyFile(
             createPanelPath,
@@ -304,6 +318,7 @@ export class AddAction extends AbstractAction {
         }
 
         if (existsSync(updatePanelPath)) {
+          this.showDebug('updatePanelPath', updatePanelPath);
           await mkdirRecursive(join(frontendPagesDestPath, dir, 'components'));
           await copyFile(
             updatePanelPath,
@@ -602,7 +617,7 @@ export class AddAction extends AbstractAction {
 
         if (changeStructure) {
           await runScript('prisma:update', join(directoryPath, 'backend'));
-          spinner.succeed(`Pirisma updated.`);
+          spinner.succeed(`Prisma updated.`);
         }
       } catch (error) {
         spinner.fail(error.message);
