@@ -221,23 +221,19 @@ export class ApplyAction extends AbstractAction {
     const YAMLContent = await readFile(hedhogFilePath, 'utf-8');
     const yamlData = yaml.parse(YAMLContent);
 
-    // Inicializa o array de rotas se ainda não existir
     if (!yamlData.routes) {
       yamlData.routes = [];
     }
 
-    // Tenta encontrar um módulo existente com o mesmo caminho
     let moduleRoute = yamlData.routes.find(
       (route: any) => route.path === module,
     );
 
-    // Se não encontrou, cria um novo
     if (!moduleRoute) {
       moduleRoute = { path: `${module}`, children: [] };
       yamlData.routes.push(moduleRoute);
     }
 
-    // Adiciona a nova rota ao children
     moduleRoute.children.push({
       path: toKebabCase(screen),
       lazy: {
@@ -245,10 +241,6 @@ export class ApplyAction extends AbstractAction {
       },
     });
 
-    // Debug para verificar a estrutura antes de salvar
-    console.log({ moduleRoute, children: moduleRoute.children });
-
-    // Atualiza o conteúdo do arquivo YAML
     const updatedYAML = yaml.stringify({
       ...yamlData,
       routes: yamlData.routes,

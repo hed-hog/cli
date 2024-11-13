@@ -24,6 +24,7 @@ import { AbstractEntity } from '../lib/entities/abstract.entity';
 import { TableFactory } from '../lib/tables/table.factory';
 import { AbstractTable } from '../lib/tables/abstract.table';
 import { toKebabCase } from '../lib/utils/convert-string-cases';
+import path = require('path');
 
 interface TableDependency {
   tableName: string;
@@ -245,6 +246,9 @@ export class AddAction extends AbstractAction {
         const requestsPath = join(reactQueryPath, 'requests.ts.ejs');
         const featuresExports = [];
 
+        const frontendDestPath = join(directoryPath, 'admin', 'src');
+        this.createScreenRouterFile(frontendDestPath, module);
+
         if (existsSync(handlersPath)) {
           this.showDebug('handlersPath', handlersPath);
           await mkdirRecursive(join(frontendFeaturesDestPath, dir));
@@ -374,6 +378,34 @@ export class AddAction extends AbstractAction {
       start: startIndex,
       end: endIndex,
     };
+  }
+
+  async createScreenRouterFile(srcPath: string, module: string) {
+    const routesDirPath = path.join(srcPath, 'routes', 'modules');
+    const routesYAMLPath = path.join(routesDirPath, `${module}.yaml`);
+    await mkdir(routesDirPath, { recursive: true });
+
+    const rootPath = await getRootPath();
+    const hedhogFilePath = path.join(
+      rootPath,
+      'lib',
+      'libs',
+      toKebabCase(module),
+      'hedhog.yaml',
+    );
+
+    const YAMLContent = YAML.parse(await readFile(hedhogFilePath, 'utf-8'));
+    if (YAMLContent.routes) {
+      await writeFile(
+        routesYAMLPath,
+        YAML.stringify({ routes: YAMLContent.routes }),
+        'utf-8',
+      );
+    } else {
+      console.error(
+        `No routes found in the YAML content for module ${module}.`,
+      );
+    }
   }
 
   private findRouteRecursively(routes: any[], path: string): any | undefined {
