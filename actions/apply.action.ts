@@ -199,16 +199,15 @@ export class ApplyAction extends AbstractAction {
       );
     }
 
-    for (const table of tables) {
-      await this.createScreenRouterFile(libraryName, table.name);
+    const hedhogFile = yaml.parse(await readFile(hedhogFilePath, 'utf-8'));
+    const screensArray = Object.keys(hedhogFile.screens);
+
+    for (const screen of screensArray) {
+      await this.createScreenRouterFile(libraryName, screen);
     }
   }
 
   async createScreenRouterFile(module: string, screen: string) {
-    if (screen.endsWith('_locale')) {
-      return;
-    }
-
     const rootPath = await getRootPath();
     const hedhogFilePath = path.join(
       rootPath,
