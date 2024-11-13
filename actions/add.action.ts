@@ -375,42 +375,44 @@ export class AddAction extends AbstractAction {
   }
 
   async addScreenRouterFile(path: string, module: string, screen: string) {
-    console.log('addScreenRouterFile', { path, module, screen });
-    const routesJSONPath = join(path, 'routes.json');
+    const routesDirPath = join(path, 'routes', 'modules');
+    const routesYAMLPath = join(routesDirPath, `${module}.yaml`);
+    await mkdir(routesDirPath, { recursive: true });
 
-    if (!existsSync(routesJSONPath)) {
-      await writeFile(routesJSONPath, '{"routes":[]}', 'utf-8');
+    if (!existsSync(routesYAMLPath)) {
+      const initialYAML = YAML.stringify({ routes: [] });
+      await writeFile(routesYAMLPath, initialYAML, 'utf-8');
     }
 
-    const routesJSON = require(routesJSONPath);
+    const routesYAMLContent = await readFile(routesYAMLPath, 'utf-8');
+    const routesData = YAML.parse(routesYAMLContent) as any;
 
-    if (!routesJSON.routes.find((route: any) => route.path === `${module}`)) {
-      routesJSON.routes.push({
+    if (!routesData.routes.find((route: any) => route.path === `${module}`)) {
+      routesData.routes.push({
         path: `${module}`,
         children: [],
       });
     }
 
-    for (let i = 0; i < routesJSON.routes.length; i++) {
-      if (routesJSON.routes[i].path === `${module}`) {
+    for (let i = 0; i < routesData.routes.length; i++) {
+      if (routesData.routes[i].path === `${module}`) {
         if (
-          !routesJSON.routes[i].children.find(
+          !routesData.routes[i].children.find(
             (child: any) => child.path === screen,
           )
         ) {
-          routesJSON.routes[i].children.push({
+          routesData.routes[i].children.push({
             path: screen,
-            component: `${module}/${screen}`,
+            lazy: {
+              component: `./pages/${module}/${screen}/index.tsx`,
+            },
           });
         }
       }
     }
 
-    await writeFile(
-      routesJSONPath,
-      JSON.stringify(routesJSON, null, 2),
-      'utf-8',
-    );
+    const updatedYAML = YAML.stringify(routesData);
+    await writeFile(routesYAMLPath, updatedYAML, 'utf-8');
   }
 
   secondsToHuman(seconds: number) {
