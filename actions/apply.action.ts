@@ -48,6 +48,8 @@ interface Table {
 }
 
 export class ApplyAction extends AbstractAction {
+  private combinedRoutes: any = { routes: [] };
+
   public async handle(inputs: Input[], options: Input[]) {
     this.debug = options.some(
       (option) => option.name === 'debug' && option.value === true,
@@ -85,6 +87,8 @@ export class ApplyAction extends AbstractAction {
       'libs',
       toKebabCase(libraryName),
     );
+
+    const adminSrcPath = path.join(rootPath, 'admin', 'src');
 
     const librarySrcPath = path.join(libraryPath, 'src');
     const libraryFrontEndPath = path.join(libraryPath, 'frontend');
@@ -179,7 +183,7 @@ export class ApplyAction extends AbstractAction {
         useLibraryNamePath: true,
       });
 
-      await addRoutesToYaml(librarySrcPath, table.name, screenWithRelations);
+      addRoutesToYaml(librarySrcPath, table.name, screenWithRelations);
 
       if (!screenWithRelations) {
         await this.updateParentModule(
@@ -196,6 +200,62 @@ export class ApplyAction extends AbstractAction {
         tablesWithRelations as any[],
       );
     }
+
+    const frontendPath = path.join(
+      rootPath,
+      'backend',
+      `node_modules`,
+      `@hedhog`,
+      libraryName,
+      'frontend',
+    );
+
+    for (const dir of await readdir(frontendPath)) {
+      await this.createScreenRouterFile(adminSrcPath, libraryName, dir);
+    }
+  }
+
+  async createScreenRouterFile(
+    srcPath: string,
+    module: string,
+    screen: string,
+  ) {
+    const routesDirPath = path.join(srcPath, 'routes', 'modules');
+    const routesYAMLPath = path.join(routesDirPath, `${module}.yaml`);
+    await mkdir(routesDirPath, { recursive: true });
+
+    if (!existsSync(routesYAMLPath)) {
+      const initialYAML = yaml.stringify({ routes: [] });
+      await writeFile(routesYAMLPath, initialYAML, 'utf-8');
+    }
+
+    const routesYAMLContent = await readFile(routesYAMLPath, 'utf-8');
+    const routesData = yaml.parse(routesYAMLContent) as any;
+
+    let moduleRoute = routesData.routes.find(
+      (route: any) => route.path === `${module}`,
+    );
+
+    if (!moduleRoute) {
+      moduleRoute = { path: `${module}`, children: [] };
+      routesData.routes.push(moduleRoute);
+    }
+
+    const screenRouteExists = moduleRoute.children.find(
+      (child: any) => child.path === screen,
+    );
+
+    if (!screenRouteExists) {
+      moduleRoute.children.push({
+        path: screen,
+        lazy: {
+          component: `./pages/${module}/${screen}/index.tsx`,
+        },
+      });
+    }
+
+    const updatedYAML = yaml.stringify(routesData);
+    await writeFile(routesYAMLPath, updatedYAML, 'utf-8');
   }
 
   async screensWithRelations(libraryPath: string) {
