@@ -300,7 +300,7 @@ export class AddAction extends AbstractAction {
             join(frontendPagesDestPath, dir, 'index.tsx'),
           );
 
-          await this.addScreenRouterFile(frontendDestPath, module, dir);
+          await this.parseYAMLFilesToJSON(frontendDestPath);
         }
 
         if (existsSync(createPanelPath)) {
@@ -376,52 +376,28 @@ export class AddAction extends AbstractAction {
     };
   }
 
-  async addScreenRouterFile(path: string, module: string, screen: string) {
-    const routesDirPath = join(path, 'routes', 'modules');
-    const routesYAMLPath = join(routesDirPath, `${module}.yaml`);
-    await mkdir(routesDirPath, { recursive: true });
+  private findRouteRecursively(routes: any[], path: string): any | undefined {
+    for (const route of routes) {
+      if (route.path === path) {
+        return route;
+      }
 
-    if (!existsSync(routesYAMLPath)) {
-      const initialYAML = YAML.stringify({ routes: [] });
-      await writeFile(routesYAMLPath, initialYAML, 'utf-8');
-    }
-
-    const routesYAMLContent = await readFile(routesYAMLPath, 'utf-8');
-    const routesData = YAML.parse(routesYAMLContent) as any;
-
-    if (!routesData.routes.find((route: any) => route.path === `${module}`)) {
-      routesData.routes.push({
-        path: `${module}`,
-        children: [],
-      });
-    }
-
-    for (let i = 0; i < routesData.routes.length; i++) {
-      if (routesData.routes[i].path === `${module}`) {
-        if (
-          !routesData.routes[i].children.find(
-            (child: any) => child.path === screen,
-          )
-        ) {
-          routesData.routes[i].children.push({
-            path: screen,
-            lazy: {
-              component: `./pages/${module}/${screen}/index.tsx`,
-            },
-          });
+      if (route.children && route.children.length > 0) {
+        const foundRoute = this.findRouteRecursively(route.children, path);
+        if (foundRoute) {
+          return foundRoute;
         }
       }
     }
 
-    const updatedYAML = YAML.stringify(routesData);
-    await writeFile(routesYAMLPath, updatedYAML, 'utf-8');
-    await this.parseYAMLFilesToJSON(path);
+    return undefined;
   }
 
   private mergeRoutes(targetRoutes: any[], newRoutes: any[]): any[] {
     newRoutes.forEach((newRoute) => {
-      const existingRoute = targetRoutes.find(
-        (route) => route.path === newRoute.path,
+      const existingRoute = this.findRouteRecursively(
+        targetRoutes,
+        newRoute.path,
       );
 
       if (existingRoute) {
@@ -478,11 +454,16 @@ export class AddAction extends AbstractAction {
     const fileContent = await readFile(filePath, 'utf-8');
     const fileData = YAML.parse(fileContent) as any;
 
+    console.log('fileData', fileData);
+    console.log('fileData.routes', fileData.routes);
+
     if (fileData && fileData.routes) {
       this.combinedRoutes.routes = this.mergeRoutes(
         this.combinedRoutes.routes,
         fileData.routes,
       );
+
+      console.log('this.combinedRoutes', this.combinedRoutes);
     }
   }
 
