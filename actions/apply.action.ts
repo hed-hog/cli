@@ -88,8 +88,6 @@ export class ApplyAction extends AbstractAction {
       toKebabCase(libraryName),
     );
 
-    const adminSrcPath = path.join(rootPath, 'admin', 'src');
-
     const librarySrcPath = path.join(libraryPath, 'src');
     const libraryFrontEndPath = path.join(libraryPath, 'frontend');
 
@@ -201,61 +199,62 @@ export class ApplyAction extends AbstractAction {
       );
     }
 
-    const frontendPath = path.join(
-      rootPath,
-      'backend',
-      `node_modules`,
-      `@hedhog`,
-      libraryName,
-      'frontend',
-    );
-
-    for (const dir of await readdir(frontendPath)) {
-      await this.createScreenRouterFile(adminSrcPath, libraryName, dir);
+    for (const table of tables) {
+      await this.createScreenRouterFile(libraryName, table.name);
     }
   }
 
-  async createScreenRouterFile(
-    srcPath: string,
-    module: string,
-    screen: string,
-  ) {
-    const routesDirPath = path.join(srcPath, 'routes', 'modules');
-    const routesYAMLPath = path.join(routesDirPath, `${module}.yaml`);
-    await mkdir(routesDirPath, { recursive: true });
-
-    if (!existsSync(routesYAMLPath)) {
-      const initialYAML = yaml.stringify({ routes: [] });
-      await writeFile(routesYAMLPath, initialYAML, 'utf-8');
+  async createScreenRouterFile(module: string, screen: string) {
+    if (screen.endsWith('_locale')) {
+      return;
     }
 
-    const routesYAMLContent = await readFile(routesYAMLPath, 'utf-8');
-    const routesData = yaml.parse(routesYAMLContent) as any;
-
-    let moduleRoute = routesData.routes.find(
-      (route: any) => route.path === `${module}`,
+    const rootPath = await getRootPath();
+    const hedhogFilePath = path.join(
+      rootPath,
+      'lib',
+      'libs',
+      toKebabCase(module),
+      'hedhog.yaml',
     );
 
+    const YAMLContent = await readFile(hedhogFilePath, 'utf-8');
+    const yamlData = yaml.parse(YAMLContent);
+
+    // Inicializa o array de rotas se ainda não existir
+    if (!yamlData.routes) {
+      yamlData.routes = [];
+    }
+
+    // Tenta encontrar um módulo existente com o mesmo caminho
+    let moduleRoute = yamlData.routes.find(
+      (route: any) => route.path === module,
+    );
+
+    // Se não encontrou, cria um novo
     if (!moduleRoute) {
       moduleRoute = { path: `${module}`, children: [] };
-      routesData.routes.push(moduleRoute);
+      yamlData.routes.push(moduleRoute);
     }
 
-    const screenRouteExists = moduleRoute.children.find(
-      (child: any) => child.path === screen,
-    );
+    // Adiciona a nova rota ao children
+    moduleRoute.children.push({
+      path: toKebabCase(screen),
+      lazy: {
+        component: `./pages/${toKebabCase(module)}/${toKebabCase(screen)}/index.tsx`,
+      },
+    });
 
-    if (!screenRouteExists) {
-      moduleRoute.children.push({
-        path: screen,
-        lazy: {
-          component: `./pages/${module}/${screen}/index.tsx`,
-        },
-      });
-    }
+    // Debug para verificar a estrutura antes de salvar
+    console.log({ moduleRoute, children: moduleRoute.children });
 
-    const updatedYAML = yaml.stringify(routesData);
-    await writeFile(routesYAMLPath, updatedYAML, 'utf-8');
+    // Atualiza o conteúdo do arquivo YAML
+    const updatedYAML = yaml.stringify({
+      ...yamlData,
+      routes: yamlData.routes,
+    });
+
+    await writeFile(hedhogFilePath, updatedYAML, 'utf-8');
   }
 
   async screensWithRelations(libraryPath: string) {

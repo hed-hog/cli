@@ -84,8 +84,6 @@ export const addRoutesToYaml = (
           },
         ];
 
-    console.log(newRoutes);
-
     for (const route of newRoutes) {
       if (
         !yamlData.data.route.some(
