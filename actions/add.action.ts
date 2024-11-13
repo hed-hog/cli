@@ -39,6 +39,8 @@ export class AddAction extends AbstractAction {
   private isDbConnected: boolean = false;
   private startAt = Date.now();
 
+  private combinedRoutes: any = { routes: [] };
+
   public async handle(
     inputs: Input[],
     options: Input[],
@@ -413,6 +415,75 @@ export class AddAction extends AbstractAction {
 
     const updatedYAML = YAML.stringify(routesData);
     await writeFile(routesYAMLPath, updatedYAML, 'utf-8');
+    await this.parseYAMLFilesToJSON(path);
+  }
+
+  private mergeRoutes(targetRoutes: any[], newRoutes: any[]): any[] {
+    newRoutes.forEach((newRoute) => {
+      const existingRoute = targetRoutes.find(
+        (route) => route.path === newRoute.path,
+      );
+
+      if (existingRoute) {
+        if (newRoute.children && newRoute.children.length > 0) {
+          existingRoute.children = this.mergeRoutes(
+            existingRoute.children || [],
+            newRoute.children,
+          );
+        }
+
+        if (newRoute.lazy) {
+          existingRoute.lazy = newRoute.lazy;
+        }
+      } else {
+        targetRoutes.push(newRoute);
+      }
+    });
+
+    return targetRoutes;
+  }
+
+  private async parseYAMLFilesToJSON(path: string) {
+    const routesPath = join(path, 'routes');
+    const modulesPath = join(routesPath, 'modules');
+
+    if (existsSync(routesPath)) {
+      const routeFiles = await readdir(routesPath);
+      for (const file of routeFiles) {
+        if (file.endsWith('.yaml') && file !== 'modules') {
+          const filePath = join(routesPath, file);
+          await this.parseAndMergeYAMLFile(filePath);
+        }
+      }
+    }
+
+    if (existsSync(modulesPath)) {
+      const moduleFiles = await readdir(modulesPath);
+      for (const file of moduleFiles) {
+        if (file.endsWith('.yaml')) {
+          const filePath = join(modulesPath, file);
+          await this.parseAndMergeYAMLFile(filePath);
+        }
+      }
+    }
+
+    await writeFile(
+      join(path, 'routes.json'),
+      JSON.stringify(this.combinedRoutes, null, 2),
+      'utf-8',
+    );
+  }
+
+  private async parseAndMergeYAMLFile(filePath: string) {
+    const fileContent = await readFile(filePath, 'utf-8');
+    const fileData = YAML.parse(fileContent) as any;
+
+    if (fileData && fileData.routes) {
+      this.combinedRoutes.routes = this.mergeRoutes(
+        this.combinedRoutes.routes,
+        fileData.routes,
+      );
+    }
   }
 
   secondsToHuman(seconds: number) {
