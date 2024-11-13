@@ -386,11 +386,12 @@ export class AddAction extends AbstractAction {
     await mkdir(routesDirPath, { recursive: true });
 
     const rootPath = await getRootPath();
-    const hedhogFilePath = path.join(
-      rootPath,
-      'lib',
-      'libs',
-      toKebabCase(module),
+    const backendPath = join('', 'backend');
+    const hedhogFilePath = join(
+      backendPath,
+      `node_modules`,
+      `@hedhog`,
+      `${module}`,
       'hedhog.yaml',
     );
 
