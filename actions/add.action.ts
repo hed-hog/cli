@@ -408,9 +408,7 @@ export class AddAction extends AbstractAction {
 
       await this.renderRoutesWithEJS(srcPath);
     } else {
-      console.error(
-        `No routes found in the YAML content for module ${module}.`,
-      );
+      console.warn(`No routes found in the YAML content for module ${module}.`);
     }
   }
 
