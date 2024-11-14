@@ -21,6 +21,8 @@ import { ResetAction } from '../actions/reset.action';
 import { ApplyCommand } from './apply.command';
 import { ApplyAction } from '../actions/apply.action';
 import { ConfigureCommand } from './configure.command';
+import { TestCommand } from './test.command';
+import { TestAction } from '../actions/test.action';
 export class CommandLoader {
   public static async load(program: Command): Promise<void> {
     new NewCommand(new NewAction()).load(program);
@@ -32,6 +34,7 @@ export class CommandLoader {
     new ResetCommand(new ResetAction()).load(program);
     new ApplyCommand(new ApplyAction()).load(program);
     new ConfigureCommand(new ConfigureAction()).load(program);
+    new TestCommand(new TestAction()).load(program);
 
     this.handleInvalidCommand(program);
   }

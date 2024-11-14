@@ -39,6 +39,15 @@ interface TableDependency {
   table?: any;
 }
 
+type RouteObject = {
+  path: string;
+  component?: string;
+  lazy?: {
+    component: string;
+  };
+  children?: RouteObject[];
+};
+
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
@@ -47,7 +56,7 @@ export class AddAction extends AbstractAction {
   private isDbConnected: boolean = false;
   private startAt = Date.now();
 
-  private combinedRoutes: any = { routes: [] };
+  private routes: RouteObject[] = [];
 
   public async handle(
     inputs: Input[],
@@ -414,118 +423,53 @@ export class AddAction extends AbstractAction {
     }
   }
 
-  async findYAMLFiles(dir: string) {
-    let yamlFiles: any[] = [];
-    const files = await readdir(dir);
+  async renderRoutesWithEJS(srcPath: string) {
+    console.log('renderRoutesWithEJS', { srcPath });
 
-    for (const file of files) {
-      const currentPath = path.join(dir, file);
-      const stats = await lstat(currentPath);
+    const routesMainPath = path.join(srcPath, 'routes', 'main.yaml');
+    const routesModulesPath = path.join(srcPath, 'routes', 'modules');
+    const routePaths = [routesMainPath];
 
-      if (stats.isDirectory()) {
-        yamlFiles = yamlFiles.concat(await this.findYAMLFiles(currentPath));
-      } else if (file.endsWith('.yaml')) {
-        yamlFiles.push(currentPath);
-      }
+    for (const file of await readdir(routesModulesPath)) {
+      routePaths.push(path.join(routesModulesPath, file));
     }
 
-    return yamlFiles;
-  }
+    const routeObjects = [];
 
-  async parseAndMergeRoutes(srcPath: string) {
-    const allRoutes: any[] = [];
-    const routesPath = path.join(srcPath, 'routes');
-    const modulesPath = path.join(srcPath, 'routes', 'modules');
-
-    const yamlFiles = [
-      ...(await this.findYAMLFiles(routesPath)),
-      ...(await this.findYAMLFiles(modulesPath)),
-    ];
-
-    for (const yamlFile of yamlFiles) {
-      const fileContent = await readFile(yamlFile, 'utf-8');
-      const parsedContent = YAML.parse(fileContent);
-
-      if (parsedContent && parsedContent.routes) {
-        this.mergeRoutes(allRoutes, parsedContent.routes);
-      }
+    for (const path of routePaths) {
+      routeObjects.push(YAML.parse(await readFile(path, 'utf-8'))?.routes);
     }
 
-    return allRoutes;
+    console.log('routeObjects', routeObjects);
+
+    await this.extractPathsFromRoutes('/', routeObjects);
+
+    console.log('routes', this.routes);
+
+    process.exit(0);
   }
 
-  mergeRoutes(targetArray: any[], routesArray: any[]) {
-    for (const route of routesArray) {
-      const existingRoute = targetArray.find((r) => r.path === route.path);
+  async extractPathsFromRoutes(
+    parentPath: string,
+    routeObjects: RouteObject[],
+  ) {
+    for (const routeObject of routeObjects) {
+      console.log('routeObject', routeObject);
 
-      if (existingRoute) {
-        if (route.children) {
-          if (!existingRoute.children) existingRoute.children = [];
-          this.mergeRoutes(existingRoute.children, route.children);
-        }
-      } else {
-        targetArray.push({
-          path: route.path,
-          component: route.lazy?.component ?? route.component,
-          children: route.children
-            ? this.mergeRoutes([], route.children)
-            : undefined,
+      const fullPath = parentPath + routeObject.path;
+
+      if (routeObject?.children) {
+        await this.extractPathsFromRoutes(fullPath, routeObject?.children);
+      }
+
+      if (routeObject?.path) {
+        this.routes.push({
+          path: fullPath,
+          component: routeObject.component,
+          lazy: routeObject.lazy,
         });
       }
     }
-
-    return this.mergeDuplicatePathsInChildren(targetArray);
-  }
-
-  mergeDuplicatePathsInChildren(routes: any[]): any[] {
-    const pathMap: { [key: string]: any } = {};
-
-    for (const route of routes) {
-      pathMap[route.path] = route;
-    }
-
-    for (const route of routes) {
-      if (route.children && Array.isArray(route.children)) {
-        for (const child of route.children) {
-          if (pathMap[child.path]) {
-            const topLevelRoute = pathMap[child.path];
-            if (
-              topLevelRoute.children &&
-              Array.isArray(topLevelRoute.children)
-            ) {
-              if (!child.children) {
-                child.children = [];
-              }
-              child.children.push(...topLevelRoute.children);
-            }
-
-            delete pathMap[child.path];
-          }
-        }
-      }
-    }
-
-    return Object.values(pathMap);
-  }
-
-  async renderRoutesWithEJS(srcPath: string) {
-    const routesData = await this.parseAndMergeRoutes(srcPath);
-    const templatePath = path.join(
-      __dirname,
-      '..',
-      'templates',
-      'router.tsx.ejs',
-    );
-
-    const fileContent = render(await readFile(templatePath, 'utf-8'), {
-      routes: routesData,
-    });
-
-    await writeFile(
-      path.join(srcPath, 'router.tsx'),
-      await formatTypeScriptCode(fileContent),
-      'utf-8',
-    );
   }
 
   secondsToHuman(seconds: number) {
