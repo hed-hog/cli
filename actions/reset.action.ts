@@ -62,6 +62,12 @@ export class ResetAction extends AbstractAction {
         }
       }
 
+      const moduleRoutesPath = join(adminPath, 'src', 'routes', 'modules');
+      if (existsSync(moduleRoutesPath)) {
+        spinner.info('Clearing routes/modules...');
+        this.unlinkDirectoryRecursive(moduleRoutesPath);
+      }
+
       await writeFile(
         routesPath,
         JSON.stringify({ routes: [] }, null, 2),
@@ -92,10 +98,15 @@ export class ResetAction extends AbstractAction {
 
       for (const file of files) {
         const currentPath = join(path, file);
-        if ((await lstat(currentPath)).isDirectory()) {
+        if (
+          existsSync(currentPath) &&
+          (await lstat(currentPath)).isDirectory()
+        ) {
           await this.unlinkDirectoryRecursive(currentPath);
         } else {
-          await unlink(currentPath);
+          if (existsSync(currentPath)) {
+            await unlink(currentPath);
+          }
         }
       }
 
