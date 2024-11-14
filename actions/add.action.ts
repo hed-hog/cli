@@ -465,8 +465,8 @@ export class AddAction extends AbstractAction {
         }
       } else {
         targetArray.push({
-          path: route.path,
-          component: route.lazy?.component,
+          path: route.path ?? '/',
+          component: route.lazy?.component ?? route.component,
           children: route.children
             ? this.mergeRoutes([], route.children)
             : undefined,
@@ -474,6 +474,7 @@ export class AddAction extends AbstractAction {
       }
     }
 
+    console.log({ targetArray });
     return targetArray;
   }
 

@@ -3,41 +3,30 @@ import GeneralError from './pages/errors/general-error.tsx'
 import MaintenanceError from './pages/errors/maintenance-error.tsx'
 import NotFoundError from './pages/errors/not-found-error.tsx'
 import UnauthorisedError from './pages/errors/unauthorised-error.tsx'
-import routesJSON from './routes.json'
 
 <% function generateLazyRoute(route) { %>
   lazy: async () => ({
-    Component: (await import('<%= route.component %>')).default,
+    Component: (await import('<%- route.component %>')).default,
   }),
 <% } %>
-
-type Route = {
-  path: string
-  children?: Route[]
-  component?: string
-}
-
-type RoutesJSON = {
-  routes: Route[]
-}
 
 const routes = [
   <% routes.forEach(route => { %>
     {
-      path: '<%= route.path %>',
+      path: '<%- route.path %>',
       <% if (route.component) { %>
-        <%= generateLazyRoute(route) %>
+        <%- generateLazyRoute(route) %>
       <% } %>
       <% if (route.children) { %>
         children: [
           <% route.children.forEach(child => { %>
             {
-              path: '<%= child.path %>',
+              path: '<%- child.path %>',
               <% if (child.component) { %>
-                <%= generateLazyRoute(child) %>
+                <%- generateLazyRoute(child) %>
               <% } %>
               <% if (child.children) { %>
-                children: <%= JSON.stringify(child.children) %>,
+                children: <%- JSON.stringify(child.children) %>,
               <% } %>
             },
           <% }) %>
