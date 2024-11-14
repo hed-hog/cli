@@ -19,6 +19,7 @@ import { recreateDatabase } from '../lib/utils/recreate-database';
 import { getEnvFileTemplate } from '../lib/utils/env-file-template';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
+import ts = require('typescript');
 
 export class ResetAction extends AbstractAction {
   public async handle() {
@@ -49,13 +50,13 @@ export class ResetAction extends AbstractAction {
     const adminPath = join(path, '..', 'admin');
 
     if (existsSync(adminPath)) {
-      const routesPath = join(adminPath, 'src', 'routes.json');
-      const routesJSON = require(routesPath);
-      const adminRoutes = (routesJSON?.routes ?? [])
-        .map((route: any) => route?.path ?? '')
-        .filter((route: string) => route !== '');
+      const moduleRouteFiles = await readdir(
+        join(adminPath, 'src', 'routes', 'modules'),
+      );
 
-      for (const module of adminRoutes) {
+      const modules = moduleRouteFiles.map((file) => file.replace('.yaml', ''));
+
+      for (const module of modules) {
         for (const dir of ['pages', 'features']) {
           spinner.info(`Clearing ${dir}/${module}...`);
           this.unlinkDirectoryRecursive(join(adminPath, 'src', dir, module));
@@ -67,12 +68,6 @@ export class ResetAction extends AbstractAction {
         spinner.info('Clearing routes/modules...');
         this.unlinkDirectoryRecursive(moduleRoutesPath);
       }
-
-      await writeFile(
-        routesPath,
-        JSON.stringify({ routes: [] }, null, 2),
-        'utf-8',
-      );
 
       spinner.succeed('Admin Frontend cleared.');
     } else {
