@@ -49,7 +49,10 @@ export class ResetAction extends AbstractAction {
     const spinner = ora('Reset Admin Frontend...').start();
     const adminPath = join(path, '..', 'admin');
 
-    if (existsSync(adminPath)) {
+    if (
+      existsSync(adminPath) &&
+      existsSync(join(adminPath, 'src', 'routes', 'modules'))
+    ) {
       const moduleRouteFiles = await readdir(
         join(adminPath, 'src', 'routes', 'modules'),
       );
