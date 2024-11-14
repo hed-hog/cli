@@ -4,7 +4,14 @@ import { PackageManagerFactory } from '../lib/package-managers';
 import { AbstractAction } from './abstract.action';
 import * as ora from 'ora';
 import { existsSync } from 'fs';
-import { copyFile, mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import {
+  copyFile,
+  lstat,
+  mkdir,
+  readdir,
+  readFile,
+  writeFile,
+} from 'fs/promises';
 import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { join, sep } from 'path';
 import { Runner, RunnerFactory } from '../lib/runners';
@@ -303,8 +310,6 @@ export class AddAction extends AbstractAction {
             screenPath,
             join(frontendPagesDestPath, dir, 'index.tsx'),
           );
-
-          await this.parseYAMLFilesToJSON(frontendDestPath);
         }
 
         if (existsSync(createPanelPath)) {
@@ -384,8 +389,6 @@ export class AddAction extends AbstractAction {
     const routesDirPath = path.join(srcPath, 'routes', 'modules');
     const routesYAMLPath = path.join(routesDirPath, `${module}.yaml`);
     await mkdir(routesDirPath, { recursive: true });
-
-    const rootPath = await getRootPath();
     const backendPath = join('', 'backend');
     const hedhogFilePath = join(
       backendPath,
@@ -402,6 +405,8 @@ export class AddAction extends AbstractAction {
         YAML.stringify({ routes: YAMLContent.routes }),
         'utf-8',
       );
+
+      await this.renderRoutesWithEJS(srcPath);
     } else {
       console.error(
         `No routes found in the YAML content for module ${module}.`,
@@ -409,95 +414,89 @@ export class AddAction extends AbstractAction {
     }
   }
 
-  private findRouteRecursively(routes: any[], path: string): any | undefined {
-    for (const route of routes) {
-      if (route.path === path) {
-        return route;
-      }
+  async findYAMLFiles(dir: string) {
+    let yamlFiles: any[] = [];
+    const files = await readdir(dir);
 
-      if (route.children && route.children.length > 0) {
-        const foundRoute = this.findRouteRecursively(route.children, path);
-        if (foundRoute) {
-          return foundRoute;
-        }
+    for (const file of files) {
+      const currentPath = path.join(dir, file);
+      const stats = await lstat(currentPath);
+
+      if (stats.isDirectory()) {
+        yamlFiles = yamlFiles.concat(await this.findYAMLFiles(currentPath));
+      } else if (file.endsWith('.yaml')) {
+        yamlFiles.push(currentPath);
       }
     }
 
-    return undefined;
+    return yamlFiles;
   }
 
-  private mergeRoutes(targetRoutes: any[], newRoutes: any[]): any[] {
-    newRoutes.forEach((newRoute) => {
-      const existingRoute = this.findRouteRecursively(
-        targetRoutes,
-        newRoute.path,
-      );
+  async parseAndMergeRoutes(srcPath: string) {
+    const allRoutes: any[] = [];
+    const routesPath = path.join(srcPath, 'routes');
+    const modulesPath = path.join(srcPath, 'routes', 'modules');
+
+    const yamlFiles = [
+      ...(await this.findYAMLFiles(routesPath)),
+      ...(await this.findYAMLFiles(modulesPath)),
+    ];
+
+    for (const yamlFile of yamlFiles) {
+      const fileContent = await readFile(yamlFile, 'utf-8');
+      const parsedContent = YAML.parse(fileContent);
+
+      if (parsedContent.routes) {
+        this.mergeRoutes(allRoutes, parsedContent.routes);
+      }
+    }
+
+    return allRoutes;
+  }
+
+  mergeRoutes(targetArray: any[], routesArray: any[]) {
+    for (const route of routesArray) {
+      const existingRoute = targetArray.find((r) => r.path === route.path);
 
       if (existingRoute) {
-        if (newRoute.children && newRoute.children.length > 0) {
-          existingRoute.children = this.mergeRoutes(
-            existingRoute.children || [],
-            newRoute.children,
-          );
-        }
-
-        if (newRoute.lazy) {
-          existingRoute.lazy = newRoute.lazy;
+        if (route.children) {
+          if (!existingRoute.children) existingRoute.children = [];
+          this.mergeRoutes(existingRoute.children, route.children);
         }
       } else {
-        targetRoutes.push(newRoute);
+        targetArray.push({
+          path: route.path,
+          component: route.lazy?.component,
+          children: route.children
+            ? this.mergeRoutes([], route.children)
+            : undefined,
+        });
       }
+    }
+
+    return targetArray;
+  }
+
+  async renderRoutesWithEJS(srcPath: string) {
+    const routesData = await this.parseAndMergeRoutes(srcPath);
+    const templatePath = path.join(
+      __dirname,
+      '..',
+      'templates',
+      'router.tsx.ejs',
+    );
+
+    const fileContent = render(await readFile(templatePath, 'utf-8'), {
+      routes: routesData,
     });
 
-    return targetRoutes;
-  }
-
-  private async parseYAMLFilesToJSON(path: string) {
-    const routesPath = join(path, 'routes');
-    const modulesPath = join(routesPath, 'modules');
-
-    if (existsSync(routesPath)) {
-      const routeFiles = await readdir(routesPath);
-      for (const file of routeFiles) {
-        if (file.endsWith('.yaml') && file !== 'modules') {
-          const filePath = join(routesPath, file);
-          await this.parseAndMergeYAMLFile(filePath);
-        }
-      }
-    }
-
-    if (existsSync(modulesPath)) {
-      const moduleFiles = await readdir(modulesPath);
-      for (const file of moduleFiles) {
-        if (file.endsWith('.yaml')) {
-          const filePath = join(modulesPath, file);
-          await this.parseAndMergeYAMLFile(filePath);
-        }
-      }
-    }
+    console.log({ routesData });
 
     await writeFile(
-      join(path, 'routes.json'),
-      JSON.stringify(this.combinedRoutes, null, 2),
+      path.join(srcPath, 'router.tsx'),
+      await formatTypeScriptCode(fileContent),
       'utf-8',
     );
-  }
-
-  private async parseAndMergeYAMLFile(filePath: string) {
-    const fileContent = await readFile(filePath, 'utf-8');
-    const fileData = YAML.parse(fileContent) as any;
-
-    console.log('fileData', fileData);
-    console.log('fileData.routes', fileData.routes);
-
-    if (fileData && fileData.routes) {
-      this.combinedRoutes.routes = this.mergeRoutes(
-        this.combinedRoutes.routes,
-        fileData.routes,
-      );
-
-      console.log('this.combinedRoutes', this.combinedRoutes);
-    }
   }
 
   secondsToHuman(seconds: number) {

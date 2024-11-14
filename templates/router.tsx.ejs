@@ -1,0 +1,61 @@
+import { createBrowserRouter } from 'react-router-dom'
+import GeneralError from './pages/errors/general-error.tsx'
+import MaintenanceError from './pages/errors/maintenance-error.tsx'
+import NotFoundError from './pages/errors/not-found-error.tsx'
+import UnauthorisedError from './pages/errors/unauthorised-error.tsx'
+import routesJSON from './routes.json'
+
+<% function generateLazyRoute(route) { %>
+  lazy: async () => ({
+    Component: (await import('<%= route.component %>')).default,
+  }),
+<% } %>
+
+type Route = {
+  path: string
+  children?: Route[]
+  component?: string
+}
+
+type RoutesJSON = {
+  routes: Route[]
+}
+
+const routes = [
+  <% routes.forEach(route => { %>
+    {
+      path: '<%= route.path %>',
+      <% if (route.component) { %>
+        <%= generateLazyRoute(route) %>
+      <% } %>
+      <% if (route.children) { %>
+        children: [
+          <% route.children.forEach(child => { %>
+            {
+              path: '<%= child.path %>',
+              <% if (child.component) { %>
+                <%= generateLazyRoute(child) %>
+              <% } %>
+              <% if (child.children) { %>
+                children: <%= JSON.stringify(child.children) %>,
+              <% } %>
+            },
+          <% }) %>
+        ],
+      <% } %>
+    },
+  <% }) %>
+  
+  // Error routes
+  { path: '/500', Component: GeneralError },
+  { path: '/404', Component: NotFoundError },
+  { path: '/503', Component: MaintenanceError },
+  { path: '/401', Component: UnauthorisedError },
+
+  // Fallback 404 route
+  { path: '*', Component: NotFoundError },
+]
+
+const router = createBrowserRouter(routes)
+
+export default router
