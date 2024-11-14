@@ -446,7 +446,7 @@ export class AddAction extends AbstractAction {
       const fileContent = await readFile(yamlFile, 'utf-8');
       const parsedContent = YAML.parse(fileContent);
 
-      if (parsedContent.routes) {
+      if (parsedContent && parsedContent.routes) {
         this.mergeRoutes(allRoutes, parsedContent.routes);
       }
     }
@@ -465,7 +465,7 @@ export class AddAction extends AbstractAction {
         }
       } else {
         targetArray.push({
-          path: route.path ?? '/',
+          path: route.path,
           component: route.lazy?.component ?? route.component,
           children: route.children
             ? this.mergeRoutes([], route.children)
@@ -474,8 +474,38 @@ export class AddAction extends AbstractAction {
       }
     }
 
-    console.log({ targetArray });
-    return targetArray;
+    return this.mergeDuplicatePathsInChildren(targetArray);
+  }
+
+  mergeDuplicatePathsInChildren(routes: any[]): any[] {
+    const pathMap: { [key: string]: any } = {};
+
+    for (const route of routes) {
+      pathMap[route.path] = route;
+    }
+
+    for (const route of routes) {
+      if (route.children && Array.isArray(route.children)) {
+        for (const child of route.children) {
+          if (pathMap[child.path]) {
+            const topLevelRoute = pathMap[child.path];
+            if (
+              topLevelRoute.children &&
+              Array.isArray(topLevelRoute.children)
+            ) {
+              if (!child.children) {
+                child.children = [];
+              }
+              child.children.push(...topLevelRoute.children);
+            }
+
+            delete pathMap[child.path];
+          }
+        }
+      }
+    }
+
+    return Object.values(pathMap);
   }
 
   async renderRoutesWithEJS(srcPath: string) {
@@ -490,8 +520,6 @@ export class AddAction extends AbstractAction {
     const fileContent = render(await readFile(templatePath, 'utf-8'), {
       routes: routesData,
     });
-
-    console.log({ routesData });
 
     await writeFile(
       path.join(srcPath, 'router.tsx'),
