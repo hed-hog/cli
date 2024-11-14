@@ -1,6 +1,6 @@
 {
   "name": "@hedhog/cli",
-  "version": "0.0.131",
+  "version": "0.0.132",
   "bin": {
     "hedhog": "bin/hedhog.js"
   },
