@@ -98,15 +98,20 @@ export class ResetAction extends AbstractAction {
 
       for (const file of files) {
         const currentPath = join(path, file);
-        if (
-          existsSync(currentPath) &&
-          (await lstat(currentPath)).isDirectory()
-        ) {
-          await this.unlinkDirectoryRecursive(currentPath);
-        } else {
-          if (existsSync(currentPath)) {
-            await unlink(currentPath);
+
+        try {
+          if (
+            existsSync(currentPath) &&
+            (await lstat(currentPath)).isDirectory()
+          ) {
+            await this.unlinkDirectoryRecursive(currentPath);
+          } else {
+            if (existsSync(currentPath)) {
+              await unlink(currentPath);
+            }
           }
+        } catch (error) {
+          return false;
         }
       }
 
