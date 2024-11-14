@@ -41,22 +41,23 @@ interface TableDependency {
 
 type RouteObject = {
   path: string;
+  originalPath?: string;
   component?: string;
   lazy?: {
     component: string;
   };
   children?: RouteObject[];
+  content?: string;
 };
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
-
+  private routes: RouteObject[] = [];
+  private routesRecursive: RouteObject[] = [];
   private db: any = null;
   private isDbConnected: boolean = false;
   private startAt = Date.now();
-
-  private routes: RouteObject[] = [];
 
   public async handle(
     inputs: Input[],
@@ -169,6 +170,8 @@ export class AddAction extends AbstractAction {
     await this.checkDependences(directoryPath, module, nodeModulePath);
     await this.checkIfModuleExists(module, nodeModulePath);
 
+    const srcPath = path.join(directoryPath, 'admin', 'src');
+
     const installedModule = await this.modifyAppModule(
       directoryPath,
       module,
@@ -205,7 +208,6 @@ export class AddAction extends AbstractAction {
     }
 
     await this.copyFrontEndFiles(directoryPath, nodeModulePath, module);
-
     if (!silentComplete) {
       await this.updateLibsPrisma(directoryPath);
       await this.complete(module, migrateRun);
@@ -221,6 +223,185 @@ export class AddAction extends AbstractAction {
     return {
       packagesAdded,
     };
+  }
+
+  // route management
+  applyOriginalPathsRecursive(routes: RouteObject[]) {
+    return this.removeDuplicates(
+      routes.map((route) => {
+        if (route.children) {
+          route.children = this.applyOriginalPathsRecursive(route.children);
+        }
+
+        if (route.originalPath) {
+          route.path = route.originalPath;
+        }
+
+        delete route.originalPath;
+
+        if (route.children?.length === 0) {
+          delete route.children;
+        }
+
+        return route;
+      }),
+    );
+  }
+
+  // route management
+  convertToString(routes: RouteObject[]) {
+    return routes.map((route) => {
+      const lines = [];
+
+      lines.push(`path: '${route.path}'`);
+
+      if (route.lazy) {
+        lines.push(
+          `lazy: async () => ({ Component: (await import('${route.lazy.component}')).default})`,
+        );
+      }
+
+      if (route.children) {
+        route.children = this.convertToString(route.children);
+
+        const childrenContent = route.children.map((child) => child.content);
+
+        lines.push(`children: [${childrenContent.join(',\n')}]`);
+      }
+
+      route.content = `{ ${lines.join(',')} }`;
+
+      return route;
+    });
+  }
+
+  // route management
+  removeDuplicates(routes: RouteObject[]): RouteObject[] {
+    const map = new Map<string, RouteObject>();
+
+    for (const route of routes) {
+      const existingRoute = map.get(route.path);
+
+      if (existingRoute) {
+        if (existingRoute.children) {
+          continue;
+        } else if (route.children) {
+          map.set(route.path, route);
+        }
+      } else {
+        map.set(route.path, route);
+      }
+    }
+
+    return Array.from(map.values());
+  }
+
+  // route management
+  sortRoutes(routeObjects: RouteObject[]) {
+    return routeObjects.sort((a, b) => {
+      if (a.path === null) {
+        return -1;
+      }
+
+      if (b.path === null) {
+        return 1;
+      }
+
+      if (a.path < b.path) {
+        return -1;
+      }
+      if (a.path > b.path) {
+        return 1;
+      }
+      return 0;
+    });
+  }
+
+  // route management
+  async extractPathsFromRoutes(
+    parentPath: string,
+    routeObjects: RouteObject[],
+  ) {
+    for (const routeObject of routeObjects) {
+      const fullPath = [parentPath, routeObject.path]
+        .join('/')
+        .replaceAll('//', '/');
+
+      if (routeObject?.children) {
+        await this.extractPathsFromRoutes(fullPath, routeObject?.children);
+      }
+
+      const newRouteObject: RouteObject = {
+        path: fullPath,
+        originalPath: routeObject.path,
+        component: routeObject.component,
+        lazy: routeObject.lazy,
+      };
+
+      if (!this.routes.map((route) => route.path).includes(fullPath)) {
+        this.routes.push(newRouteObject);
+      }
+    }
+  }
+
+  // route management
+  private buildRoutesTree(flatRoutes: RouteObject[]): RouteObject[] {
+    const routeTree: RouteObject[] = [];
+
+    for (const route of flatRoutes) {
+      const path = route.path;
+      const isIndexRoute = path.endsWith('/');
+      const segments = path.split('/').filter((segment) => segment.length > 0);
+      this.insertRoute(route, segments, routeTree, isIndexRoute);
+    }
+
+    return routeTree;
+  }
+
+  // route management
+  private insertRoute(
+    route: RouteObject,
+    segments: string[],
+    routes: RouteObject[],
+    isIndexRoute: boolean,
+  ) {
+    if (segments.length === 0) {
+      if (!routes.map((r) => r.path).includes(route.path)) {
+        routes.push(route);
+      }
+      return;
+    }
+
+    const [currentSegment, ...remainingSegments] = segments;
+    let node = routes.find((r) => r.path === currentSegment);
+
+    if (!node) {
+      node = { path: currentSegment, children: [] } as unknown as RouteObject;
+      if (!routes.map((r) => r.path).includes(node.path)) {
+        routes.push(node);
+      }
+    }
+
+    if (remainingSegments.length === 0) {
+      if (isIndexRoute) {
+        // Rota de índice
+        if (!node.children) {
+          node.children = [];
+        }
+        const indexRoute = { ...route, path: '', index: true };
+        if (!node.children.map((r) => r.path).includes(indexRoute.path)) {
+          node.children.push(indexRoute);
+        }
+      } else {
+        // Rota final
+        Object.assign(node, route);
+      }
+    } else {
+      if (!node.children) {
+        node.children = [];
+      }
+      this.insertRoute(route, remainingSegments, node.children, isIndexRoute);
+    }
   }
 
   removeEjsExtension(file: string) {
@@ -239,7 +420,6 @@ export class AddAction extends AbstractAction {
     });
 
     if (existsSync(join(nodeModulePath, 'frontend'))) {
-      //const spinner = ora('Copying frontend files...').start();
       const frontendPath = join(nodeModulePath, 'frontend');
       const frontendDestPath = join(directoryPath, 'admin', 'src');
       const frontendPagesDestPath = join(frontendDestPath, 'pages', module);
@@ -350,6 +530,60 @@ export class AddAction extends AbstractAction {
         }
       }
 
+      const routesMainPath = path.join(frontendDestPath, 'routes', 'main.yaml');
+      const routesModulesPath = path.join(
+        frontendDestPath,
+        'routes',
+        'modules',
+      );
+      const routePaths = [routesMainPath];
+
+      for (const file of await readdir(routesModulesPath)) {
+        routePaths.push(path.join(routesModulesPath, file));
+      }
+
+      const routeObjects = [];
+
+      for (const path of routePaths) {
+        routeObjects.push(...YAML.parse(await readFile(path, 'utf-8'))?.routes);
+      }
+
+      await this.extractPathsFromRoutes('', routeObjects);
+
+      this.routes = this.sortRoutes(this.routes);
+
+      this.routesRecursive = this.buildRoutesTree(this.routes);
+
+      this.routesRecursive = this.applyOriginalPathsRecursive(
+        this.routesRecursive,
+      );
+
+      const varTemplate = `${this.convertToString(this.routesRecursive)
+        .map((route) => route.content)
+        .join(',')}`;
+
+      const routerTemplatePath = path.join(
+        __dirname,
+        '..',
+        'templates',
+        'router.tsx.ejs',
+      );
+      const routerDestPath = join(frontendDestPath, 'router.tsx');
+
+      if (existsSync(routerTemplatePath)) {
+        const templateContent = await readFile(routerTemplatePath, 'utf-8');
+        const renderedContent = await formatTypeScriptCode(
+          render(templateContent, {
+            routes: varTemplate,
+          }),
+        );
+
+        console.log({ varTemplate });
+        await writeFile(routerDestPath, renderedContent, 'utf-8');
+      } else {
+        console.warn(`Router template not found at ${routerTemplatePath}`);
+      }
+
       this.showDebug({
         frontendPath,
         frontendDestPath,
@@ -414,59 +648,8 @@ export class AddAction extends AbstractAction {
         YAML.stringify({ routes: YAMLContent.routes }),
         'utf-8',
       );
-
-      await this.renderRoutesWithEJS(srcPath);
     } else {
       console.warn(`No routes found in the YAML content for module ${module}.`);
-    }
-  }
-
-  async renderRoutesWithEJS(srcPath: string) {
-    console.log('renderRoutesWithEJS', { srcPath });
-
-    const routesMainPath = path.join(srcPath, 'routes', 'main.yaml');
-    const routesModulesPath = path.join(srcPath, 'routes', 'modules');
-    const routePaths = [routesMainPath];
-
-    for (const file of await readdir(routesModulesPath)) {
-      routePaths.push(path.join(routesModulesPath, file));
-    }
-
-    const routeObjects = [];
-
-    for (const path of routePaths) {
-      routeObjects.push(YAML.parse(await readFile(path, 'utf-8'))?.routes);
-    }
-
-    console.log('routeObjects', routeObjects);
-
-    await this.extractPathsFromRoutes('/', routeObjects);
-
-    console.log('routes', this.routes);
-
-    process.exit(0);
-  }
-
-  async extractPathsFromRoutes(
-    parentPath: string,
-    routeObjects: RouteObject[],
-  ) {
-    for (const routeObject of routeObjects) {
-      console.log('routeObject', routeObject);
-
-      const fullPath = parentPath + routeObject.path;
-
-      if (routeObject?.children) {
-        await this.extractPathsFromRoutes(fullPath, routeObject?.children);
-      }
-
-      if (routeObject?.path) {
-        this.routes.push({
-          path: fullPath,
-          component: routeObject.component,
-          lazy: routeObject.lazy,
-        });
-      }
     }
   }
 

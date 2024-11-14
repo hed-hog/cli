@@ -4,38 +4,52 @@ import MaintenanceError from './pages/errors/maintenance-error.tsx'
 import NotFoundError from './pages/errors/not-found-error.tsx'
 import UnauthorisedError from './pages/errors/unauthorised-error.tsx'
 
-<% function generateLazyRoute(route) { %>
-  lazy: async () => ({
-    Component: (await import('<%- route.component %>')).default,
-  }),
-<% } %>
-
 const routes = [
-  <% routes.forEach(route => { %>
-    {
-      path: '<%- route.path %>',
-      <% if (route.component) { %>
-        <%- generateLazyRoute(route) %>
-      <% } %>
-      <% if (route.children) { %>
-        children: [
-          <% route.children.forEach(child => { %>
-            {
-              path: '<%- child.path %>',
-              <% if (child.component) { %>
-                <%- generateLazyRoute(child) %>
-              <% } %>
-              <% if (child.children) { %>
-                children: <%- JSON.stringify(child.children) %>,
-              <% } %>
-            },
-          <% }) %>
-        ],
-      <% } %>
+  {
+    path: '/login',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/login.tsx')).default,
+    }),
+  },
+  {
+    path: '/forgot-password',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/forgot-password.tsx')).default,
+    }),
+  },
+  {
+    path: '/otp',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/otp.tsx')).default,
+    }),
+  },
+  {
+    path: '/tests',
+    lazy: async () => ({
+      Component: (await import('./components/custom/color-theme.tsx')).default,
+    }),
+  },
+
+  // Main route
+  {
+    path: '/',
+    lazy: async () => {
+      const AppShell = await import('./components/app/app-shell.tsx')
+      return { Component: AppShell.default }
     },
-  <% }) %>
-  
-  // Error routes
+    errorElement: <GeneralError />,
+    children: [
+      {
+        index: true,
+        lazy: async () => ({
+          Component: (await import('./pages/dashboard/index.tsx')).default,
+        }),
+      },
+      <%- routes %>
+    ],
+  },
+
+  // Error route
   { path: '/500', Component: GeneralError },
   { path: '/404', Component: NotFoundError },
   { path: '/503', Component: MaintenanceError },
