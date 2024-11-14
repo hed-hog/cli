@@ -578,7 +578,6 @@ export class AddAction extends AbstractAction {
           }),
         );
 
-        console.log({ varTemplate });
         await writeFile(routerDestPath, renderedContent, 'utf-8');
       } else {
         console.warn(`Router template not found at ${routerTemplatePath}`);
