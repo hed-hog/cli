@@ -177,9 +177,15 @@ export class ApplyAction extends AbstractAction {
         hasRelationsWith: screenWithRelations,
       });
 
-      await createScreen(libraryFrontEndPath, table.name, 'screen', {
-        useLibraryNamePath: true,
-      });
+      await createScreen(
+        libraryFrontEndPath,
+        libraryName,
+        table.name,
+        'screen',
+        {
+          useLibraryNamePath: true,
+        },
+      );
 
       addRoutesToYaml(librarySrcPath, table.name, screenWithRelations);
 

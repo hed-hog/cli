@@ -19,12 +19,12 @@ interface IFields {
 }
 export async function createScreen(
   libraryPath: string,
+  libraryName: string,
   tableName: string,
   fileType: 'screen',
   options: IOption = {
     importServices: false,
   },
-  hasLocale?: boolean,
 ) {
   if (!(await filterScreenCreation(libraryPath, tableName))) {
     return;
@@ -48,7 +48,7 @@ export async function createScreen(
 
   const fileContent = render(await fs.readFile(templatePath, 'utf-8'), {
     tableName,
-    libraryName: tableName,
+    libraryName,
     fieldsForSearch,
     options,
   });
