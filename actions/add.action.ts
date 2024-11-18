@@ -640,15 +640,21 @@ export class AddAction extends AbstractAction {
       'hedhog.yaml',
     );
 
-    const YAMLContent = YAML.parse(await readFile(hedhogFilePath, 'utf-8'));
-    if (YAMLContent.routes) {
-      await writeFile(
-        routesYAMLPath,
-        YAML.stringify({ routes: YAMLContent.routes }),
-        'utf-8',
-      );
+    if (existsSync(hedhogFilePath)) {
+      const YAMLContent = YAML.parse(await readFile(hedhogFilePath, 'utf-8'));
+      if (YAMLContent.routes) {
+        await writeFile(
+          routesYAMLPath,
+          YAML.stringify({ routes: YAMLContent.routes }),
+          'utf-8',
+        );
+      } else {
+        console.warn(
+          `No routes found in the YAML content for module ${module}.`,
+        );
+      }
     } else {
-      console.warn(`No routes found in the YAML content for module ${module}.`);
+      console.warn(`Hedhog file not found for module ${module}.`);
     }
   }
 
