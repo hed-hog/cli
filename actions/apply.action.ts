@@ -447,6 +447,14 @@ export class ApplyAction extends AbstractAction {
     tables: any,
     tablesWithRelations: any[],
   ) {
+    fields = fields
+      .filter((field) => field.name || field.type === 'slug')
+      .map((f) => {
+        if (f.type === 'slug') {
+          f.name = 'slug';
+        }
+        return f;
+      });
     const frontendPath = path.join(libraryPath, '..', 'frontend');
     const hasLocale = hasLocaleYaml(libraryPath, tableName);
     const extraTabs: any[] = [];

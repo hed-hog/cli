@@ -43,7 +43,7 @@ const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
                 <FormPanel
                   ref={formRef}
                   fields={[
-                      <% fields.filter(field => field.name).forEach((field, index, array) => { %>
+                      <% fields.forEach((field, index, array) => { %>
                       {
                           name: '<%= field.name %>',
                           label: { text: t('<%= field.name %>', { ns: 'translation' }) },
