@@ -44,7 +44,7 @@ const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
                         required: true,
                     }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
                     <% }) %>
-                    <%- hasLocale ? '...getFieldsLocale([{ name: "name" }])' : '' %>
+                    <%- hasLocale ? '...getFieldsLocale([{ name: "name" }], item)' : '' %>
                 ]}
                 button={{ text: t('create', { ns: 'actions' }) }}
                 onSubmit={async (data) => {

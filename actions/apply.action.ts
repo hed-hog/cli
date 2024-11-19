@@ -146,14 +146,6 @@ export class ApplyAction extends AbstractAction {
         hasLocale,
       );
 
-      const dependencyTables = await this.checkRelationsTable(tables);
-      await this.installDependencies(
-        libraryPath,
-        [{ name: '', value: '' }],
-        dependencyTables,
-      );
-      await addPackageJsonPeerDependencies(libraryName, dependencyTables);
-
       await createFile(
         librarySrcPath,
         table.name,
@@ -204,6 +196,16 @@ export class ApplyAction extends AbstractAction {
         tablesWithRelations as any[],
       );
     }
+
+    const dependencyTables = await this.checkRelationsTable(tables);
+
+    await addPackageJsonPeerDependencies(libraryName, dependencyTables);
+
+    await this.installDependencies(
+      libraryPath,
+      [{ name: '', value: '' }],
+      dependencyTables,
+    );
 
     const hedhogFile = yaml.parse(await readFile(hedhogFilePath, 'utf-8'));
     const screensArray = Object.keys(hedhogFile.screens);

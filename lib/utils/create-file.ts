@@ -5,6 +5,8 @@ import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from './format-with-prettier';
 import { formatTypeScriptCode } from './format-typescript-code';
+import hasLocaleYaml from './has-locale-yaml';
+import getLocaleYaml from './get-fk-locale-yaml';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -55,6 +57,9 @@ export async function createFile(
         /(import\s*\{[^\}]*\}\s*from\s*['"][^'"]*['"])/,
         `$1\nimport { ${toPascalCase(tableName)}Controller } from './${toKebabCase(tableName)}/${toKebabCase(tableName)}.controller';\nimport { ${toPascalCase(tableName)}Service } from './${toKebabCase(tableName)}/${toKebabCase(tableName)}.service';`,
       );
+
+    console.log(await formatTypeScriptCode(updatedModuleContent));
+
     await fs.writeFile(
       parentModulePath,
       await formatTypeScriptCode(updatedModuleContent),
@@ -112,6 +117,10 @@ export async function createFile(
     );
   }
 
+  if (fileType === 'module') {
+    console.log('options', options);
+  }
+
   const fileContent = render(
     await fs.readFile(
       options.hasRelationsWith && fileType !== 'module'
@@ -125,6 +134,8 @@ export async function createFile(
       fieldsForSearch,
       options,
       listFunction,
+      hasLocale: hasLocaleYaml(libraryPath, tableName),
+      foreignKey: getLocaleYaml(libraryPath, tableName),
     },
   );
 
@@ -139,6 +150,12 @@ export async function createFile(
     fileFullPath,
     await formatWithPrettier(fileContent, {
       parser: 'typescript',
+      trailingComma: 'none',
+      semi: true,
+      singleQuote: true,
+      printWidth: 80,
+      tabWidth: 2,
+      endOfLine: 'lf',
     }),
   );
 }
