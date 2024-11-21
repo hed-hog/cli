@@ -58,84 +58,72 @@ export class AddAction extends AbstractAction {
   private db: any = null;
   private isDbConnected: boolean = false;
   private startAt = Date.now();
+  private directoryPath = '';
+  private backendPath = '';
+  private adminPath = '';
+  private srcPath = '';
+  private appControllerPath = '';
+  private appModulePath = '';
+  private silentComplete = false;
+  private module = '';
+  private migrateRun = false;
+  private addModuleName = '';
+  private packageName = '';
+  private nodeModulePath = '';
+  private envVars: any = {};
+  private hasMigrations = false;
 
-  public async handle(
-    inputs: Input[],
-    options: Input[],
-    packagesAdded: string[] = [],
-  ) {
-    /**
-     * 1. Get variables from the inputs and options
-     */
-
-    let directoryPath = '';
-
+  private async initPaths() {
     try {
-      directoryPath = await getRootPath();
+      this.directoryPath = await getRootPath();
+      this.backendPath = join(this.directoryPath, 'backend');
+      this.adminPath = join(this.directoryPath, 'admin');
+      this.appModulePath = join(this.backendPath, 'src', 'app.module.ts');
+      (this.appControllerPath = join(
+        this.backendPath,
+        'src',
+        'app.controller.ts',
+      )),
+        (this.nodeModulePath = join(
+          this.backendPath,
+          `node_modules`,
+          `@hedhog`,
+          `${this.module}`,
+        ));
+      this.srcPath = path.join(this.adminPath, 'src');
+
+      this.showDebug({
+        directoryPath: this.directoryPath,
+        module: this.module,
+        appModulePath: this.appModulePath,
+        addModuleName: this.addModuleName,
+        packageName: this.packageName,
+        nodeModulePath: this.nodeModulePath,
+        backendPath: this.backendPath,
+        adminPath: this.adminPath,
+      });
     } catch (error) {
       return console.error(chalk.red('Directory is not a hedhog project.'));
     }
+  }
 
-    const backendPath = join(directoryPath, 'backend');
-    const adminPath = join(directoryPath, 'admin');
+  private async initNames() {
+    this.addModuleName = `${this.capitalizeFirstLetter(this.module)}Module`;
+    this.packageName = `@hedhog/${this.module}`;
+  }
 
-    let migrateRun = false;
-    const silentComplete =
-      options.find(({ name }) => name === 'silentComplete')?.value || false;
-    const module = String(
-      inputs.find((input) => input.name === 'module')?.value || '',
-    ).toLowerCase();
-
-    this.debug = options.some(
-      (option) => option.name === 'debug' && option.value === true,
-    );
-
-    const appModulePath = join(backendPath, 'src', 'app.module.ts');
-    const addModuleName = `${this.capitalizeFirstLetter(module)}Module`;
-    const packageName = `@hedhog/${module}`;
-    const nodeModulePath = join(
-      backendPath,
-      `node_modules`,
-      `@hedhog`,
-      `${module}`,
-    );
-
-    this.showDebug({
-      directoryPath,
-      module,
-      appModulePath,
-      addModuleName,
-      packageName,
-      nodeModulePath,
-      backendPath,
-      adminPath,
-    });
-
-    /**
-     * 2. Get the database connection
-     */
-    let envVars: any = {};
-    try {
-      envVars = (await parseEnvFile(join(backendPath, '.env'))) as EnvFile;
-    } catch (error) {
-      console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
-    }
-
-    this.showDebug('Env vars:', envVars);
-
-    const type = getDbTypeFromConnectionString(envVars.DATABASE_URL);
+  private async initDb() {
+    const type = getDbTypeFromConnectionString(this.envVars.DATABASE_URL);
 
     this.db = DatabaseFactory.create(
       type === 'mysql' ? Database.MYSQL : Database.POSTGRES,
-      envVars.DB_HOST,
-      envVars.DB_USERNAME,
-      envVars.DB_PASSWORD,
-      envVars.DB_DATABASE,
-      Number(envVars.DB_PORT),
+      this.envVars.DB_HOST,
+      this.envVars.DB_USERNAME,
+      this.envVars.DB_PASSWORD,
+      this.envVars.DB_DATABASE,
+      Number(this.envVars.DB_PORT),
     );
-
     this.db.disableAutoClose();
-
     this.db.on('query', (query: any) =>
       this.showDebug(chalk.bgYellow('Query:'), query),
     );
@@ -144,73 +132,73 @@ export class AddAction extends AbstractAction {
     );
 
     this.isDbConnected = await this.db.testDatabaseConnection();
-
     this.showDebug('Database connection status:', this.isDbConnected);
+  }
 
-    /**
-     * 3. Get the module name
-     */
+  private async initEnvVars() {
+    try {
+      this.envVars = (await parseEnvFile(
+        join(this.backendPath, '.env'),
+      )) as EnvFile;
+      this.showDebug('Env vars:', this.envVars);
+    } catch (error) {
+      console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
+    }
+  }
+
+  public async handle(
+    inputs: Input[],
+    options: Input[],
+    packagesAdded: string[] = [],
+  ) {
+    this.silentComplete = Boolean(
+      options.find(({ name }) => name === 'silentComplete')?.value,
+    );
+
+    this.module = String(
+      inputs.find((input) => input.name === 'module')?.value || '',
+    ).toLowerCase();
+
+    this.debug = options.some(
+      (option) => option.name === 'debug' && option.value === true,
+    );
+
+    await this.initPaths();
+    await this.initNames();
+    await this.initEnvVars();
+    await this.initDb();
 
     this.packagesAdded = packagesAdded;
 
-    this.showDebug('Packages added:', this.packagesAdded);
-
-    /* *********************************************************************** */
-    try {
-      if (!this.checkIfDirectoryIsPackage(directoryPath)) {
-        console.error(chalk.red('This directory is not a package.'));
-        return;
-      }
-    } catch (error) {
-      console.error(chalk.red('This directory is not a package.', error));
-      return;
-    }
-
-    await this.installPackage(directoryPath, packageName);
-    await this.checkDependences(directoryPath, module, nodeModulePath);
-    await this.checkIfModuleExists(module, nodeModulePath);
-
-    const srcPath = path.join(directoryPath, 'admin', 'src');
-
-    const installedModule = await this.modifyAppModule(
-      directoryPath,
-      module,
-      appModulePath,
-      addModuleName,
-      packageName,
-      nodeModulePath,
-    );
-
-    let hasMigrations = false;
+    await this.installPackage();
+    await this.checkDependencies();
+    await this.checkIfModuleExists();
+    const installedModule = await this.modifyAppModule();
+    this.hasMigrations = false;
 
     if (installedModule) {
-      hasMigrations = await this.copyMigrationsFiles(
-        directoryPath,
-        nodeModulePath,
-      );
+      this.hasMigrations = await this.copyMigrationsFiles();
     }
 
-    if (this.isDbConnected && hasMigrations) {
+    if (this.isDbConnected && this.hasMigrations) {
       try {
-        await runScript('migrate:up', join(directoryPath, 'backend'));
+        await runScript('migrate:up', this.backendPath);
       } catch (error) {
         console.error(chalk.red('Error running migrations.'));
       }
-      migrateRun = true;
+      this.migrateRun = true;
     }
 
-    await this.applyHedhogFile(directoryPath, module);
+    await this.applyHedhogFile();
 
-    if (module === 'admin') {
-      await this.modifyControllerApp(
-        join(directoryPath, 'backend', 'src', 'app.controller.ts'),
-      );
+    if (this.module === 'admin') {
+      await this.modifyControllerApp();
     }
 
-    await this.copyFrontEndFiles(directoryPath, nodeModulePath, module);
-    if (!silentComplete) {
-      await this.updateLibsPrisma(directoryPath);
-      await this.complete(module, migrateRun);
+    await this.copyFrontEndFiles();
+    if (!this.silentComplete) {
+      await this.updateLibsPrisma();
+      await this.complete();
     }
 
     this.showDebug(
@@ -408,25 +396,25 @@ export class AddAction extends AbstractAction {
     return file.replace('.ejs', '');
   }
 
-  async copyFrontEndFiles(
-    directoryPath: string,
-    nodeModulePath: string,
-    module: string,
-  ) {
+  async copyFrontEndFiles() {
     this.showDebug('copyFrontEndFiles', {
-      directoryPath,
-      nodeModulePath,
-      module,
+      directoryPath: this.directoryPath,
+      nodeModulePath: this.nodeModulePath,
+      module: this.module,
     });
 
-    if (existsSync(join(nodeModulePath, 'frontend'))) {
-      const frontendPath = join(nodeModulePath, 'frontend');
-      const frontendDestPath = join(directoryPath, 'admin', 'src');
-      const frontendPagesDestPath = join(frontendDestPath, 'pages', module);
+    if (existsSync(join(this.nodeModulePath, 'frontend'))) {
+      const frontendPath = join(this.nodeModulePath, 'frontend');
+      const frontendDestPath = join(this.directoryPath, 'admin', 'src');
+      const frontendPagesDestPath = join(
+        frontendDestPath,
+        'pages',
+        this.module,
+      );
       const frontendFeaturesDestPath = join(
         frontendDestPath,
         'features',
-        module,
+        this.module,
       );
 
       for (const dir of await readdir(frontendPath)) {
@@ -442,8 +430,8 @@ export class AddAction extends AbstractAction {
         const requestsPath = join(reactQueryPath, 'requests.ts.ejs');
         const featuresExports = [];
 
-        const frontendDestPath = join(directoryPath, 'admin', 'src');
-        this.createScreenRouterFile(frontendDestPath, module);
+        const frontendDestPath = join(this.directoryPath, 'admin', 'src');
+        this.createScreenRouterFile();
 
         if (existsSync(handlersPath)) {
           this.showDebug('handlersPath', handlersPath);
@@ -551,9 +539,7 @@ export class AddAction extends AbstractAction {
       await this.extractPathsFromRoutes('', routeObjects);
 
       this.routes = this.sortRoutes(this.routes);
-
       this.routesRecursive = this.buildRoutesTree(this.routes);
-
       this.routesRecursive = this.applyOriginalPathsRecursive(
         this.routesRecursive,
       );
@@ -627,16 +613,16 @@ export class AddAction extends AbstractAction {
     };
   }
 
-  async createScreenRouterFile(srcPath: string, module: string) {
-    const routesDirPath = path.join(srcPath, 'routes', 'modules');
-    const routesYAMLPath = path.join(routesDirPath, `${module}.yaml`);
+  async createScreenRouterFile() {
+    const routesDirPath = path.join(this.srcPath, 'routes', 'modules');
+    const routesYAMLPath = path.join(routesDirPath, `${this.module}.yaml`);
     await mkdir(routesDirPath, { recursive: true });
     const backendPath = join('', 'backend');
     const hedhogFilePath = join(
       backendPath,
       `node_modules`,
       `@hedhog`,
-      `${module}`,
+      `${this.module}`,
       'hedhog.yaml',
     );
 
@@ -650,11 +636,11 @@ export class AddAction extends AbstractAction {
         );
       } else {
         console.warn(
-          `No routes found in the YAML content for module ${module}.`,
+          `No routes found in the YAML content for module ${this.module}.`,
         );
       }
     } else {
-      console.warn(`Hedhog file not found for module ${module}.`);
+      console.warn(`Hedhog file not found for module ${this.module}.`);
     }
   }
 
@@ -777,17 +763,20 @@ export class AddAction extends AbstractAction {
     return sortedTables;
   }
 
-  async applyHedhogFile(directoryPath: string, module: string) {
+  async applyHedhogFile() {
     const spinner = ora('Loading Hedhog file..').start();
     let changeStructure = false;
-    this.showDebug('applyHedhogFile', { directoryPath, module });
+    this.showDebug('applyHedhogFile', {
+      directoryPath: this.directoryPath,
+      module: this.module,
+    });
 
     const path = join(
-      directoryPath,
+      this.directoryPath,
       'backend',
       'node_modules',
       '@hedhog',
-      module,
+      this.module,
       'hedhog',
     );
     const extensions = ['json', 'yaml', 'yml'];
@@ -859,7 +848,7 @@ export class AddAction extends AbstractAction {
         }
 
         if (changeStructure) {
-          await runScript('prisma:update', join(directoryPath, 'backend'));
+          await runScript('prisma:update', join(this.directoryPath, 'backend'));
           spinner.succeed(`Prisma updated.`);
         }
       } catch (error) {
@@ -870,10 +859,10 @@ export class AddAction extends AbstractAction {
     }
   }
 
-  async updateLibsPrisma(directoryPath: string) {
+  async updateLibsPrisma() {
     const spinner = ora('Starting updating prisma in libraries...').start();
-    const libPath = join(directoryPath, 'lib');
-    const libsPath = join(directoryPath, 'lib', 'libs');
+    const libPath = join(this.directoryPath, 'lib');
+    const libsPath = join(this.directoryPath, 'lib', 'libs');
 
     try {
       if (existsSync(libPath) && existsSync(libsPath)) {
@@ -923,8 +912,8 @@ export class AddAction extends AbstractAction {
     }
   }
 
-  async getModuleDependencies(modulePath: string) {
-    const packageJsonPath = join(modulePath, 'package.json');
+  async getModuleDependencies() {
+    const packageJsonPath = join(this.nodeModulePath, 'package.json');
 
     if (!existsSync(packageJsonPath)) {
       throw new Error('package.json not found.');
@@ -967,15 +956,17 @@ export class AddAction extends AbstractAction {
     return hedhogModules;
   }
 
-  async checkDependences(
-    directoryPath: string,
-    moduleName: string,
-    modulePath: string,
-  ) {
-    const moduleDependences = await this.getModuleDependencies(modulePath);
+  async checkDependencies() {
+    this.showDebug({
+      directoryPath: this.directoryPath,
+      module: this.module,
+      nodeModulePath: this.nodeModulePath,
+    });
+
+    const moduleDependences = await this.getModuleDependencies();
     const packageInstalledModules = this.getPackageInstalledModules(
-      directoryPath,
-      moduleName,
+      this.directoryPath,
+      this.module,
     );
 
     const missingDependences = moduleDependences.filter(
@@ -988,13 +979,13 @@ export class AddAction extends AbstractAction {
     }
   }
 
-  async complete(module: string, migrateRun = false) {
+  async complete() {
     console.info();
     console.info(chalk.red(BANNER));
     console.info();
-    console.info(MESSAGES.PACKAGE_MANAGER_INSTALLATION_SUCCEED(module));
+    console.info(MESSAGES.PACKAGE_MANAGER_INSTALLATION_SUCCEED(this.module));
     console.info(MESSAGES.GET_STARTED_INFORMATION);
-    if (!migrateRun) {
+    if (!this.migrateRun) {
       console.info();
       console.info(chalk.gray(MESSAGES.RUN_MIGRATE_COMMAND));
     }
@@ -1020,14 +1011,18 @@ export class AddAction extends AbstractAction {
     }
   }
 
-  async copyMigrationsFiles(directoryPath: string, nodeModulePath: string) {
+  async copyMigrationsFiles() {
     const spinner = ora('Copying migrations files...').start();
     try {
       let copies = 0;
-      const migrationsPath = join(`${nodeModulePath}`, `src`, `migrations`);
-      const entitiesPath = join(`${nodeModulePath}`, `src`, `entities`);
+      const migrationsPath = join(
+        `${this.nodeModulePath}`,
+        `src`,
+        `migrations`,
+      );
+      const entitiesPath = join(`${this.nodeModulePath}`, `src`, `entities`);
       const migrationDestPath = join(
-        directoryPath,
+        this.directoryPath,
         `backend`,
         `src`,
         `typeorm`,
@@ -1035,7 +1030,7 @@ export class AddAction extends AbstractAction {
       );
       await mkdirRecursive(migrationDestPath);
       const entitiesDestPath = join(
-        directoryPath,
+        this.directoryPath,
         `backend`,
         `src`,
         `typeorm`,
@@ -1097,7 +1092,7 @@ export class AddAction extends AbstractAction {
 
           await writeFile(
             join(
-              directoryPath,
+              this.directoryPath,
               `backend`,
               `src`,
               `typeorm`,
@@ -1129,9 +1124,9 @@ export class AddAction extends AbstractAction {
     spinner.succeed();
   }
 
-  async modifyControllerApp(path: string) {
+  async modifyControllerApp() {
     let alreadyInstalled = false;
-    let fileContent = await readFile(path, 'utf-8');
+    let fileContent = await readFile(this.appControllerPath, 'utf-8');
 
     if (['@Public()'].includes(fileContent)) {
       return;
@@ -1181,24 +1176,17 @@ export class AddAction extends AbstractAction {
       },
     );
 
-    await writeFile(path, updatedFileContent, 'utf-8');
+    await writeFile(this.appControllerPath, updatedFileContent, 'utf-8');
   }
 
-  async modifyAppModule(
-    directoryPath: string,
-    module: string,
-    filePath: string,
-    newModule: string,
-    newModulePath: string,
-    nodeModulePath: string,
-  ) {
+  async modifyAppModule() {
     let alreadyInstalled = false;
 
-    if (['UtilsModule'].includes(newModule)) {
+    if (['UtilsModule'].includes(this.addModuleName)) {
       return;
     }
 
-    let fileContent = await readFile(filePath, 'utf-8');
+    let fileContent = await readFile(this.appModulePath, 'utf-8');
 
     fileContent = await formatTypeScriptCode(fileContent, {
       printWidth: 100000,
@@ -1207,10 +1195,8 @@ export class AddAction extends AbstractAction {
       semi: true,
     });
 
-    // Verifica se a linha de import já existe
-    const importStatement = `import { ${newModule} } from '${newModulePath}';`;
+    const importStatement = `import { ${this.addModuleName} } from '${this.appModulePath}';`;
     if (!fileContent.includes(importStatement)) {
-      // Adiciona a linha de import no início do arquivo (após os outros imports)
       const importRegex = /(import[\s\S]+?;)/g;
       const importMatch = importRegex.exec(fileContent);
       if (importMatch) {
@@ -1220,14 +1206,13 @@ export class AddAction extends AbstractAction {
           `${lastImport}\n${importStatement}`,
         );
       } else {
-        // Se nenhum import estiver presente, adiciona no início do arquivo
         fileContent = `${importStatement}\n\n${fileContent}`;
       }
     } else {
       if (this.showWarning) {
         console.warn(
           chalk.yellow(
-            `${EMOJIS.WARNING} The row for "${newModule}" module already exists.`,
+            `${EMOJIS.WARNING} The row for "${this.addModuleName}" module already exists.`,
           ),
         );
       }
@@ -1266,7 +1251,6 @@ export class AddAction extends AbstractAction {
       return;
     }
 
-    // Separa a lista de imports
     const importsList: string[] = [];
 
     openBracketCount = 0;
@@ -1305,12 +1289,12 @@ export class AddAction extends AbstractAction {
     }
 
     const moduleTemplatePath = join(
-      nodeModulePath,
+      this.nodeModulePath,
       'src',
-      `${module}.template.ejs`,
+      `${this.module}.template.ejs`,
     );
 
-    let newModuleTemplate = `${newModule}`;
+    let newModuleTemplate = `${this.addModuleName}`;
 
     if (existsSync(moduleTemplatePath)) {
       const templateContent = await readFile(moduleTemplatePath, 'utf-8');
@@ -1326,7 +1310,7 @@ export class AddAction extends AbstractAction {
       if (this.showWarning) {
         console.warn(
           chalk.yellow(
-            `${EMOJIS.WARNING} The "${newModule}" module is already imported.`,
+            `${EMOJIS.WARNING} The "${this.addModuleName}" module is already imported.`,
           ),
         );
       }
@@ -1352,14 +1336,14 @@ export class AddAction extends AbstractAction {
         },
       );
 
-      await writeFile(filePath, updatedFileContent, 'utf-8');
+      await writeFile(this.appModulePath, updatedFileContent, 'utf-8');
     } catch (error) {
       console.info(
         chalk.blue('Not possible add module, the original file was restored.'),
       );
 
       await writeFile(
-        filePath,
+        this.appModulePath,
         await formatTypeScriptCode(fileContent, {
           singleQuote: true,
           trailingComma: 'all',
@@ -1368,7 +1352,7 @@ export class AddAction extends AbstractAction {
         'utf-8',
       );
       try {
-        await runScript(`format`, join(directoryPath, 'backend'));
+        await runScript(`format`, join(this.directoryPath, 'backend'));
       } catch (error) {
         console.error(chalk.red('Error formatting file app.module.ts'));
       }
@@ -1377,34 +1361,39 @@ export class AddAction extends AbstractAction {
     return true;
   }
 
-  async checkIfModuleExists(module: string, nodeModulePath: string) {
+  async checkIfModuleExists() {
     const spinner = ora('Checking module installed...').start();
-    const path = join(nodeModulePath, 'dist', `${module}.module.js`);
+    const path = join(this.nodeModulePath, 'dist', `${this.module}.module.js`);
 
     try {
       await readFile(path);
-      spinner.succeed(`Module ${module} installed.`);
+      spinner.succeed(`Module ${this.module} installed.`);
       return true;
     } catch (error) {
-      spinner.warn(`Module ${module} not installed.`);
+      spinner.warn(`Module ${this.module} not installed.`);
       return false;
     }
   }
 
-  checkIfDirectoryIsPackage(directory: string) {
+  checkIfDirectoryIsPackage() {
     try {
-      const packageJson = require(`${directory}/package.json`);
+      const packageJson = require(`${this.directoryPath}/package.json`);
 
-      if (!existsSync(join(directory, 'backend'))) {
+      if (!existsSync(join(this.directoryPath, 'backend'))) {
         throw new Error(
           'Directory is not a hedhog project beacaue backend folder not found.',
         );
       }
 
-      if (!existsSync(join(directory, 'admin'))) {
+      if (!existsSync(join(this.directoryPath, 'admin'))) {
         throw new Error(
           'Directory is not a hedhog project beacaue admin folder not found.',
         );
+      }
+
+      if (!packageJson) {
+        console.error(chalk.red('This directory is not a package.'));
+        return;
       }
 
       return packageJson;
@@ -1451,13 +1440,15 @@ export class AddAction extends AbstractAction {
     return false;
   }
 
-  async installPackage(directoryPath: string, module: string) {
-    if (!(await this.checkIfPackageExists(directoryPath, module))) {
+  async installPackage() {
+    if (
+      !(await this.checkIfPackageExists(this.directoryPath, this.packageName))
+    ) {
       const packageManager = await PackageManagerFactory.find();
       return packageManager.addProduction(
-        [module],
+        [this.packageName],
         'latest',
-        join(directoryPath, 'backend'),
+        join(this.directoryPath, 'backend'),
       );
     } else {
       return true;
