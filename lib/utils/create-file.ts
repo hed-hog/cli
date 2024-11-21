@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { toKebabCase, toPascalCase } from './convert-string-cases';
+import { toKebabCase } from './convert-string-cases';
 import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from './format-with-prettier';
@@ -12,7 +12,13 @@ interface IOption {
   useLibraryNamePath?: boolean;
   importServices?: boolean;
   hasRelationsWith?: string;
+  tablesWithRelations?: IRelation[];
   fields?: IFields[];
+}
+
+interface IRelation {
+  name: string;
+  relations: string[];
 }
 
 interface IFields {
@@ -28,6 +34,7 @@ export async function createFile(
     useLibraryNamePath: false,
     importServices: false,
     hasRelationsWith: '',
+    tablesWithRelations: [],
   },
   hasLocale?: boolean,
 ) {
@@ -37,33 +44,40 @@ export async function createFile(
     options?.useLibraryNamePath ? toKebabCase(tableName) : 'src',
   );
 
-  if (options.hasRelationsWith && fileType === 'module') {
+  if (
+    options.tablesWithRelations &&
+    options.tablesWithRelations[0].name === tableName &&
+    fileType === 'module'
+  ) {
     const parentModulePath = path.join(
       libraryPath,
-      options.hasRelationsWith,
-      `${options.hasRelationsWith}.module.ts`,
+      options.tablesWithRelations[0].name,
+      `${options.tablesWithRelations[0].name}.module.ts`,
     );
-    const parentModuleContent = await fs.readFile(parentModulePath, 'utf-8');
-    const updatedModuleContent = parentModuleContent
-      .replace(
-        /(controllers:\s*\[)([^\]]*)(\])/,
-        `$1$2, ${toPascalCase(tableName)}Controller$3`,
-      )
-      .replace(
-        /(providers:\s*\[)([^\]]*)(\])/,
-        `$1$2, ${toPascalCase(tableName)}Service$3`,
-      )
-      .replace(
-        /(import\s*\{[^\}]*\}\s*from\s*['"][^'"]*['"])/,
-        `$1\nimport { ${toPascalCase(tableName)}Controller } from './${toKebabCase(tableName)}/${toKebabCase(tableName)}.controller';\nimport { ${toPascalCase(tableName)}Service } from './${toKebabCase(tableName)}/${toKebabCase(tableName)}.service';`,
-      );
 
-    console.log(await formatTypeScriptCode(updatedModuleContent));
-
-    await fs.writeFile(
-      parentModulePath,
-      await formatTypeScriptCode(updatedModuleContent),
+    const templatePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'templates',
+      'module-related.ts.ejs',
     );
+
+    const templateContent = await fs.readFile(templatePath, 'utf-8');
+    const data = {
+      tableName,
+      options: {
+        importServices: true,
+        tablesWithRelations: options.tablesWithRelations
+          .map((t) => t.relations)
+          .flat(),
+      },
+    };
+
+    const renderedContent = render(templateContent, data);
+    const formattedContent = await formatTypeScriptCode(renderedContent);
+    await fs.writeFile(parentModulePath, formattedContent);
+
     return;
   }
 
@@ -115,10 +129,6 @@ export async function createFile(
         options,
       },
     );
-  }
-
-  if (fileType === 'module') {
-    console.log('options', options);
   }
 
   const fileContent = render(

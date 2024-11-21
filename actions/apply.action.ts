@@ -167,6 +167,7 @@ export class ApplyAction extends AbstractAction {
         useLibraryNamePath: true,
         importServices: true,
         hasRelationsWith: screenWithRelations,
+        tablesWithRelations,
       });
 
       await createScreen(

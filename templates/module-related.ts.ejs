@@ -1,0 +1,50 @@
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+<%
+const moduleImports = `
+import { AdminModule } from '@hedhog/admin';
+import { PaginationModule } from '@hedhog/pagination';
+import { PrismaModule } from '@hedhog/prisma';
+import { forwardRef, Module } from '@nestjs/common';`;
+
+let additionalImports = options.tablesWithRelations
+    .map(relation => `
+import { ${toPascalCase(relation)}Controller } from './${toKebabCase(relation)}/${toKebabCase(relation)}.controller';
+import { ${toPascalCase(relation)}Service } from './${toKebabCase(relation)}/${toKebabCase(relation)}.service';`
+    )
+    .join('');
+
+const ownProviderImport = `
+import { ${toPascalCase(tableName)}Controller } from './${toKebabCase(tableName)}.controller';
+import { ${toPascalCase(tableName)}Service } from './${toKebabCase(tableName)}.service';`;
+
+let controllersList = options.tablesWithRelations
+    .map(relation => `${toPascalCase(relation)}Controller`)
+    .join(', ');
+
+let providersList = options.tablesWithRelations
+    .map(relation => `${toPascalCase(relation)}Service`)
+    .join(', ');
+
+controllersList += `, ${toPascalCase(tableName)}Controller`;
+providersList += `, ${toPascalCase(tableName)}Service`;
+additionalImports += ownProviderImport;
+
+%>
+
+<%- moduleImports %><%- additionalImports %>
+@Module({
+  imports: [
+    forwardRef(() => AdminModule),
+    forwardRef(() => PrismaModule),
+    forwardRef(() => PaginationModule),
+  ],
+  controllers: [
+    <%= controllersList %>
+  ],
+  providers: [
+    <%= providersList %>
+  ],
+  exports: [forwardRef(() => PersonService)],
+})
+export class <%= toPascalCase(tableName) %>Module {}
