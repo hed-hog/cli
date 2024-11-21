@@ -221,16 +221,7 @@ export class ApplyAction extends AbstractAction {
   }
 
   async createScreenRouterFile(screen: string) {
-    const rootPath = await getRootPath();
-    const hedhogFilePath = path.join(
-      rootPath,
-      'lib',
-      'libs',
-      toKebabCase(this.libraryName),
-      'hedhog.yaml',
-    );
-
-    const YAMLContent = await readFile(hedhogFilePath, 'utf-8');
+    const YAMLContent = await readFile(this.hedhogFilePath, 'utf-8');
     const yamlData = yaml.parse(YAMLContent);
 
     if (!yamlData.routes) {
@@ -238,11 +229,11 @@ export class ApplyAction extends AbstractAction {
     }
 
     let moduleRoute = yamlData.routes.find(
-      (route: any) => route.path === module,
+      (route: any) => route.path === this.libraryName,
     );
 
     if (!moduleRoute) {
-      moduleRoute = { path: `${module}`, children: [] };
+      moduleRoute = { path: `${this.libraryName}`, children: [] };
       yamlData.routes.push(moduleRoute);
     }
 
@@ -257,8 +248,7 @@ export class ApplyAction extends AbstractAction {
       ...yamlData,
       routes: yamlData.routes,
     });
-
-    await writeFile(hedhogFilePath, updatedYAML, 'utf-8');
+    await writeFile(this.hedhogFilePath, updatedYAML, 'utf-8');
   }
 
   async screensWithRelations() {
