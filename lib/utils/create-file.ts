@@ -44,6 +44,14 @@ export async function createFile(
     options?.useLibraryNamePath ? toKebabCase(tableName) : 'src',
   );
 
+  const tablesWithRelations = (options.tablesWithRelations ?? [])
+    .map((t) => t.relations)
+    .flat();
+
+  if (tablesWithRelations.includes(tableName) && fileType === 'module') {
+    return;
+  }
+
   if (
     options.tablesWithRelations &&
     options.tablesWithRelations[0].name === tableName &&
@@ -68,9 +76,7 @@ export async function createFile(
       tableName,
       options: {
         importServices: true,
-        tablesWithRelations: options.tablesWithRelations
-          .map((t) => t.relations)
-          .flat(),
+        tablesWithRelations,
       },
     };
 
