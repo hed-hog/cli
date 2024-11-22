@@ -1195,7 +1195,7 @@ export class AddAction extends AbstractAction {
       semi: true,
     });
 
-    const importStatement = `import { ${this.addModuleName} } from '${this.appModulePath}';`;
+    const importStatement = `import { ${this.addModuleName} } from '${this.packageName}';`;
     if (!fileContent.includes(importStatement)) {
       const importRegex = /(import[\s\S]+?;)/g;
       const importMatch = importRegex.exec(fileContent);
