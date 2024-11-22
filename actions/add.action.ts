@@ -1139,7 +1139,7 @@ export class AddAction extends AbstractAction {
       semi: true,
     });
 
-    const importStatement = `import { Public } from '@hedhog/admin';`;
+    const importStatement = `import { Public } from '@hedhog/core';`;
     if (!fileContent.includes(importStatement)) {
       // Adiciona a linha de import no início do arquivo (após os outros imports)
       const importRegex = /(import[\s\S]+?;)/g;
