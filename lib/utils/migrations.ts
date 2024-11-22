@@ -19,7 +19,7 @@ export async function createMigrationDirectory(
 
   const migrationContent = `
 import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
-import { idColumn, timestampColumn } from '@hedhog/utils';
+import { idColumn, timestampColumn } from '@hedhog/core';
 
 export class Migrate implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
