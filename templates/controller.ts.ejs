@@ -18,7 +18,7 @@ import {
 import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
 import { <%= toPascalCase(tableName) %>Service } from './<%= toKebabCase(tableName) %>.service';
-import { Role, DeleteDTO } from '@hedhog/utils';
+import { Role, DeleteDTO } from '@hedhog/core';
 
 @Role()
 @Controller('<%= toKebabCase(tableName) %>')

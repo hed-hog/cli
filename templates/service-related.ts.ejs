@@ -8,7 +8,7 @@ import { PrismaService } from '@hedhog/prisma';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
-import { DeleteDTO } from '@hedhog/utils';
+import { DeleteDTO } from '@hedhog/core';
 
 @Injectable()
 export class <%= toPascalCase(tableName) %>Service {

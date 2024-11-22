@@ -3,7 +3,7 @@
 <% const getFirstWord = (str) => str.split('_')[0]; %>
 <% const getSecondWord = (str) => str.split('_')[1]; %>
 
-import { Role, OptionalParseIntPipe } from '@hedhog/utils';
+import { Role, OptionalParseIntPipe } from '@hedhog/core';
 import {
   Body,
   Controller,
@@ -18,7 +18,7 @@ import {
 import { <%= toPascalCase(tableName) %>Service } from './<%= toKebabCase(tableName) %>.service';
 import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
-import { DeleteDTO } from '@hedhog/utils';
+import { DeleteDTO } from '@hedhog/core';
 
 @Role()
 @Controller('<%= getFirstWord(tableName) %>/:<%= getFirstWord(tableName) %>Id/<%= getSecondWord(tableName) %>')
