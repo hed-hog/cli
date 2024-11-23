@@ -6,4 +6,5 @@ export enum Runner {
   NPX,
   DOCKER,
   NESTJS,
+  GIT,
 }
