@@ -1,7 +1,7 @@
 export const getEnvFileTemplate = (type: 'postgres' | 'mysql' = 'postgres') => `
 DB_TYPE=${type}
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=${type === 'postgres' ? 5432 : 3306}
 DB_USERNAME=hedhog
 DB_PASSWORD=changeme
 DB_DATABASE=hedhog
