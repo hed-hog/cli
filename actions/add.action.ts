@@ -1170,7 +1170,7 @@ export class AddAction extends AbstractAction {
   async modifyAppModule() {
     let alreadyInstalled = false;
 
-    if (['UtilsModule'].includes(this.addModuleName)) {
+    if (['UtilsModule', 'CoreModule'].includes(this.addModuleName)) {
       return;
     }
 

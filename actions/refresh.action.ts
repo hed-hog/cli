@@ -59,7 +59,8 @@ export class RefreshAction extends AbstractAction {
         if (
           key.startsWith('@hedhog') &&
           key !== '@hedhog/prisma' &&
-          key !== '@hedhog/utils'
+          key !== '@hedhog/utils' &&
+          key !== '@hedhog/core' &&
         ) {
           delete deps[key];
         }
