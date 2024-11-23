@@ -2,18 +2,9 @@ import chalk = require('chalk');
 import { AbstractAction } from './abstract.action';
 import * as ora from 'ora';
 import { existsSync } from 'fs';
-import {
-  lstat,
-  mkdir,
-  readdir,
-  readFile,
-  rmdir,
-  unlink,
-  writeFile,
-} from 'fs/promises';
+import { lstat, mkdir, readdir, rmdir, unlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getFileContent } from '../lib/utils/get-file-content';
-import { EMOJIS } from '../lib/ui';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { recreateDatabase } from '../lib/utils/recreate-database';
 import { getEnvFileTemplate } from '../lib/utils/env-file-template';

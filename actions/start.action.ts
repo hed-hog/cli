@@ -1,22 +1,18 @@
 import { AbstractAction } from './abstract.action';
 import chalk = require('chalk');
-import { spawn, SpawnOptions } from 'child_process';
+import { spawn } from 'child_process';
 import { join } from 'path';
 import { EMOJIS } from '../lib/ui';
-import { existsSync } from 'fs';
 import { getRootPath } from '../lib/utils/get-root-path';
 import * as net from 'net';
-
-type Command = {
-  command: string;
-  cwd: string;
-  name: string;
-  options?: SpawnOptions;
-};
+import * as ora from 'ora';
 
 export class StartAction extends AbstractAction {
+  private spinner: ora.Ora = ora();
+
   public async handle() {
-    console.info(chalk.white(`Starting HedHog ${EMOJIS.HEDGEHOG}...`));
+    this.spinner = ora(`Starting HedHog ${EMOJIS.HEDGEHOG}...`).start();
+
     const rootPath = await getRootPath();
     await this.startProcess(
       'API',
@@ -34,7 +30,7 @@ export class StartAction extends AbstractAction {
   }
 
   async startProcess(id: string, bin: string, args: string[], cwd: string) {
-    console.info(`Starting ${bin} ${args.join(' ')} in ${cwd}`);
+    this.spinner.info(`Starting ${bin} ${args.join(' ')} in ${cwd}`);
     const childProcess = spawn(bin, args, {
       cwd,
       stdio: 'inherit',
@@ -42,11 +38,11 @@ export class StartAction extends AbstractAction {
     });
 
     childProcess.stderr?.on('data', (data) => {
-      console.error(id, data.toString());
+      this.spinner.fail(`${id}: ${data.toString()}`);
     });
 
     childProcess.stdout?.on('data', (data) => {
-      console.info(id, data.toString());
+      this.spinner.info(`${id}: ${data.toString()}`);
     });
 
     return childProcess;
@@ -56,8 +52,9 @@ export class StartAction extends AbstractAction {
     let apiReady = false;
     let frontendReady = false;
 
+    this.spinner.info('Waiting for ports to be ready...');
+
     while (!apiReady || !frontendReady) {
-      console.info('Waiting for ports...');
       apiReady = await this.checkPort(3000);
       frontendReady = await this.checkPort(3100);
 
@@ -70,12 +67,23 @@ export class StartAction extends AbstractAction {
   }
 
   complete() {
+    this.spinner.succeed();
     console.clear();
     console.info();
-    console.info(chalk.green(`${EMOJIS.HEDGEHOG} HedHog is ready!`));
+    console.info(
+      chalk.rgb(255, 118, 12)(`${EMOJIS.HEDGEHOG} HedHog is ready!`),
+    );
     console.info();
-    console.info(chalk.blue('API is running on http://localhost:3000'));
-    console.info(chalk.red('Admin is running on http://localhost:3100'));
+    console.info(
+      chalk.green('➡ '),
+      `API:`,
+      chalk.blue('http://localhost:3000'),
+    );
+    console.info(
+      chalk.green('➡ '),
+      `ADMIN:`,
+      chalk.blue('http://localhost:3100'),
+    );
     console.info();
   }
 
@@ -91,7 +99,7 @@ export class StartAction extends AbstractAction {
           resolve(false);
         });
       } catch (error) {
-        console.error('Error:', error);
+        this.spinner.fail(`Error: ${error}`);
         reject(error);
       }
     });
