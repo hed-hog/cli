@@ -170,7 +170,11 @@ export class ResetAction extends AbstractAction {
     const packageJsonPath = join(path, 'package.json');
 
     const hedhogDependencies = [];
-    const excludedDependencies = ['@hedhog/prisma'];
+    const excludedDependencies = [
+      '@hedhog/prisma',
+      '@hedhog/utils',
+      '@hedhog/core',
+    ];
 
     if (existsSync(packageJsonPath)) {
       const packageJson = require(packageJsonPath);
