@@ -5,7 +5,7 @@
     "hedhog": "bin/hedhog.js"
   },
   "scripts": {
-    "build": "tsc && npm version patch",
+    "build": "tsc",
     "start": "node bin/hedhog.js",
     "dev": "tsc --watch",
     "prod": "ts-node ./scripts/deploy.ts",

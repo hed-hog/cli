@@ -25,6 +25,8 @@ function main() {
       runCommand('git push origin master');
     }
 
+    runCommand('npm version patch');
+
     const branches = execSync('git branch')
       .toString()
       .trim()
