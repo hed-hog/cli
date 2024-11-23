@@ -9,7 +9,7 @@
     "start": "node bin/hedhog.js",
     "dev": "tsc --watch",
     "prod": "ts-node ./scripts/deploy.ts",
-    "posprod": "npm run clean",
+    "postprod": "npm run clean",
     "clean": "gulp clean:bundle"
   },
   "keywords": [],
