@@ -11,7 +11,7 @@ import { debug } from '../lib/utils/debug';
 
 export class ActionBase {
   protected debug = false;
-  private envVars: any = {};
+  private envVars: any = false;
 
   async parseEnvFile(envPath: string) {
     if (this.envVars) {
