@@ -5,6 +5,11 @@ import * as yaml from 'yaml';
 function getLocaleYaml(libraryPath: string, name: string) {
   try {
     const filePath = path.join(libraryPath, '..', 'hedhog.yaml');
+
+    if (!fs.existsSync(filePath)) {
+      return false;
+    }
+
     const fileContents = fs.readFileSync(filePath, 'utf8');
     const data = yaml.parse(fileContents) as Record<string, any>;
     const key = `${name}_locale`;
