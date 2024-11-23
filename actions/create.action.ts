@@ -3,10 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AbstractAction } from './abstract.action';
 import { Input } from '../commands';
-import {
-  AbstractPackageManager,
-  PackageManagerFactory,
-} from '../lib/package-managers';
 import { createFile } from '../lib/utils/create-file';
 import {
   updateNestCliJson,
@@ -66,7 +62,6 @@ export class CreateAction extends AbstractAction {
     });
 
     await this.checkLibraryExistence(libraryPath, force);
-
     this.createGitignore(libraryPath);
     await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
     await this.createTsconfigProduction(libraryPath);
@@ -177,6 +172,9 @@ export class CreateAction extends AbstractAction {
     }
 
     const packageFilePath = path.join(libraryPath, 'package.json');
+    if (!fs.existsSync(libraryPath)) {
+      await mkdir(libraryPath, { recursive: true });
+    }
     await writeFile(
       packageFilePath,
       JSON.stringify(packageJsonContent, null, 2),

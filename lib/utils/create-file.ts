@@ -54,6 +54,7 @@ export async function createFile(
 
   if (
     options.tablesWithRelations &&
+    options.tablesWithRelations.length &&
     options.tablesWithRelations[0].name === tableName &&
     fileType === 'module'
   ) {
