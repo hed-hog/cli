@@ -77,12 +77,12 @@ export class StartAction extends AbstractAction {
     console.info(
       chalk.green('➡ '),
       `API:`,
-      chalk.blue('http://localhost:3000'),
+      chalk.cyan('http://localhost:3000'),
     );
     console.info(
       chalk.green('➡ '),
       `ADMIN:`,
-      chalk.blue('http://localhost:3100'),
+      chalk.cyan('http://localhost:3100'),
     );
     console.info();
   }
