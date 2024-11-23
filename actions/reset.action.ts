@@ -19,7 +19,6 @@ import { recreateDatabase } from '../lib/utils/recreate-database';
 import { getEnvFileTemplate } from '../lib/utils/env-file-template';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
-import ts = require('typescript');
 
 export class ResetAction extends AbstractAction {
   public async handle() {
@@ -208,26 +207,6 @@ export class ResetAction extends AbstractAction {
       }
     } else {
       spinner.warn('No package.json found.');
-    }
-  }
-
-  async parseEnvFile(envPath: string) {
-    if (existsSync(envPath)) {
-      const envFile = await readFile(envPath, 'utf-8');
-      const envLines = envFile.split('\n');
-
-      const env: any = {};
-
-      for (const line of envLines) {
-        const [key, value] = line.split('=');
-        if (key && value) {
-          env[key.trim()] = value.trim().replace(/['"\r]+/g, '');
-        }
-      }
-
-      return env;
-    } else {
-      console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
     }
   }
 

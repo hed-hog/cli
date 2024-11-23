@@ -23,7 +23,6 @@ import { getNpmPackage } from '../lib/utils/get-npm-package';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
 import * as YAML from 'yaml';
 import { Database, DatabaseFactory } from '../lib/databases';
-import { parseEnvFile } from '../lib/utils/parse-env-file';
 import { EnvFile } from '../lib/types/env-file';
 import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
 import { EntityFactory } from '../lib/entities/entity.factory';
@@ -70,7 +69,7 @@ export class AddAction extends AbstractAction {
   private addModuleName = '';
   private packageName = '';
   private nodeModulePath = '';
-  private envVars: any = {};
+
   private hasMigrations = false;
 
   private async initPaths() {
@@ -113,15 +112,16 @@ export class AddAction extends AbstractAction {
   }
 
   private async initDb() {
-    const type = getDbTypeFromConnectionString(this.envVars.DATABASE_URL);
+    const envVars = await this.parseEnvFile(join(this.backendPath, '.env'));
+    const type = getDbTypeFromConnectionString(envVars.DATABASE_URL);
 
     this.db = DatabaseFactory.create(
       type === 'mysql' ? Database.MYSQL : Database.POSTGRES,
-      this.envVars.DB_HOST,
-      this.envVars.DB_USERNAME,
-      this.envVars.DB_PASSWORD,
-      this.envVars.DB_DATABASE,
-      Number(this.envVars.DB_PORT),
+      envVars.DB_HOST,
+      envVars.DB_USERNAME,
+      envVars.DB_PASSWORD,
+      envVars.DB_DATABASE,
+      Number(envVars.DB_PORT),
     );
     this.db.disableAutoClose();
     this.db.on('query', (query: any) =>
@@ -133,17 +133,6 @@ export class AddAction extends AbstractAction {
 
     this.isDbConnected = await this.db.testDatabaseConnection();
     this.showDebug('Database connection status:', this.isDbConnected);
-  }
-
-  private async initEnvVars() {
-    try {
-      this.envVars = (await parseEnvFile(
-        join(this.backendPath, '.env'),
-      )) as EnvFile;
-      this.showDebug('Env vars:', this.envVars);
-    } catch (error) {
-      console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
-    }
   }
 
   public async handle(
@@ -165,7 +154,6 @@ export class AddAction extends AbstractAction {
 
     await this.initPaths();
     await this.initNames();
-    await this.initEnvVars();
     await this.initDb();
 
     this.packagesAdded = packagesAdded;
