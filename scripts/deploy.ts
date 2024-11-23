@@ -37,6 +37,8 @@ function main() {
       runCommand('git branch production');
     }
 
+    runCommand('git pull origin master');
+    runCommand('git push origin master');
     runCommand('git checkout production');
     runCommand('git merge master');
     runCommand('git push origin production');
