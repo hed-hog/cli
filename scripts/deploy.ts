@@ -29,6 +29,18 @@ function main() {
       runCommand('git push origin master');
     }
 
+    const branches = execSync('git branch')
+      .toString()
+      .trim()
+      .split('\n')
+      .map((branch) => branch.replace('*', '').trim());
+
+    console.log({ branches });
+
+    if (!branches.includes('production')) {
+      runCommand('git branch production');
+    }
+
     runCommand('git checkout production');
     runCommand('git merge master');
     runCommand('git push origin production');
