@@ -14,8 +14,10 @@ function main() {
     const gitStatus = execSync('git status -s').toString().trim();
 
     if (gitStatus) {
-      runCommand('git add .');
-      runCommand('git commit -m "🚀 Auto commit before deploy"');
+      console.error(
+        '❌ O repositório possui arquivos não commitados. Por favor, realize o commit e tente novamente.',
+      );
+      process.exit(1);
     }
 
     const gitLog = execSync('git log origin/master..master').toString().trim();
