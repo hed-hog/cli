@@ -13,16 +13,12 @@ function main() {
   try {
     const gitStatus = execSync('git status -s').toString().trim();
 
-    console.log({ gitStatus });
-
     if (gitStatus) {
       runCommand('git add .');
       runCommand('git commit -m "🚀 Auto commit before deploy"');
     }
 
     const gitLog = execSync('git log origin/master..master').toString().trim();
-
-    console.log({ gitLog });
 
     if (gitLog) {
       runCommand('git pull origin master');
@@ -34,8 +30,6 @@ function main() {
       .trim()
       .split('\n')
       .map((branch) => branch.replace('*', '').trim());
-
-    console.log({ branches });
 
     if (!branches.includes('production')) {
       runCommand('git branch production');
