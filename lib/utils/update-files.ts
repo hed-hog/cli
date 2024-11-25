@@ -7,16 +7,23 @@ import { getRootPath } from './get-root-path';
 export async function updateNestCliJson(libraryName: string) {
   const rootPath = await getRootPath();
   const nestCliPath = path.join(rootPath, 'lib', 'nest-cli.json');
+  const cliBackendPath = path.join(rootPath, 'backend', 'nest-cli.json');
 
   try {
     const nestCliExists = fs.existsSync(nestCliPath);
     if (!nestCliExists) {
-      console.info(chalk.red('Error: nest-cli.json not found!'));
-      process.exit(1);
+      if (fs.existsSync(cliBackendPath)) {
+        fs.copyFileSync(cliBackendPath, nestCliPath);
+      } else {
+        console.info(chalk.red('Error: nest-cli.json not found!'));
+        process.exit(1);
+      }
     }
 
     const nestCliContent = JSON.parse(fs.readFileSync(nestCliPath, 'utf-8'));
-
+    if (!nestCliContent.projects) {
+      nestCliContent.projects = {};
+    }
     const projectPath = `libs/${toKebabCase(libraryName)}`;
     const newProject = {
       type: 'library',
@@ -55,8 +62,15 @@ export async function updatePackageJson(libraryName: string) {
   try {
     const packageJsonExists = fs.existsSync(packageJsonPath);
     if (!packageJsonExists) {
-      console.info(chalk.red('Error: package.json not found!'));
-      process.exit(1);
+      if (fs.existsSync(path.join(rootPath, 'backend', 'package.json'))) {
+        fs.copyFileSync(
+          path.join(rootPath, 'backend', 'package.json'),
+          packageJsonPath,
+        );
+      } else {
+        console.info(chalk.red('Error: package.json not found!'));
+        process.exit(1);
+      }
     }
 
     const packageJsonContent = JSON.parse(
@@ -145,8 +159,15 @@ export async function updateTsconfigPaths(libraryName: string) {
   try {
     const tsconfigExists = fs.existsSync(tsconfigPath);
     if (!tsconfigExists) {
-      console.info(chalk.red('Error: tsconfig.json not found!'));
-      process.exit(1);
+      if (fs.existsSync(path.join(rootPath, 'backend', 'tsconfig.json'))) {
+        fs.copyFileSync(
+          path.join(rootPath, 'backend', 'tsconfig.json'),
+          tsconfigPath,
+        );
+      } else {
+        console.info(chalk.red('Error: tsconfig.json not found!'));
+        process.exit(1);
+      }
     }
 
     const tsconfigContent = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
