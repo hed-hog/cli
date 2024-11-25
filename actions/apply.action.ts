@@ -446,7 +446,7 @@ export class ApplyAction extends AbstractAction {
       case 'slug':
         return `EnumFieldType.TEXT`;
       case 'fk':
-        return `EnumFieldType.SELECT`;
+        return `EnumFieldType.COMBOBOX`;
       case 'date':
         return `EnumFieldType.DATEPICKER`;
       case 'boolean':
