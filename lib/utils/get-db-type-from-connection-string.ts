@@ -3,6 +3,8 @@ import { Database } from '../databases';
 export function getDbTypeFromConnectionString(
   connectionString: string,
 ): Database {
+  console.log('connectionString:', connectionString);
+
   const protocol = connectionString.split(':')[0];
 
   switch (protocol) {
