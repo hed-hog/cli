@@ -16,7 +16,6 @@ bin/**/*.d.ts
 
 # configuration
 renovate.json
-gulpfile.js
 /.vscode
 
 # sample
