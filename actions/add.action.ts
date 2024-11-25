@@ -23,7 +23,6 @@ import { getNpmPackage } from '../lib/utils/get-npm-package';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
 import * as YAML from 'yaml';
 import { Database, DatabaseFactory } from '../lib/databases';
-import { EnvFile } from '../lib/types/env-file';
 import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
 import { EntityFactory } from '../lib/entities/entity.factory';
 import { AbstractEntity } from '../lib/entities/abstract.entity';

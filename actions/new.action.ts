@@ -739,12 +739,36 @@ ${this.detectIfVolumeIsPath(dataVolume)}`;
     return result;
   }
 
-  async configureGit(directory: string, skipGit = false) {
+  async deleteGitFolder(directory: string) {
+    const MAX_ATTEMPTS = 3;
+    let attempt = 0;
+
+    while (attempt < MAX_ATTEMPTS) {
+      try {
+        await fs.promises.rm(`${directory}/.git`, { recursive: true });
+        break; // Se a remoção for bem-sucedida, saia do loop
+      } catch (err) {
+        if (err.code === 'EBUSY') {
+          console.warn(
+            `Attempt ${attempt + 1} failed: resource busy or locked.`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 1000)); // Espera 1 segundo antes de tentar novamente
+          attempt++;
+        } else {
+          throw err; // Se o erro não for 'EBUSY', lançar o erro novamente
+        }
+      }
+    }
+
+    if (attempt === MAX_ATTEMPTS) {
+      throw new Error('Failed to remove .git folder after multiple attempts');
+    }
+  }
+
+  async configureGit(directory: string, skipGit: boolean = false) {
     const results = [];
     const spinner = ora('Configure git in project folder').start();
-    results.push(
-      await fs.promises.rm(`${directory}/.git`, { recursive: true }),
-    );
+    await this.deleteGitFolder(directory); // Use a função para remover a pasta .git
     if (!skipGit) {
       results.push(await init({ dir: directory, fs }));
     }

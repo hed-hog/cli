@@ -19,11 +19,12 @@ export class ActionBase {
     }
 
     if (existsSync(envPath)) {
-      const envFile = await readFile(envPath, 'utf-8');
+      let envFile = await readFile(envPath, 'utf-8');
       const envLines = envFile.split('\n');
 
       const env: any = {};
 
+      // First pass: parse the env file into key-value pairs
       for (const line of envLines) {
         const [key, value] = line.split('=');
         if (key && value) {
@@ -31,7 +32,16 @@ export class ActionBase {
         }
       }
 
-      return (this.envVars = env);
+      // Second pass: replace variable references in the values
+      for (const key in env) {
+        env[key] = env[key].replace(
+          /\${(.*?)}/g,
+          (_: any, varName: string | number) => env[varName] || '',
+        );
+      }
+
+      this.envVars = env;
+      return env;
     } else {
       console.error(chalk.red(`${EMOJIS.ERROR} File .env not found.`));
     }

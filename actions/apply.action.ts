@@ -39,6 +39,7 @@ interface Column {
     column: string;
     onDelete: string;
   };
+  inputType?: string;
 }
 
 interface Table {
@@ -437,6 +438,24 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
+  mapFieldTypeToInputType(type: string) {
+    switch (type) {
+      case 'text':
+        return `EnumFieldType.RICHTEXT`;
+      case 'varchar':
+      case 'slug':
+        return `EnumFieldType.TEXT`;
+      case 'fk':
+        return `EnumFieldType.COMBOBOX`;
+      case 'date':
+        return `EnumFieldType.DATEPICKER`;
+      case 'boolean':
+        return `EnumFieldType.SWITCH`;
+      default:
+        return `EnumFieldType.TEXT`;
+    }
+  }
+
   async createFrontendFiles(
     tableName: string,
     fields: Column[],
@@ -450,7 +469,12 @@ export class ApplyAction extends AbstractAction {
           f.name = 'slug';
         }
         return f;
-      });
+      })
+      .map((field) => ({
+        ...field,
+        inputType: this.mapFieldTypeToInputType(field.type),
+      }));
+
     const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
     const hasLocale = hasLocaleYaml(this.librarySrcPath, tableName);
     const extraTabs: any[] = [];
