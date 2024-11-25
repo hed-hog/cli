@@ -40,7 +40,7 @@ const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
                     {
                         name: '<%= field.name %>',
                         label: { text: t('<%= field.name %>', { ns: 'translation' }) },
-                        type: EnumFieldType.TEXT,
+                        type: <%- field.inputType %>,
                         required: true,
                     }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
                     <% }) %>
