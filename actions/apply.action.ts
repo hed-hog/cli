@@ -439,8 +439,12 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
-  mapFieldTypeToInputType(type: string) {
-    switch (type) {
+  mapFieldTypeToInputType(field: Column) {
+    if (field.type === 'fk' && field.references?.table === 'file') {
+      return `EnumFieldType.FILE`;
+    }
+
+    switch (field.type) {
       case 'text':
         return `EnumFieldType.RICHTEXT`;
       case 'varchar':
@@ -483,7 +487,7 @@ export class ApplyAction extends AbstractAction {
       })
       .map((field) => ({
         ...field,
-        inputType: this.mapFieldTypeToInputType(field.type),
+        inputType: this.mapFieldTypeToInputType(field),
         ...this.getComboboxProperties(field),
       }));
 
