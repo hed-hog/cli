@@ -3,7 +3,7 @@ import { AbstractAction } from '.';
 import { Input } from '../commands';
 import path = require('path');
 import * as yaml from 'yaml';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, read, readFileSync } from 'fs';
 import { createDTOs } from '../lib/utils/create-dto';
 import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
 import {
@@ -494,6 +494,8 @@ export class ApplyAction extends AbstractAction {
     const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
     const hasLocale = hasLocaleYaml(this.librarySrcPath, tableName);
     const extraTabs: any[] = [];
+    const extraVars: any[] = [];
+    const extraImports: any[] = [];
     const relatedItems = tablesWithRelations.flatMap((item) => item.name);
     const relationOfItems = tablesWithRelations
       .filter((i) => i.name.includes(relatedItems))
@@ -504,6 +506,33 @@ export class ApplyAction extends AbstractAction {
         path.join(__dirname, '..', 'templates', 'tab-panel-item.ts.ejs'),
         'utf-8',
       );
+
+      const relationTables = ((await this.screensWithRelations()) ?? [])
+        .map((item: any) => item.relations)
+        .flat();
+
+      for (const tableName of relationTables) {
+        const variableRendering = render(
+          await readFile(
+            path.join(__dirname, '..', 'templates', 'tab-panel-ref.ts.ejs'),
+            'utf-8',
+          ),
+          { tableName },
+        );
+
+        const importsRendering = render(
+          await readFile(
+            path.join(__dirname, '..', 'templates', 'tab-panel-imports.ts.ejs'),
+            'utf-8',
+          ),
+          { tableName },
+        );
+
+        extraVars.push(variableRendering);
+        extraImports.push(importsRendering);
+      }
+
+      console.log({ extraImportsAfterMap: extraImports });
 
       for (const relatedTable of relationOfItems) {
         const table: Table = tables.find(
@@ -545,9 +574,14 @@ export class ApplyAction extends AbstractAction {
           libraryName: this.libraryName,
           fields,
           extraTabs,
+          extraVars,
+          extraImports: extraImports.join('\n'),
         },
       },
     ];
+
+    console.log({ extraImports });
+    console.log({ extraImports: extraImports.join('\n') });
 
     for (const task of tasks) {
       if (!(await filterScreenCreation(this.librarySrcPath, tableName, task))) {

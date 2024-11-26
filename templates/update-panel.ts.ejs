@@ -5,12 +5,17 @@
 import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
 import { Overlay } from '@/components/custom/overlay'
 import { TabPanel } from '@/components/panels/tab-panel'
-<% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
 import { use<%= toPascalCase(tableName) %>Get, use<%= toPascalCase(tableName) %>Update } from '@/features/<%= libraryName %>/<%= toKebabCase(tableName) %>'
 import useEffectAfterFirstUpdate from '@/hooks/use-effect-after-first-update'
 import { <%= toPascalCase(tableName) %> } from '@/types/models'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+<% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
+<% if (extraTabs.length) { %>
+  import DataPanel from '@/components/panels/data-panel'
+  import { useRef } from 'react'
+<% } %>
+<%- extraImports %>
 
 export type <%= toPascalCase(tableName) %>UpdatePanelProps = {
   data: <%= toPascalCase(tableName) %>
@@ -23,6 +28,8 @@ const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
     const { data: item, isLoading } = use<%= toPascalCase(tableName) %>Get(data.id as number)
     const { mutate: <%= toCamelCase(tableName) %>Update } = use<%= toPascalCase(tableName) %>Update()
     const formRef = useRef<FormPanelRef>(null)
+
+    <%- extraVars %>
 
     useEffectAfterFirstUpdate(() => {
       if (item && formRef.current) {
