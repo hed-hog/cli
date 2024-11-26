@@ -39,6 +39,7 @@ interface Column {
     column: string;
     onDelete: string;
   };
+  isNullable?: boolean;
   inputType?: string;
 }
 
@@ -135,7 +136,7 @@ export class ApplyAction extends AbstractAction {
           const columnType = column.type === 'slug' ? 'varchar' : column.type;
           if (!columnName) return '';
           const lengthPart = column.length ? `${column.length}` : '255';
-          return `${columnName}:${columnType || 'varchar'}:${lengthPart}`;
+          return `${columnName}:${columnType || 'varchar'}:${lengthPart}:${Boolean(column.isNullable)}`;
         })
         .filter(Boolean)
         .join(',');

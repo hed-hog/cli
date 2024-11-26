@@ -16,19 +16,18 @@ export async function createDTOs(
 
 function parseFields(fields: string): any[] {
   return fields.split(',').map((field) => {
-    const [name, type, length] = field.split(':');
-    return { name, type, length };
+    const [name, type, length, isNullable] = field.split(':');
+    return { name, type, length, isNullable };
   });
 }
 
 function getPrimitiveType(type: string): string {
   switch (type) {
     case 'varchar':
+    case 'date':
       return 'string';
     case 'int':
       return 'number';
-    case 'date':
-      return 'Date';
     case 'boolean':
       return 'boolean';
     case 'decimal':
@@ -42,12 +41,9 @@ function getPrimitiveType(type: string): string {
   }
 }
 
-function getValidator(
-  field: any,
-  isOptional = false,
-  decoratorsUsed: Set<string>,
-): string {
+function getValidator(field: any, decoratorsUsed: Set<string>): string {
   const { name, type, length } = field;
+  const isNullable = field.isNullable === 'true' || field.isNullable === true;
   const validations: string[] = [];
 
   switch (type) {
@@ -68,8 +64,8 @@ function getValidator(
       validations.push(`@IsDecimal()`);
       break;
     case 'date':
-      decoratorsUsed.add('IsDate');
-      validations.push(`@IsDate()`);
+      decoratorsUsed.add('IsDateString');
+      validations.push(`@IsDateString()`);
       break;
     case 'boolean':
       decoratorsUsed.add('IsBoolean');
@@ -84,12 +80,12 @@ function getValidator(
       validations.push(`@IsString()`);
   }
 
-  if (isOptional) {
+  if (isNullable) {
     decoratorsUsed.add('IsOptional');
     validations.push('@IsOptional()');
   }
 
-  return `${validations.join('\n  ')}\n  ${name}${isOptional && !field.name.includes('?') ? '?' : ''}: ${type === 'fk' ? 'number' : getPrimitiveType(type)};`;
+  return `${validations.join('\n  ')}\n  ${name}${isNullable && !field.name.includes('?') ? '?' : ''}: ${type === 'fk' ? 'number' : getPrimitiveType(type)};`;
 }
 
 async function createCreateDTO(
@@ -100,7 +96,7 @@ async function createCreateDTO(
   const parsedFields = parseFields(fields);
   const decoratorsUsed = new Set<string>();
   const dtoFields = parsedFields
-    .map((field) => getValidator(field, false, decoratorsUsed))
+    .map((field) => getValidator(field, decoratorsUsed))
     .join('\n\n  ');
 
   const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';${hasLocale ? "import { WithLocaleDTO } from '@hedhog/locale';" : ''}`;
