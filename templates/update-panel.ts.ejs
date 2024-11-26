@@ -45,10 +45,13 @@ const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
                   fields={[
                       <% fields.forEach((field, index, array) => { %>
                       {
-                          name: '<%= field.name %>',
+                          name: <%= field.name %>,
                           label: { text: t('<%= field.name %>', { ns: 'translation' }) },
-                          type: EnumFieldType.TEXT,
+                          type: <%- field.inputType %>,
                           required: true,
+                          <% if (field.url) { %>url: '<%= field.url %>',<% } %>
+                          <% if (field.displayName) { %>displayName: '<%= field.displayName %>',<% } %>
+                          <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
                       }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
                       <% }) %>
                       <%- hasLocale ? '...getFieldsLocale([{ name: "name" }], item)' : '' %>

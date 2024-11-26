@@ -42,6 +42,9 @@ const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
                         label: { text: t('<%= field.name %>', { ns: 'translation' }) },
                         type: <%- field.inputType %>,
                         required: true,
+                        <% if (field.url) { %>url: '<%= field.url %>',<% } %>
+                        <% if (field.displayName) { %>displayName: '<%= field.displayName %>',<% } %>
+                        <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
                     }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
                     <% }) %>
                     <%- hasLocale ? '...getFieldsLocale([{ name: "name" }])' : '' %>

@@ -456,6 +456,16 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
+  getComboboxProperties(field: Column) {
+    if (field.type !== 'fk') return;
+
+    const url = `/${toKebabCase(String(field.references?.table))}`;
+    const displayName = field.name.replace('_id', '');
+    const valueName = field.name.endsWith('id') ? 'id' : 'name';
+
+    return { url, displayName, valueName };
+  }
+
   async createFrontendFiles(
     tableName: string,
     fields: Column[],
@@ -473,6 +483,7 @@ export class ApplyAction extends AbstractAction {
       .map((field) => ({
         ...field,
         inputType: this.mapFieldTypeToInputType(field.type),
+        ...this.getComboboxProperties(field),
       }));
 
     const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
