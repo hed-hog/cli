@@ -532,8 +532,6 @@ export class ApplyAction extends AbstractAction {
         extraImports.push(importsRendering);
       }
 
-      console.log({ extraImportsAfterMap: extraImports });
-
       for (const relatedTable of relationOfItems) {
         const table: Table = tables.find(
           (t: Column) => t.name === relatedTable,
@@ -579,9 +577,6 @@ export class ApplyAction extends AbstractAction {
         },
       },
     ];
-
-    console.log({ extraImports });
-    console.log({ extraImports: extraImports.join('\n') });
 
     for (const task of tasks) {
       if (!(await filterScreenCreation(this.librarySrcPath, tableName, task))) {
