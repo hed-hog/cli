@@ -29,7 +29,6 @@ import { homedir } from 'os';
 import { createHash } from 'crypto';
 import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
 import { filterScreenCreation } from '../lib/utils/filter-screen-creation';
-import { TableApply } from '../lib/classes/TableApply';
 import { Column } from '../lib/types/column';
 import { Table } from '../lib/types/table';
 import { TableFactory } from '../lib/classes/TableFactory';
@@ -92,9 +91,7 @@ export class ApplyAction extends AbstractAction {
       const fkName = tableApply.fkName;
       const hasLocale = tableApply.hasLocale;
       const baseTableName = tableApply.baseName;
-
-      const tablesWithRelations = await this.screensWithRelations();
-
+      const tablesWithRelations = tableApply.hedhogFile.screensWithRelations();
       const screenWithRelations = tableApply.findTableWithRelation();
 
       if (!screenWithRelations) {

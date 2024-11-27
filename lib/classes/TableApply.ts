@@ -61,6 +61,10 @@ export class TableApply {
     return this._fkName;
   }
 
+  get hedhogFile() {
+    return this._hedhogFile;
+  }
+
   initHasLocale() {
     this._hasLocale = this._hedhogFile.hasLocale(this._table.name);
   }
