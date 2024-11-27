@@ -1,29 +1,32 @@
 export function toCamelCase(str: string): string {
-  return str
-    .replace(/([-_][a-z])/gi, (match) => {
-      return match.toUpperCase().replace('-', '').replace('_', '');
-    })
-    .replace(/^[A-Z]/, (match) => match.toLowerCase());
+  console.warn('toCamelCase is deprecated. Use toPascalCase instead.');
+  return str.toCamelCase();
 }
 
 export function toSnakeCase(str: string): string {
-  return str
-    .replace(/([A-Z])/g, (letter) => `_${letter.toLowerCase()}`)
-    .replace(/^_/, '')
-    .replace(/[-]/g, '_');
+  console.warn('toSnakeCase is deprecated. Use toKebabCase instead.');
+  return str.toSnakeCase();
 }
 
 export function toKebabCase(str: string): string {
-  return str
-    .replace(/([A-Z])/g, (letter) => `-${letter.toLowerCase()}`)
-    .replace(/^[-_]/, '')
-    .replace(/[_]/g, '-');
+  console.warn('toKebabCase is deprecated. Use toKebabCase instead.');
+  return str.toKebabCase();
 }
 
 export function toPascalCase(str: string): string {
-  return str.replace(/(^\w|[-_]\w)/g, (match) =>
-    match.replace(/[-_]/, '').toUpperCase(),
-  );
+  console.warn('toPascalCase is deprecated. Use toPascalCase instead.');
+  return str.toPascalCase();
+}
+
+export function toObjectCase(value: string) {
+  return {
+    value,
+    toCamelCase: value.toCamelCase(),
+    toSnakeCase: value.toSnakeCase(),
+    toKebabCase: value.toKebabCase(),
+    toPascalCase: value.toPascalCase(),
+    toScreamingSnakeCase: value.toScreamingSnakeCase(),
+  };
 }
 
 export function capitalize(str: string) {
