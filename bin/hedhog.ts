@@ -8,6 +8,7 @@ import {
 } from '../lib/utils/local-binaries';
 import { checkVersion } from '../lib/utils/checkVersion';
 import 'reflect-metadata';
+import '../lib/utils/global-string';
 
 const bootstrap = async () => {
   const debug = true;
