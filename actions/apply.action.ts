@@ -141,7 +141,20 @@ export class ApplyAction extends AbstractAction {
         .filter(Boolean)
         .join(',');
 
-      console.log({ dtos: fields, hasLocale, tableName: table.name, tableNameRelation: screenWithRelations ?? '', hasRelationsWith: Boolean(screenWithRelations), pkName: this.getColumns(table.columns).find(t => t.type === 'pk')?.name, fkName: this.getColumns(table.columns).find(t => t.references?.table === screenWithRelations)?.name, fields: this.getColumns(table.columns).map(t => t.name)})
+      console.log({
+        dtos: fields,
+        hasLocale,
+        tableName: table.name,
+        tableNameCamel: table.name.toCamelCase(),
+        tableNameRelation: screenWithRelations ?? '',
+        hasRelationsWith: Boolean(screenWithRelations),
+        pkName: this.getColumns(table.columns).find((t) => t.type === 'pk')
+          ?.name,
+        fkName: this.getColumns(table.columns).find(
+          (t) => t.references?.table === screenWithRelations,
+        )?.name,
+        fields: this.getColumns(table.columns).map((t) => t.name),
+      });
 
       await createDTOs(
         path.join(
