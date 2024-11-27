@@ -222,6 +222,24 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
+  getColumns(tableColumns: Column[]) {
+    return tableColumns.map((column) => {
+      if (!column.name) {
+        switch (column.type) {
+          case 'pk':
+            column.name = 'id';
+            break;
+          case 'order':
+          case 'slug':
+          case 'created_at':
+          case 'updated_at':
+            column.name = column.type;
+        }
+      }
+      return column;
+    });
+  }
+
   async createScreenRouterFile(screen: string) {
     const YAMLContent = await readFile(this.hedhogFilePath, 'utf-8');
     const yamlData = yaml.parse(YAMLContent);
