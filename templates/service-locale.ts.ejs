@@ -14,36 +14,45 @@ import {
 import { CreateDTO } from './dto/create.dto';
 import { DeleteDTO } from '@hedhog/core';
 import { UpdateDTO } from './dto/update.dto';
+import { LocaleService } from '@hedhog/locale';
 
 @Injectable()
 export class <%= toPascalCase(tableName) %>Service {
+  private readonly modelName = '<%= tableName%>';
+  private readonly foreignKey = '<%= foreignKey%>';
 
   constructor(
     @Inject(forwardRef(() => PrismaService))
     private readonly prismaService: PrismaService,
     @Inject(forwardRef(() => PaginationService))
     private readonly paginationService: PaginationService,
+    @Inject(forwardRef(() => LocaleService))
+    private readonly localeService: LocaleService,
   ) {}
   
-  <%- listFunction %>
+  async list(locale: string, paginationParams: PaginationDTO) {
+    return this.localeService.listModelWithLocale(locale, this.modelName, paginationParams)
+  }
 
   async get(<%= toCamelCase(tableName) %>Id: number) {
-    return this.prismaService.<%= toSnakeCase(tableName) %>.findUnique({
-      where: { id: <%= toCamelCase(tableName) %>Id },
-    });
+    return this.localeService.getModelWithLocale(this.modelName, <%= toCamelCase(tableName) %>Id);
   }
 
   async create(data: CreateDTO) {
-    return this.prismaService.<%= toSnakeCase(tableName) %>.create({
+    return this.localeService.createModelWithLocale(
+      this.modelName,
+      this.foreignKey,
       data,
-    });
+    );
   }
 
   async update({ id, data }: { id: number; data: UpdateDTO }) {
-    return this.prismaService.<%= toSnakeCase(tableName) %>.update({
-      where: { id },
+    return this.localeService.updateModelWithLocale(
+      this.modelName,
+      this.foreignKey,
+      id,
       data,
-    });
+    );
   }
 
   async delete({ ids }: DeleteDTO) {
