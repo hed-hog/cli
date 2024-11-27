@@ -26,47 +26,18 @@ export class <%= toPascalCase(tableName) %>Service {
     });
   }
 
-  async list(<%= getFirstWord(tableName) %>Id?: number, typeId?: number, <%= getSecondWord(tableName) %>Id?: number) {
+  async list(<%= getFirstWord(tableName) %>Id?: number, <%= getSecondWord(tableName) %>Id?: number) {
     const where: any = {};
     if (<%= getFirstWord(tableName) %>Id !== undefined) where.<%= getFirstWord(tableName) %>_id = <%= getFirstWord(tableName) %>Id;
-    if (typeId !== undefined) where.type_id = typeId;
     if (<%= getSecondWord(tableName) %>Id !== undefined) where.id = <%= getSecondWord(tableName) %>Id;
-
-    const <%= getSecondWord(tableName) %>s = await this.prismaService.<%= tableName %>.findMany({
-      where,
-      include: {
-        <%= tableName %>_type: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    if (Boolean(<%= getSecondWord(tableName) %>Id) && <%= getSecondWord(tableName) %>s.length === 0) {
-      throw new NotFoundException(`<%= getSecondWord(tableName) %> with ID ${<%= getSecondWord(tableName) %>Id} not found`);
-    }
-
-    if (Boolean(typeId) && <%= getSecondWord(tableName) %>s.length === 0) {
-      throw new NotFoundException(`Type with ID ${typeId} not found`);
-    }
 
     return this.paginationService.paginate(
       this.prismaService.<%= tableName %>,
       {
-        fields: 'id,<%= getFirstWord(tableName) %>_id,type_id,primary,value',
+        fields: '<%= fields.join(',') %>',
       },
       {
-        where,
-        include: {
-          <%= tableName %>_type: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        where
       },
     );
   }

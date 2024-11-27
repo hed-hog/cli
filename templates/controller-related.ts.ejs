@@ -1,7 +1,6 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>
+<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-<% const getFirstWord = (str) => str.split('_')[0]; %>
-<% const getSecondWord = (str) => str.split('_')[1]; %>
 
 import { Role, OptionalParseIntPipe } from '@hedhog/core';
 import {
@@ -14,6 +13,8 @@ import {
   Patch,
   Post,
   Query,
+  Inject,
+  forwardRef
 } from '@nestjs/common';
 import { <%= toPascalCase(tableName) %>Service } from './<%= toKebabCase(tableName) %>.service';
 import { CreateDTO } from './dto/create.dto';
@@ -21,46 +22,49 @@ import { UpdateDTO } from './dto/update.dto';
 import { DeleteDTO } from '@hedhog/core';
 
 @Role()
-@Controller('<%= getFirstWord(tableName) %>/:<%= getFirstWord(tableName) %>Id/<%= getSecondWord(tableName) %>')
+@Controller('<%= toCamelCase(tableName) %>/:<%= toCamelCase(fkName) %>/<%= toCamelCase(tableName) %>')
 export class <%= toPascalCase(tableName) %>Controller {
-  constructor(private readonly <%= getSecondWord(tableName) %>Service: <%= toPascalCase(tableName) %>Service) {}
+
+  constructor(
+    @Inject(forwardRef(() => <%= toCamelCase(tableName) %>Service))
+    private readonly <%= toCamelCase(tableName) %>Service: <%= toPascalCase(tableName) %>Service
+  ) {}
+
   @Post()
   create(
-    @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,
+    @Param('<%= toCamelCase(fkName) %>', ParseIntPipe) <%= toCamelCase(fkName) %>: number,
     @Body() data: CreateDTO,
   ) {
-    return this.<%= getSecondWord(tableName) %>Service.create(<%= getFirstWord(tableName) %>Id, data);
+    return this.<%= toCamelCase(tableName) %>Service.create(<%= toCamelCase(fkName) %>, data);
   }
 
   @Get()
   list(
-    @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,
-    @Query('typeId', OptionalParseIntPipe) typeId?: number,
-    @Query('id', OptionalParseIntPipe) <%= getSecondWord(tableName) %>Id?: number,
+    @Param('<%= toCamelCase(fkName) %>', ParseIntPipe) <%= toCamelCase(fkName) %>: number,
+    @Pagination() paginationParams,
+    @Locale() locale,
   ) {
-    if (<%= getSecondWord(tableName) %>Id) {
-      return this.<%= getSecondWord(tableName) %>Service.list(<%= getFirstWord(tableName) %>Id, null, <%= getSecondWord(tableName) %>Id);
-    }
-    if (typeId) {
-      return this.<%= getSecondWord(tableName) %>Service.list(<%= getFirstWord(tableName) %>Id, typeId);
-    }
-    return this.<%= getSecondWord(tableName) %>Service.list(<%= getFirstWord(tableName) %>Id);
+    return this.<%= toCamelCase(tableName) %>Service.list(locale, <%= toCamelCase(fkName) %>, paginationParams);
   }
 
-  @Patch(':<%= getSecondWord(tableName) %>Id')
+  @Patch(':<%= toCamelCase(tableName) %>Id')
   update(
-    @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,
-    @Param('<%= getSecondWord(tableName) %>Id', ParseIntPipe) <%= getSecondWord(tableName) %>Id: number,
+    @Param('<%= toCamelCase(fkName) %>', ParseIntPipe) <%= toCamelCase(fkName) %>: number,
+    @Param('<%= toCamelCase(pkName) %>', ParseIntPipe) <%= toCamelCase(pkName) %>: number,
     @Body() data: UpdateDTO,
   ) {
-    return this.<%= getSecondWord(tableName) %>Service.update(<%= getFirstWord(tableName) %>Id, <%= getSecondWord(tableName) %>Id, data);
+    return this.<%= toCamelCase(tableName) %>Service.update({
+      <%= pkName %>: <%= toCamelCase(pkName) %>,
+      data,
+      personId,
+    });
   }
 
   @Delete()
   delete(
-    @Param('<%= getFirstWord(tableName) %>Id', ParseIntPipe) <%= getFirstWord(tableName) %>Id: number,
+    @Param('<%= toCamelCase(fkName) %>', ParseIntPipe) <%= toCamelCase(fkName) %>: number,
     @Body() { ids }: DeleteDTO,
   ) {
-    return this.<%= getSecondWord(tableName) %>Service.delete(<%= getFirstWord(tableName) %>Id, { ids });
+    return this.<%= toCamelCase(tableName) %>Service.delete(<%= toCamelCase(fkName) %>, { ids });
   }
 }
