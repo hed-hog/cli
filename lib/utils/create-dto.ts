@@ -1,6 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { formatTypeScriptCode } from './format-typescript-code';
+import { render } from 'ejs';
+import { capitalize } from './convert-string-cases';
 
 export async function createDTOs(
   libraryPath: string,
@@ -25,67 +27,17 @@ function getPrimitiveType(type: string): string {
   switch (type) {
     case 'varchar':
     case 'date':
+    case 'text':
       return 'string';
     case 'int':
+    case 'decimal':
+    case 'fk':
       return 'number';
     case 'boolean':
       return 'boolean';
-    case 'decimal':
-      return 'number';
-    case 'text':
-      return 'string';
-    case 'json':
-      return 'any';
     default:
       return 'string';
   }
-}
-
-function getValidator(field: any, decoratorsUsed: Set<string>): string {
-  const { name, type, length } = field;
-  const isNullable = field.isNullable === 'true' || field.isNullable === true;
-  const validations: string[] = [];
-
-  switch (type) {
-    case 'varchar':
-      decoratorsUsed.add('IsString');
-      validations.push(`@IsString()`);
-      if (length) {
-        decoratorsUsed.add('Length');
-        validations.push(`@Length(0, ${length})`);
-      }
-      break;
-    case 'int':
-      decoratorsUsed.add('IsInt');
-      validations.push(`@IsInt()`);
-      break;
-    case 'decimal':
-      decoratorsUsed.add('IsDecimal');
-      validations.push(`@IsDecimal()`);
-      break;
-    case 'date':
-      decoratorsUsed.add('IsDateString');
-      validations.push(`@IsDateString()`);
-      break;
-    case 'boolean':
-      decoratorsUsed.add('IsBoolean');
-      validations.push(`@IsBoolean()`);
-      break;
-    case 'fk':
-      decoratorsUsed.add('IsInt');
-      validations.push(`@IsInt()`);
-      break;
-    default:
-      decoratorsUsed.add('IsString');
-      validations.push(`@IsString()`);
-  }
-
-  if (isNullable) {
-    decoratorsUsed.add('IsOptional');
-    validations.push('@IsOptional()');
-  }
-
-  return `${validations.join('\n  ')}\n  ${name}${isNullable && !field.name.includes('?') ? '?' : ''}: ${type === 'fk' ? 'number' : getPrimitiveType(type)};`;
 }
 
 async function createCreateDTO(
@@ -94,20 +46,38 @@ async function createCreateDTO(
   hasLocale: boolean,
 ) {
   const parsedFields = parseFields(fields);
-  const decoratorsUsed = new Set<string>();
-  const dtoFields = parsedFields
-    .map((field) => getValidator(field, decoratorsUsed))
-    .join('\n\n  ');
-
-  const imports = `import { ${Array.from(decoratorsUsed).join(', ')} } from 'class-validator';${hasLocale ? "import { WithLocaleDTO } from '@hedhog/locale';" : ''}`;
-
-  const createDTOContent = `
-${imports}
-
-export class CreateDTO ${hasLocale ? 'extends WithLocaleDTO' : ''} {
-  ${dtoFields}
-}
-  `.trim();
+  const imports = [];
+  for (const f of parsedFields) {
+    const templatePath = path.join(__dirname, '..', '..', 'templates', 'dto', `import.dto.ts.ejs`);
+    const templateContent = await fs.readFile(templatePath, 'utf-8'); 
+    const type = getPrimitiveType(f.type);
+    const rendered = render(templateContent, {
+      type: capitalize(type),
+    });
+    imports.push(rendered); 
+  }
+  
+  // Handle dtoFields
+  const dtoFields = [];
+  for (const f of parsedFields) {
+    const type = getPrimitiveType(f.type);
+    const templatePath = path.join(__dirname, '..', '..', 'templates', 'dto', `${type}.dto.ts.ejs`);
+    const templateContent = await fs.readFile(templatePath, 'utf-8'); 
+    const rendered = render(templateContent, {
+      fieldName: f.name,
+    });
+    dtoFields.push(rendered);
+  }
+  
+  console.log({ imports, dtoFields });
+  const createDTOContent = render(path.join(__dirname,
+    '..',
+    '..',
+    'templates', 'dto', 'create.dto.ts.ejs'), {
+      fields: dtoFields,
+      imports,
+      hasLocale
+    })
 
   const createDtoFilePath = path.join(dtoPath, 'create.dto.ts');
   await fs.writeFile(
@@ -122,13 +92,12 @@ export class CreateDTO ${hasLocale ? 'extends WithLocaleDTO' : ''} {
 }
 
 async function createUpdateDTO(dtoPath: string) {
-  const updateDTOContent = `
-    import { PartialType } from '@nestjs/mapped-types';
-    import { CreateDTO } from './create.dto';
-    
-    export class UpdateDTO extends PartialType(CreateDTO) {}`.trim();
-
   const updateDtoFilePath = path.join(dtoPath, 'update.dto.ts');
+  const updateDTOContent = render(path.join(__dirname,
+    '..',
+    '..',
+    'templates', 'dto', 'update.dto.ts.ejs'))
+
   await fs.writeFile(
     updateDtoFilePath,
     await formatTypeScriptCode(updateDTOContent, {
