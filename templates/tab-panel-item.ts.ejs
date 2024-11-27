@@ -12,12 +12,12 @@
       selectable
       multiple
       layout='list'
-      id={`<%= toKebabCase(tableName) %>-${item.id}`}
-      url={`/<%= getFirstName(tableName) %>/${item.id}/<%= getSecondName(tableName) %>`}
+      id={`<%= toKebabCase(tableName) %>-${item?.id}`}
+      url={`/<%= getFirstName(tableName) %>/${item?.id}/<%= getSecondName(tableName) %>`}
       render={(item: <%= toPascalCase(tableName) %>) => (
         <div className='flex flex-row gap-2'>
           <span className='relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold'>
-            {<%= mainField %>}: {item.<%= mainField %>}
+            <%= mainField %>: {item.<%= mainField %>}
           </span>
         </div>
       )}
@@ -30,4 +30,4 @@
       onClick: () => {},
     },
   ],
-},
+}
