@@ -32,6 +32,7 @@ import { filterScreenCreation } from '../lib/utils/filter-screen-creation';
 import { Column } from '../lib/types/column';
 import { Table } from '../lib/types/table';
 import { TableFactory } from '../lib/classes/TableFactory';
+import { HedhogFile } from '../lib/classes/HedHogFile';
 
 export class ApplyAction extends AbstractAction {
   private libraryName = '';
@@ -82,8 +83,9 @@ export class ApplyAction extends AbstractAction {
     this.librarySrcPath = path.join(this.libraryPath, 'src');
     this.libraryFrontEndPath = path.join(this.libraryPath, 'frontend');
     const tables = this.parseYamlFile(this.hedhogFilePath);
+    const hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
-    for (const table of tables) {
+    for (const table of hedhogFile.getTables()) {
       const tableApply = await TableFactory.create(table, this.hedhogFilePath);
 
       const tableNameRelation = tableApply.tableNameRelation;
@@ -91,7 +93,7 @@ export class ApplyAction extends AbstractAction {
       const fkName = tableApply.fkName;
       const hasLocale = tableApply.hasLocale;
       const baseTableName = tableApply.baseName;
-      const tablesWithRelations = tableApply.hedhogFile.screensWithRelations();
+      const tablesWithRelations = tableApply.hedhogFile.screensWithRelations;
       const screenWithRelations = tableApply.findTableWithRelation();
 
       if (!screenWithRelations) {
@@ -205,8 +207,10 @@ export class ApplyAction extends AbstractAction {
       dependencyTables,
     );
 
-    const hedhogFile = yaml.parse(await readFile(this.hedhogFilePath, 'utf-8'));
-    const screensArray = Object.keys(hedhogFile.screens);
+    const hedhogFile2 = yaml.parse(
+      await readFile(this.hedhogFilePath, 'utf-8'),
+    );
+    const screensArray = Object.keys(hedhogFile2.screens);
 
     for (const screen of screensArray) {
       await this.createScreenRouterFile(screen);

@@ -78,8 +78,7 @@ export class TableApply {
   }
 
   findTableWithRelation() {
-    const relations = this._hedhogFile
-      .screensWithRelations()
+    const relations = this._hedhogFile.screensWithRelations
       .filter((item) => item.relations.includes(this._table.name))
       .map((item) => item.name);
 
