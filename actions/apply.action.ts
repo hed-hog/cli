@@ -3,12 +3,13 @@ import { AbstractAction } from '.';
 import { Input } from '../commands';
 import path = require('path');
 import * as yaml from 'yaml';
-import { existsSync, read, readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { createDTOs } from '../lib/utils/create-dto';
 import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
 import {
   toCamelCase,
   toKebabCase,
+  toObjectCase,
   toPascalCase,
 } from '../lib/utils/convert-string-cases';
 import { getRootPath } from '../lib/utils/get-root-path';
@@ -28,26 +29,10 @@ import { homedir } from 'os';
 import { createHash } from 'crypto';
 import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
 import { filterScreenCreation } from '../lib/utils/filter-screen-creation';
-
-interface Column {
-  name: string;
-  type: string;
-  length?: number;
-  isPrimary: boolean;
-  references?: {
-    table: string;
-    column: string;
-    onDelete: string;
-  };
-  isNullable?: boolean;
-  inputType?: string;
-}
-
-interface Table {
-  name: string;
-  columns: Column[];
-  ifNotExists: boolean;
-}
+import { Column } from '../lib/types/column';
+import { Table } from '../lib/types/table';
+import { TableFactory } from '../lib/classes/TableFactory';
+import { HedhogFile } from '../lib/classes/HedHogFile';
 
 export class ApplyAction extends AbstractAction {
   private libraryName = '';
@@ -98,23 +83,18 @@ export class ApplyAction extends AbstractAction {
     this.librarySrcPath = path.join(this.libraryPath, 'src');
     this.libraryFrontEndPath = path.join(this.libraryPath, 'frontend');
     const tables = this.parseYamlFile(this.hedhogFilePath);
+    const hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
-    for (const table of tables) {
-      const findTableWithRelation = (
-        tableName: string,
-        tablesWithRelations: any[],
-      ) => {
-        return tablesWithRelations
-          .filter((item) => item.relations.includes(tableName))
-          .map((item) => item.name)[0];
-      };
+    for (const table of hedhogFile.getTables()) {
+      const tableApply = await TableFactory.create(table, this.hedhogFilePath);
 
-      const tablesWithRelations = await this.screensWithRelations();
-      const baseTableName = table.name.replace('_locale', '');
-      const screenWithRelations = findTableWithRelation(
-        baseTableName,
-        tablesWithRelations as any[],
-      );
+      const tableNameRelation = tableApply.tableNameRelation;
+      const pkName = tableApply.pkName;
+      const fkName = tableApply.fkName;
+      const hasLocale = tableApply.hasLocale;
+      const baseTableName = tableApply.baseName;
+      const tablesWithRelations = tableApply.hedhogFile.screensWithRelations;
+      const screenWithRelations = tableApply.findTableWithRelation();
 
       if (!screenWithRelations) {
         await this.createTranslationFiles(baseTableName);
@@ -128,7 +108,6 @@ export class ApplyAction extends AbstractAction {
         continue;
       }
 
-      const hasLocale = hasLocaleYaml(this.librarySrcPath, baseTableName);
       const fields = table.columns
         .filter((column) => column.type !== 'pk')
         .map((column) => {
@@ -144,16 +123,15 @@ export class ApplyAction extends AbstractAction {
       console.log({
         dtos: fields,
         hasLocale,
-        tableName: table.name,
-        tableNameCamel: table.name.toCamelCase(),
-        tableNameRelation: screenWithRelations ?? '',
+        tableName: toObjectCase(table.name),
+        tableNameRelation: toObjectCase(tableNameRelation),
         hasRelationsWith: Boolean(screenWithRelations),
-        pkName: this.getColumns(table.columns).find((t) => t.type === 'pk')
-          ?.name,
-        fkName: this.getColumns(table.columns).find(
-          (t) => t.references?.table === screenWithRelations,
-        )?.name,
-        fields: this.getColumns(table.columns).map((t) => t.name),
+        pkName: toObjectCase(pkName),
+        fkName: toObjectCase(fkName),
+        fields: tableApply
+          .getColumns()
+          .map((t) => t.name)
+          .map((field) => toObjectCase(field)),
       });
 
       await createDTOs(
@@ -229,30 +207,14 @@ export class ApplyAction extends AbstractAction {
       dependencyTables,
     );
 
-    const hedhogFile = yaml.parse(await readFile(this.hedhogFilePath, 'utf-8'));
-    const screensArray = Object.keys(hedhogFile.screens);
+    const hedhogFile2 = yaml.parse(
+      await readFile(this.hedhogFilePath, 'utf-8'),
+    );
+    const screensArray = Object.keys(hedhogFile2.screens);
 
     for (const screen of screensArray) {
       await this.createScreenRouterFile(screen);
     }
-  }
-
-  getColumns(tableColumns: Column[]) {
-    return tableColumns.map((column) => {
-      if (!column.name) {
-        switch (column.type) {
-          case 'pk':
-            column.name = 'id';
-            break;
-          case 'order':
-          case 'slug':
-          case 'created_at':
-          case 'updated_at':
-            column.name = column.type;
-        }
-      }
-      return column;
-    });
   }
 
   async createScreenRouterFile(screen: string) {
