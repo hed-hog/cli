@@ -7,31 +7,28 @@ import { PaginationModule } from '@hedhog/pagination';
 import { PrismaModule } from '@hedhog/prisma';
 import { forwardRef, Module } from '@nestjs/common';`;
 
-let additionalImports = options.tablesWithRelations
-    .map(relation => `
-import { ${toPascalCase(relation)}Controller } from './${toKebabCase(relation)}/${toKebabCase(relation)}.controller';
-import { ${toPascalCase(relation)}Service } from './${toKebabCase(relation)}/${toKebabCase(relation)}.service';`
-    )
-    .join('');
+let additionalImports = '';
+let controllersList = '';
+let providersList = '';
+
+for (const relation of options.tablesWithRelations) {
+    const pascalCaseRelation = toPascalCase(relation);
+    const kebabCaseRelation = toKebabCase(relation);
+    additionalImports += `
+import { ${pascalCaseRelation}Controller } from './${kebabCaseRelation}/${kebabCaseRelation}.controller';
+import { ${pascalCaseRelation}Service } from './${kebabCaseRelation}/${kebabCaseRelation}.service';`;
+    controllersList += `${pascalCaseRelation}Controller, `;
+    providersList += `${pascalCaseRelation}Service, `;
+}
 
 const ownProviderImport = `
-import { ${toPascalCase(tableName)}Controller } from './${toKebabCase(tableName)}.controller';
-import { ${toPascalCase(tableName)}Service } from './${toKebabCase(tableName)}.service';`;
-
-let controllersList = options.tablesWithRelations
-    .map(relation => `${toPascalCase(relation)}Controller`)
-    .join(', ');
-
-let providersList = options.tablesWithRelations
-    .map(relation => `${toPascalCase(relation)}Service`)
-    .join(', ');
-
-controllersList += `, ${toPascalCase(tableName)}Controller`;
-providersList += `, ${toPascalCase(tableName)}Service`;
+import { ${tableNameCase.pascal}Controller } from './${tableNameCase.kebab}.controller';
+import { ${tableNameCase.pascal}Service } from './${tableNameCase.kebab}.service';`;
 additionalImports += ownProviderImport;
 
+controllersList += `${tableNameCase.pascal}Controller`;
+providersList += `${tableNameCase.pascal}Service`;
 %>
-
 <%- moduleImports %><%- additionalImports %>
 @Module({
   imports: [
@@ -45,6 +42,6 @@ additionalImports += ownProviderImport;
   providers: [
     <%= providersList %>
   ],
-  exports: [forwardRef(() => PersonService)],
+  exports: [forwardRef(() => <%= tableNameCase.pascal %>Service)],
 })
-export class <%= toPascalCase(tableName) %>Module {}
+export class <%= tableNameCase.pascal %>Module {}

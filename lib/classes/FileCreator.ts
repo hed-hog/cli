@@ -170,6 +170,8 @@ export class FileCreator {
   }
 
   private async generateFileContent(fieldsForSearch: string[]) {
+    console.log({ opt: this.options });
+
     const vars: any = {
       tableNameCase: this.table.name,
       fieldsForSearch,
