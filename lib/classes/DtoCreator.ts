@@ -71,7 +71,6 @@ export class DTOCreator {
 
   private async createCreateDTO(dtoPath: string) {
     const parsedFields = this.parseFields(this.fields);
-
     let importsSet = new Set<string>();
     const dtoFields = [];
 
@@ -92,6 +91,7 @@ export class DTOCreator {
       });
       dtoFields.push(renderedField);
     }
+
     const imports = Array.from(importsSet);
 
     const createTemplateContent = await this.loadTemplate('create.dto.ts.ejs');

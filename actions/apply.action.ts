@@ -33,6 +33,7 @@ import { Column } from '../lib/types/column';
 import { Table } from '../lib/types/table';
 import { TableFactory } from '../lib/classes/TableFactory';
 import { HedhogFile } from '../lib/classes/HedHogFile';
+import { FileCreator } from '../lib/classes/FileCreator';
 
 export class ApplyAction extends AbstractAction {
   private libraryName = '';
@@ -87,6 +88,12 @@ export class ApplyAction extends AbstractAction {
 
     for (const table of hedhogFile.getTables()) {
       const tableApply = await TableFactory.create(table, this.hedhogFilePath);
+      const screenWithRelations = tableApply.findTableWithRelation();
+      const dtoFilePath = path.join(
+        this.librarySrcPath,
+        screenWithRelations ?? '',
+        toKebabCase(table.name),
+      );
 
       const tableNameRelation = tableApply.tableNameRelation;
       const pkName = tableApply.pkName;
@@ -94,7 +101,6 @@ export class ApplyAction extends AbstractAction {
       const hasLocale = tableApply.hasLocale;
       const baseTableName = tableApply.baseName;
       const tablesWithRelations = tableApply.hedhogFile.screensWithRelations;
-      const screenWithRelations = tableApply.findTableWithRelation();
 
       if (!screenWithRelations) {
         await this.createTranslationFiles(baseTableName);
@@ -136,20 +142,11 @@ export class ApplyAction extends AbstractAction {
           .map((field) => toObjectCase(field)),
       });
 
-      const dtoCreator = new DTOCreator(
-        path.join(
-          this.librarySrcPath,
-          screenWithRelations ?? '',
-          toKebabCase(table.name),
-        ),
-        fields,
-        hasLocale,
-      );
-      dtoCreator
+      new DTOCreator(dtoFilePath, fields, hasLocale)
         .createDTOs()
         .then(() => console.log('DTOs criados com sucesso!'));
 
-      await createFile(
+      new FileCreator(
         this.librarySrcPath,
         table.name,
         'service',
@@ -159,19 +156,19 @@ export class ApplyAction extends AbstractAction {
           hasRelationsWith: screenWithRelations,
         },
         hasLocale,
-      );
+      ).createFile();
 
-      await createFile(this.librarySrcPath, table.name, 'controller', {
+      new FileCreator(this.librarySrcPath, table.name, 'controller', {
         useLibraryNamePath: true,
         hasRelationsWith: screenWithRelations,
-      });
+      }).createFile();
 
-      await createFile(this.librarySrcPath, table.name, 'module', {
+      new FileCreator(this.librarySrcPath, table.name, 'module', {
         useLibraryNamePath: true,
         importServices: true,
         hasRelationsWith: screenWithRelations,
         tablesWithRelations,
-      });
+      }).createFile();
 
       await createScreen(
         this.libraryFrontEndPath,
