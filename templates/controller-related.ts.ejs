@@ -1,7 +1,3 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>
-<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-
 import { Pagination } from '@hedhog/pagination';
 import { Locale } from '@hedhog/locale';
 import { Role } from '@hedhog/core';
@@ -17,45 +13,45 @@ import {
   Inject,
   forwardRef
 } from '@nestjs/common';
-import { <%= toPascalCase(tableName) %>Service } from './<%= toKebabCase(tableName) %>.service';
+import { <%= tableNameCase.pascal %>Service } from './<%= tableNameCase.kebab %>.service';
 import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
 import { DeleteDTO } from '@hedhog/core';
 
 @Role()
-@Controller('<%= toKebabCase(relatedTableName) %>/:<%= toCamelCase(fkName) %>/<%= toKebabCase(tableName) %>')
-export class <%= toPascalCase(tableName) %>Controller {
+@Controller('<%= relatedTableNameCase.kebab %>/:<%= fkNameCase.camel %>/<%= tableNameCase.kebab %>')
+export class <%= tableNameCase.pascal %>Controller {
 
   constructor(
-    @Inject(forwardRef(() => <%= toPascalCase(tableName) %>Service))
-    private readonly <%= toCamelCase(tableName) %>Service: <%= toPascalCase(tableName) %>Service
+    @Inject(forwardRef(() => <%= tableNameCase.pascal %>Service))
+    private readonly <%= tableNameCase.camel %>Service: <%= tableNameCase.pascal %>Service
   ) {}
 
   @Post()
   create(
-    @Param('<%= toCamelCase(fkName) %>', ParseIntPipe) <%= toCamelCase(fkName) %>: number,
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
     @Body() data: CreateDTO,
   ) {
-    return this.<%= toCamelCase(tableName) %>Service.create(<%= toCamelCase(fkName) %>, data);
+    return this.<%= tableNameCase.camel %>Service.create(<%= fkNameCase.camel %>, data);
   }
 
   @Get()
   list(
-    @Param('<%= toCamelCase(fkName) %>', ParseIntPipe) <%= toCamelCase(fkName) %>: number,
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
     @Pagination() paginationParams,
     @Locale() locale,
   ) {
-    return this.<%= toCamelCase(tableName) %>Service.list(locale, <%= toCamelCase(fkName) %>, paginationParams);
+    return this.<%= tableNameCase.camel %>Service.list(locale, <%= fkNameCase.camel %>, paginationParams);
   }
 
-  @Patch(':<%= toCamelCase(tableName) %>Id')
+  @Patch(':<%= tableNameCase.camel %>Id')
   update(
-    @Param('<%= toCamelCase(fkName) %>', ParseIntPipe) <%= toCamelCase(fkName) %>: number,
-    @Param('<%= toCamelCase(pkName) %>', ParseIntPipe) <%= toCamelCase(pkName) %>: number,
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
     @Body() data: UpdateDTO,
   ) {
-    return this.<%= toCamelCase(tableName) %>Service.update({
-      <%= pkName %>: <%= toCamelCase(pkName) %>,
+    return this.<%= tableNameCase.camel %>Service.update({
+      <%= pkNameCase.snake %>: <%= pkNameCase.camel %>,
       data,
       personId,
     });
@@ -63,9 +59,9 @@ export class <%= toPascalCase(tableName) %>Controller {
 
   @Delete()
   delete(
-    @Param('<%= toCamelCase(fkName) %>', ParseIntPipe) <%= toCamelCase(fkName) %>: number,
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
     @Body() { ids }: DeleteDTO,
   ) {
-    return this.<%= toCamelCase(tableName) %>Service.delete(<%= toCamelCase(fkName) %>, { ids });
+    return this.<%= tableNameCase.camel %>Service.delete(<%= fkNameCase.camel %>, { ids });
   }
 }

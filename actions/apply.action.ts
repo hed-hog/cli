@@ -146,17 +146,13 @@ export class ApplyAction extends AbstractAction {
         .createDTOs()
         .then(() => console.log('DTOs criados com sucesso!'));
 
-      new FileCreator(
-        this.librarySrcPath,
-        tableApply,
-        'service',
-        {
-          fields: table.columns,
-          useLibraryNamePath: true,
-          hasRelationsWith: screenWithRelations,
-        },
-        hasLocale,
-      ).createFile();
+      console.log({ tableApply, hasLocale });
+
+      new FileCreator(this.librarySrcPath, tableApply, 'service', {
+        fields: table.columns,
+        useLibraryNamePath: true,
+        hasRelationsWith: screenWithRelations,
+      }).createFile();
 
       new FileCreator(this.librarySrcPath, tableApply, 'controller', {
         useLibraryNamePath: true,

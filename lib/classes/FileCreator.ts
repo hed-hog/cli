@@ -32,7 +32,6 @@ export class FileCreator {
   private table: TableApply;
   private fileType: 'controller' | 'service' | 'module' | 'screen';
   private options: IOption;
-  private hasLocale?: boolean;
 
   constructor(
     libraryPath: string,
@@ -44,13 +43,11 @@ export class FileCreator {
       hasRelationsWith: '',
       tablesWithRelations: [],
     },
-    hasLocale?: boolean,
   ) {
     this.libraryPath = libraryPath;
     this.table = table;
     this.fileType = fileType;
     this.options = options;
-    this.hasLocale = hasLocale;
   }
 
   async createFile() {
@@ -59,14 +56,6 @@ export class FileCreator {
       this.options.hasRelationsWith ?? '',
       this.options.useLibraryNamePath ? toKebabCase(this.table.name) : 'src',
     );
-
-    console.log({
-      libraryPath: this.libraryPath,
-      tableName: this.table.name,
-      fileType: this.fileType,
-      options: this.options,
-      hasLocale: this.hasLocale,
-    });
 
     const tablesWithRelations = (this.options.tablesWithRelations ?? [])
       .map((t) => t.relations)
@@ -78,8 +67,6 @@ export class FileCreator {
     ) {
       return;
     }
-
-    console.log({ tablesWithRelations });
 
     if (
       this.options.tablesWithRelations &&
@@ -99,8 +86,6 @@ export class FileCreator {
       .filter((field) => !field.references)
       .filter((field) => !field.isPrimary)
       .map((field) => field.name);
-
-    console.log({ fieldsForSearch });
 
     const fileContent = await this.generateFileContent(fieldsForSearch);
     const fileFullPath = path.join(
@@ -169,17 +154,22 @@ export class FileCreator {
       `${this.fileType}-locale.ts.ejs`,
     );
 
-    if (this.hasLocale) {
+    if (this.fileType === 'module') {
+      return this.options.hasRelationsWith
+        ? templateRelationsPath
+        : templatePath;
+    }
+
+    if (this.table.hasLocale) {
       return this.options.hasRelationsWith
         ? templateRelationsLocalePath
         : templateLocalePath;
     }
+
     return this.options.hasRelationsWith ? templateRelationsPath : templatePath;
   }
 
   private async generateFileContent(fieldsForSearch: string[]) {
-    console.log({ fields: this.options.fields });
-
     const vars: any = {
       tableNameCase: this.table.name,
       fieldsForSearch,
@@ -187,15 +177,16 @@ export class FileCreator {
       options: this.options,
       fkNameCase: this.table.fkName,
       pkNameCase: this.table.pkName,
-      hasLocale: hasLocaleYaml(this.libraryPath, this.table.name),
+      hasLocale: this.table.hasLocale,
+      fkNameLocaleCase: getLocaleYaml(this.libraryPath, this.table.name),
     };
-
     for (const field in vars) {
       if (typeof vars[field] === 'string' && field.endsWith('Case')) {
         vars[field] = toObjectCase(vars[field]);
       }
     }
 
+    console.log({ vars, template: this.getTemplatePath() });
     return render(await fs.readFile(this.getTemplatePath(), 'utf-8'), vars);
   }
 }

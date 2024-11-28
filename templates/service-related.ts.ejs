@@ -1,8 +1,3 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-<% const getFirstWord = (str) => str.split('_')[0]; %>
-<% const getSecondWord = (str) => str.split('_')[1]; %>
-
 import { PaginationService } from '@hedhog/pagination';
 import { PrismaService } from '@hedhog/prisma';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -11,28 +6,28 @@ import { UpdateDTO } from './dto/update.dto';
 import { DeleteDTO } from '@hedhog/core';
 
 @Injectable()
-export class <%= toPascalCase(tableName) %>Service {
+export class <%= tableNameCase.pascal %>Service {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly paginationService: PaginationService,
   ) {}
 
-  async create(<%= getFirstWord(tableName) %>Id: number, data: CreateDTO) {
-    return this.prismaService.<%= tableName %>.create({
+  async create(<%= fkNameCase.camel %>: number, data: CreateDTO) {
+    return this.prismaService.<%= tableNameCase.camel %>.create({
       data: {
-        <%= getFirstWord(tableName) %>_id: <%= getFirstWord(tableName) %>Id,
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
         ...data,
       },
     });
   }
 
-  async list(<%= getFirstWord(tableName) %>Id?: number, <%= getSecondWord(tableName) %>Id?: number) {
+  async list(<%= fkNameCase.camel %>?: number, <%= pkNameCase.camel %>?: number) {
     const where: any = {};
-    if (<%= getFirstWord(tableName) %>Id !== undefined) where.<%= getFirstWord(tableName) %>_id = <%= getFirstWord(tableName) %>Id;
-    if (<%= getSecondWord(tableName) %>Id !== undefined) where.id = <%= getSecondWord(tableName) %>Id;
+    if (<%= fkNameCase.camel %> !== undefined) where.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
+    if (<%= pkNameCase.camel %> !== undefined) where.id = <%= pkNameCase.camel %>;
 
     return this.paginationService.paginate(
-      this.prismaService.<%= tableName %>,
+      this.prismaService.<%= tableNameCase.camel %>,
       {
         fields: '<%= fieldsForSearch.join(',') %>',
       },
@@ -42,26 +37,26 @@ export class <%= toPascalCase(tableName) %>Service {
     );
   }
 
-  async update(<%= getFirstWord(tableName) %>Id: number, <%= getSecondWord(tableName) %>Id: number, data: UpdateDTO) {
-    return this.prismaService.<%= tableName %>.update({
+  async update(<%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number, data: UpdateDTO) {
+    return this.prismaService.<%= tableNameCase.camel %>.update({
       where: { 
-        <%= getFirstWord(tableName) %>_id: <%= getFirstWord(tableName) %>Id,
-        id: <%= getSecondWord(tableName) %>Id
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+        id: <%= pkNameCase.camel %>
       },
       data,
     });
   }
 
-  async delete(<%= getFirstWord(tableName) %>Id: number, { ids }: DeleteDTO) {
+  async delete(<%= fkNameCase.camel %>: number, { ids }: DeleteDTO) {
     if (ids == undefined || ids == null) {
       throw new BadRequestException(
         'You must select at least one item to delete.',
       );
     }
 
-    return this.prismaService.<%= tableName %>.deleteMany({
+    return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
       where: {
-        <%= getFirstWord(tableName) %>_id: <%= getFirstWord(tableName) %>Id,
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
         id: {
           in: ids,
         },
