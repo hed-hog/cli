@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import * as yaml from 'yaml';
-import { toKebabCase, toPascalCase } from './convert-string-cases';
 import path = require('path');
 import { Menu } from '../types/menu';
 import { Screen } from '../types/screen';
@@ -73,12 +72,16 @@ export const addRoutesToYaml = (
           },
         ]
       : [
-          { url: `/${toKebabCase(tableName)}`, method: 'GET', relations },
-          { url: `/${toKebabCase(tableName)}`, method: 'POST', relations },
-          { url: `/${toKebabCase(tableName)}/:id`, method: 'GET', relations },
-          { url: `/${toKebabCase(tableName)}/:id`, method: 'PATCH', relations },
+          { url: `/${tableName.toKebabCase()}`, method: 'GET', relations },
+          { url: `/${tableName.toKebabCase()}`, method: 'POST', relations },
+          { url: `/${tableName.toKebabCase()}/:id`, method: 'GET', relations },
           {
-            url: `/${toKebabCase(tableName)}`,
+            url: `/${tableName.toKebabCase()}/:id`,
+            method: 'PATCH',
+            relations,
+          },
+          {
+            url: `/${tableName.toKebabCase()}`,
             method: 'DELETE',
             relations,
           },
@@ -101,12 +104,12 @@ export const addRoutesToYaml = (
     const newMenus: Menu[] = [
       {
         name: {
-          en: toPascalCase(tableName),
-          pt: toPascalCase(tableName),
+          en: tableName.toPascalCase(),
+          pt: tableName.toPascalCase(),
         },
         icon: 'file',
-        url: `/${toKebabCase(tableName)}`,
-        slug: toKebabCase(tableName),
+        url: `/${tableName.toKebabCase()}`,
+        slug: tableName.toKebabCase(),
         relations,
       },
     ];
@@ -124,10 +127,10 @@ export const addRoutesToYaml = (
     const newScreens: Screen[] = [
       {
         name: {
-          en: toPascalCase(tableName),
-          pt: toPascalCase(tableName),
+          en: tableName.toPascalCase(),
+          pt: tableName.toPascalCase(),
         },
-        slug: toKebabCase(tableName),
+        slug: tableName.toKebabCase(),
         description: {
           en: `Screen to manage ${tableName}`,
           pt: `Tela para gerenciar ${tableName}`,

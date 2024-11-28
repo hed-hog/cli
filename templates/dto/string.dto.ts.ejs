@@ -1,2 +1,3 @@
+<% if (isOptional) { %>@IsOptional()<%} %>
 @IsString()
-<%- fieldName %>: string;
+<%- fieldName %><%= optionalSignal %>: string;

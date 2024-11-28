@@ -30,7 +30,11 @@ export async function createScreen(
     return;
   }
 
-  const filePath = path.join(libraryPath, toKebabCase(tableName), 'components');
+  const filePath = path.join(
+    libraryPath,
+    tableName.toKebabCase(),
+    'components',
+  );
   await fs.mkdir(filePath, { recursive: true });
   const fieldsForSearch = (options?.fields ?? [])
     .map((field) => AbstractTable.getColumnOptions(field))
@@ -55,7 +59,7 @@ export async function createScreen(
 
   const fileFullPath = path.join(
     filePath,
-    `${toKebabCase(tableName)}.${fileType}.tsx.ejs`,
+    `${tableName.toKebabCase()}.${fileType}.tsx.ejs`,
   );
 
   console.log('Creating file:', fileFullPath);

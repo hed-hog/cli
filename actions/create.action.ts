@@ -51,7 +51,7 @@ export class CreateAction extends AbstractAction {
       rootPath,
       'lib',
       'libs',
-      toKebabCase(libraryName),
+      libraryName.toKebabCase(),
     );
 
     this.showDebug({
@@ -143,7 +143,7 @@ export class CreateAction extends AbstractAction {
     removeDefaultDeps: boolean,
   ) {
     const packageJsonContent = {
-      name: `@hedhog/${toKebabCase(libraryName)}`,
+      name: `@hedhog/${libraryName.toKebabCase()}`,
       version: '0.0.0',
       private: false,
       main: 'dist/index.js',
@@ -224,7 +224,7 @@ export class CreateAction extends AbstractAction {
     }
 
     const indexContent = `
-  export * from './${toKebabCase(libraryName)}.module';
+  export * from './${libraryName.toKebabCase()}.module';
     `.trim();
 
     const indexFilePath = path.join(srcPath, 'index.ts');

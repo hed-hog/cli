@@ -4,14 +4,7 @@ import { PackageManagerFactory } from '../lib/package-managers';
 import { AbstractAction } from './abstract.action';
 import * as ora from 'ora';
 import { existsSync } from 'fs';
-import {
-  copyFile,
-  lstat,
-  mkdir,
-  readdir,
-  readFile,
-  writeFile,
-} from 'fs/promises';
+import { copyFile, mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { join, sep } from 'path';
 import { Runner, RunnerFactory } from '../lib/runners';
@@ -28,7 +21,6 @@ import { EntityFactory } from '../lib/entities/entity.factory';
 import { AbstractEntity } from '../lib/entities/abstract.entity';
 import { TableFactory } from '../lib/tables/table.factory';
 import { AbstractTable } from '../lib/tables/abstract.table';
-import { toKebabCase } from '../lib/utils/convert-string-cases';
 import path = require('path');
 
 interface TableDependency {
@@ -485,7 +477,7 @@ export class AddAction extends AbstractAction {
               frontendPagesDestPath,
               dir,
               'components',
-              `${toKebabCase(dir)}-create-panel.tsx`,
+              `${dir.toKebabCase()}-create-panel.tsx`,
             ),
           );
         }
@@ -499,7 +491,7 @@ export class AddAction extends AbstractAction {
               frontendPagesDestPath,
               dir,
               'components',
-              `${toKebabCase(dir)}-update-panel.tsx`,
+              `${dir.toKebabCase()}-update-panel.tsx`,
             ),
           );
         }

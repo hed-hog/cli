@@ -5,7 +5,6 @@ import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from '../utils/format-with-prettier';
 import { formatTypeScriptCode } from '../utils/format-typescript-code';
-import hasLocaleYaml from '../utils/has-locale-yaml';
 import getLocaleYaml from '../utils/get-fk-locale-yaml';
 import { TableApply } from './TableApply';
 
@@ -54,7 +53,7 @@ export class FileCreator {
     const filePath = path.join(
       this.libraryPath,
       this.options.hasRelationsWith ?? '',
-      this.options.useLibraryNamePath ? toKebabCase(this.table.name) : 'src',
+      this.options.useLibraryNamePath ? this.table.name.toKebabCase() : 'src',
     );
 
     const tablesWithRelations = (this.options.tablesWithRelations ?? [])
@@ -90,10 +89,8 @@ export class FileCreator {
     const fileContent = await this.generateFileContent(fieldsForSearch);
     const fileFullPath = path.join(
       filePath,
-      `${toKebabCase(this.table.name)}.${this.fileType}.ts`,
+      `${this.table.name.toKebabCase()}.${this.fileType}.ts`,
     );
-
-    console.log('Creating file:', fileFullPath);
 
     await fs.writeFile(
       fileFullPath,
@@ -203,7 +200,6 @@ export class FileCreator {
       }
     }
 
-    console.log({ vars, template: this.getTemplatePath() });
     return render(await fs.readFile(this.getTemplatePath(), 'utf-8'), vars);
   }
 }

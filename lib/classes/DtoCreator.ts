@@ -73,6 +73,7 @@ export class DTOCreator {
     const parsedFields = this.parseFields(this.fields);
     let importsSet = new Set<string>();
     const dtoFields = [];
+    let hasOptional = false;
 
     for (const f of parsedFields) {
       const importTemplateContent =
@@ -86,13 +87,24 @@ export class DTOCreator {
       const fieldTemplateContent = await this.loadTemplate(
         `${type}.dto.ts.ejs`,
       );
-      const renderedField = render(fieldTemplateContent, {
+      let renderedField = render(fieldTemplateContent, {
         fieldName: f.name,
+        optionalSignal: f.isNullable === 'true' ? '?' : '',
+        isOptional: f.isNullable === 'true',
       });
+
+      if (f.isNullable === 'true') {
+        hasOptional = true;
+      }
+
       dtoFields.push(renderedField);
     }
 
     const imports = Array.from(importsSet);
+
+    if (hasOptional) {
+      imports.push("import { IsOptional } from 'class-validator';");
+    }
 
     const createTemplateContent = await this.loadTemplate('create.dto.ts.ejs');
     const createDTOContent = render(createTemplateContent, {

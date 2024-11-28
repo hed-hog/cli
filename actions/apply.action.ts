@@ -6,12 +6,7 @@ import * as yaml from 'yaml';
 import { existsSync, readFileSync } from 'fs';
 import { DTOCreator } from '../lib/classes/DtoCreator';
 import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
-import {
-  toCamelCase,
-  toKebabCase,
-  toObjectCase,
-  toPascalCase,
-} from '../lib/utils/convert-string-cases';
+import { toObjectCase } from '../lib/utils/convert-string-cases';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
 import { render } from 'ejs';
@@ -41,6 +36,7 @@ export class ApplyAction extends AbstractAction {
   private libraryPath = '';
   private librarySrcPath = '';
   private libraryFrontEndPath = '';
+  private hedhogFile: HedhogFile = new HedhogFile();
 
   public async handle(inputs: Input[], options: Input[]) {
     this.debug = options.some(
@@ -57,7 +53,7 @@ export class ApplyAction extends AbstractAction {
       this.rootPath,
       'lib',
       'libs',
-      toKebabCase(this.libraryName),
+      this.libraryName.toKebabCase(),
       'hedhog.yaml',
     );
 
@@ -65,7 +61,7 @@ export class ApplyAction extends AbstractAction {
       this.rootPath,
       'lib',
       'libs',
-      toKebabCase(this.libraryName),
+      this.libraryName.toKebabCase(),
     );
 
     if (!this.libraryName.length) {
@@ -83,9 +79,9 @@ export class ApplyAction extends AbstractAction {
     this.librarySrcPath = path.join(this.libraryPath, 'src');
     this.libraryFrontEndPath = path.join(this.libraryPath, 'frontend');
     const tables = this.parseYamlFile(this.hedhogFilePath);
-    const hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
+    this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
-    for (const table of hedhogFile.getTables()) {
+    for (const table of this.hedhogFile.getTables()) {
       const tableApply = await TableFactory.create(table, this.hedhogFilePath);
       const screenWithRelations = tableApply.findTableWithRelation();
       const dtoFilePath = path.join(
@@ -94,9 +90,6 @@ export class ApplyAction extends AbstractAction {
         table.name.toKebabCase(),
       );
 
-      const tableNameRelation = tableApply.tableNameRelation;
-      const pkName = tableApply.pkName;
-      const fkName = tableApply.fkName;
       const hasLocale = tableApply.hasLocale;
       const baseTableName = tableApply.baseName;
       const tablesWithRelations = tableApply.hedhogFile.screensWithRelations;
@@ -165,7 +158,7 @@ export class ApplyAction extends AbstractAction {
         await this.updateParentModule(
           path.join(
             this.librarySrcPath,
-            `${toKebabCase(this.libraryName)}.module.ts`,
+            `${this.libraryName.toKebabCase()}.module.ts`,
           ),
           table.name,
         );
@@ -216,9 +209,9 @@ export class ApplyAction extends AbstractAction {
     }
 
     moduleRoute.children.push({
-      path: toKebabCase(screen),
+      path: screen.toKebabCase(),
       lazy: {
-        component: `./pages/${toKebabCase(this.libraryName)}/${toKebabCase(screen)}/index.tsx`,
+        component: `./pages/${this.libraryName.toKebabCase()}/${screen.toKebabCase()}/index.tsx`,
       },
     });
 
@@ -312,7 +305,7 @@ export class ApplyAction extends AbstractAction {
 
         const folderPath = path.join(
           localesFolder,
-          toKebabCase(tableName),
+          tableName.toKebabCase(),
           'locales',
           folder.name,
         );
@@ -321,7 +314,7 @@ export class ApplyAction extends AbstractAction {
 
         const filePath = path.join(
           folderPath,
-          `${this.libraryName}.${toKebabCase(tableName)}.json`,
+          `${this.libraryName}.${tableName.toKebabCase()}.json`,
         );
         const templatePath = path.join(
           __dirname,
@@ -440,7 +433,7 @@ export class ApplyAction extends AbstractAction {
   getComboboxProperties(field: Column) {
     if (field.type !== 'fk') return;
 
-    const url = `/${toKebabCase(String(field.references?.table))}`;
+    const url = `/${String(field.references?.table).toKebabCase()}`;
     const displayName = field.name.replace('_id', '');
     const valueName = field.name.endsWith('id') ? 'id' : 'name';
 
@@ -453,7 +446,15 @@ export class ApplyAction extends AbstractAction {
     tables: any,
     tablesWithRelations: any[],
   ) {
+    const table = this.hedhogFile
+      .getTables()
+      .find((t) => t.name === tableName) as Table;
+    const tableApply = await TableFactory.create(table, this.hedhogFilePath);
+
     fields = fields
+      .filter(
+        (field) => !['pk', 'created_at', 'updated_at'].includes(field.type),
+      )
       .filter((field) => field.name || field.type === 'slug')
       .map((f) => {
         if (f.type === 'slug') {
@@ -521,10 +522,22 @@ export class ApplyAction extends AbstractAction {
             ...table.columns.find((f) => f.type === 'pk'),
           };
 
-        const renderedContent = render(templateContent, {
+        const vars: any = {
+          tableNameCase: tableApply.name,
+          tableNameRelatedCase: relatedTable,
+          fkNameCase: tableApply.fkName,
+          pkNameCase: tableApply.pkName,
+          hasLocale: tableApply.hasLocale,
           mainField: mainField?.name,
           tableName: relatedTable,
-        });
+        };
+        for (const field in vars) {
+          if (typeof vars[field] === 'string' && field.endsWith('Case')) {
+            vars[field] = toObjectCase(vars[field]);
+          }
+        }
+
+        const renderedContent = render(templateContent, vars);
         extraTabs.push(renderedContent);
       }
     }
@@ -561,7 +574,7 @@ export class ApplyAction extends AbstractAction {
 
       const taskPath = path.join(
         frontendPath,
-        toKebabCase(tableName),
+        tableName.toKebabCase(),
         task.subPath,
       );
 
@@ -610,8 +623,8 @@ export class ApplyAction extends AbstractAction {
     const controllerFilePath = path.join(
       this.librarySrcPath,
       hasRelationsWith ?? '',
-      toKebabCase(baseTableName),
-      `${toKebabCase(baseTableName)}.controller.ts`,
+      baseTableName.toKebabCase(),
+      `${baseTableName.toKebabCase()}.controller.ts`,
     );
 
     try {
@@ -624,8 +637,8 @@ export class ApplyAction extends AbstractAction {
         );
 
         controllerContent = controllerContent.replace(
-          `return this.${toCamelCase(baseTableName)}Service.list(paginationParams)`,
-          `return this.${toCamelCase(baseTableName)}Service.list(locale, paginationParams)`,
+          `return this.${baseTableName.toCamelCase()}Service.list(paginationParams)`,
+          `return this.${baseTableName.toCamelCase()}Service.list(locale, paginationParams)`,
         );
       }
 
@@ -660,7 +673,7 @@ export class ApplyAction extends AbstractAction {
       return;
     }
 
-    newModuleName = toPascalCase(newModuleName);
+    newModuleName = newModuleName.toPascalCase();
 
     try {
       let moduleContent = await readFileSync(modulePath, 'utf8');
@@ -693,7 +706,7 @@ export class ApplyAction extends AbstractAction {
 
       const importsList = this.parseImportsList(importsMatch);
       importsList.push(
-        `forwardRef(() => ${toPascalCase(newModuleName)}Module)`,
+        `forwardRef(() => ${newModuleName.toPascalCase()}Module)`,
       );
 
       const startFileContent = moduleContent.substring(0, startImportsIndex);
@@ -717,7 +730,7 @@ export class ApplyAction extends AbstractAction {
   }
 
   private createImportStatement(newModuleName: string): string {
-    return `import { ${toPascalCase(newModuleName)}Module } from './${toKebabCase(newModuleName)}/${toKebabCase(newModuleName)}.module';`;
+    return `import { ${newModuleName.toPascalCase()}Module } from './${newModuleName.toKebabCase()}/${newModuleName.toKebabCase()}.module';`;
   }
 
   private extractImportsSection(moduleContent: string) {
