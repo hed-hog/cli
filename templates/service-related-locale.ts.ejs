@@ -60,15 +60,7 @@ export class <%= tableNameCase.pascal %>Service {
     );
   }
 
-  async update({
-    <%= pkNameCase.camel %>,
-    data,
-    <%= fkNameCase.camel %>,
-  }: {
-    <%= pkNameCase.camel %>: number;
-    data: UpdateDTO;
-    <%= fkNameCase.camel %>: number;
-  }) {
+  async update(<%= pkNameCase.camel %>: number, <%= fkNameCase.camel %>: number, data: UpdateDTO) {
     return this.localeService.updateModelWithLocale(
       this.modelName,
       this.foreignKey,

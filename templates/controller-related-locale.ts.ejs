@@ -1,0 +1,67 @@
+import { Pagination } from '@hedhog/pagination';
+import { Role } from '@hedhog/core';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Inject,
+  forwardRef
+} from '@nestjs/common';
+import { <%= tableNameCase.pascal %>Service } from './<%= tableNameCase.kebab %>.service';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+import { DeleteDTO } from '@hedhog/core';
+import { Locale } from '@hedhog/locale';	
+
+@Role()
+@Controller('<%= relatedTableNameCase.kebab %>/:<%= fkNameCase.camel %>/<%= tableNameCase.kebab %>')
+export class <%= tableNameCase.pascal %>Controller {
+
+  constructor(
+    @Inject(forwardRef(() => <%= tableNameCase.pascal %>Service))
+    private readonly <%= tableNameCase.camel %>Service: <%= tableNameCase.pascal %>Service
+  ) {}
+
+  @Post()
+  create(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Body() data: CreateDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.create(<%= fkNameCase.camel %>, data);
+  }
+
+  @Get()
+  list(
+    @Locale() locale,
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Pagination() paginationParams,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.list(locale, <%= fkNameCase.camel %>, paginationParams);
+  }
+
+  @Patch(':<%= pkNameCase.camel %>')
+  update(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
+    @Body() data: UpdateDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.update(
+      <%= fkNameCase.camel %>,
+      <%= pkNameCase.camel %>,
+      data,
+    );
+  }
+
+  @Delete()
+  delete(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Body() { ids }: DeleteDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.delete(<%= fkNameCase.camel %>, { ids });
+  }
+}
