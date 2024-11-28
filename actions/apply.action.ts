@@ -4,7 +4,7 @@ import { Input } from '../commands';
 import path = require('path');
 import * as yaml from 'yaml';
 import { existsSync, readFileSync } from 'fs';
-import { createDTOs } from '../lib/utils/create-dto';
+import { DTOCreator } from '../lib/classes/DtoCreator';
 import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
 import {
   toCamelCase,
@@ -109,7 +109,9 @@ export class ApplyAction extends AbstractAction {
       }
 
       const fields = table.columns
-        .filter((column) => column.type !== 'pk')
+        .filter(
+          ({ type }) => !['pk', 'created_at', 'updated_at'].includes(type),
+        )
         .map((column) => {
           const columnName = column.type === 'slug' ? 'slug' : column.name;
           const columnType = column.type === 'slug' ? 'varchar' : column.type;
@@ -134,7 +136,7 @@ export class ApplyAction extends AbstractAction {
           .map((field) => toObjectCase(field)),
       });
 
-      await createDTOs(
+      const dtoCreator = new DTOCreator(
         path.join(
           this.librarySrcPath,
           screenWithRelations ?? '',
@@ -143,6 +145,9 @@ export class ApplyAction extends AbstractAction {
         fields,
         hasLocale,
       );
+      dtoCreator
+        .createDTOs()
+        .then(() => console.log('DTOs criados com sucesso!'));
 
       await createFile(
         this.librarySrcPath,
