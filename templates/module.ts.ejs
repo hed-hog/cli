@@ -2,10 +2,7 @@ import { AdminModule } from '@hedhog/admin';
 import { PaginationModule } from '@hedhog/pagination';
 import { PrismaModule } from '@hedhog/prisma';
 import { forwardRef, Module } from '@nestjs/common';
-<% if (options.importServices) { %>
-import { <%= tableNameCase.pascal %>Service } from './<%= tableNameCase.kebab %>.service';
-import { <%= tableNameCase.pascal %>Controller } from './<%= tableNameCase.kebab %>.controller';`
-<% } %>
+<%= imports %>
 
 @Module({
     imports: [
@@ -13,8 +10,8 @@ import { <%= tableNameCase.pascal %>Controller } from './<%= tableNameCase.kebab
         forwardRef(() => PrismaModule),
         forwardRef(() => PaginationModule),
     ],
-    controllers: <%= options.importServices ? `[<%= tableNameCase.pascal %>Controller]` : '[]' %>,
-    providers: <%= options.importServices ? `[<%= tableNameCase.pascal %>Service]` : '[]' %>,
-    exports: <%- options.importServices ? `[forwardRef(() => <%= tableNameCase.pascal %>Service)]` : '[]' %>,
+    controllers: [<%= controllers.join(',') %>],
+    providers: [<%= providers.join(',') %>],
+    exports:  [<%= exports.join(',') %>]
 })
 export class <%= tableNameCase.pascal %>Module {}
