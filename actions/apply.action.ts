@@ -92,7 +92,7 @@ export class ApplyAction extends AbstractAction {
       const dtoFilePath = path.join(
         this.librarySrcPath,
         screenWithRelations ?? '',
-        toKebabCase(table.name),
+        table.name.toKebabCase(),
       );
 
       const tableNameRelation = tableApply.tableNameRelation;

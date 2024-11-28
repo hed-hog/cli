@@ -1,6 +1,6 @@
 <%- imports %>
-<%- hasLocale ? 'import { WithLocaleDTO } from @hedhog/locale' : '' %>
+<%- hasLocale ? 'import { WithLocaleDTO } from "@hedhog/locale"' : '' %>
 
-export class CreateDTO <% hasLocale ? 'extends WithLocaleDTO' : '' %> {
+export class CreateDTO <%- hasLocale ? 'extends WithLocaleDTO' : '' %> {
     <%- fields %>
 }

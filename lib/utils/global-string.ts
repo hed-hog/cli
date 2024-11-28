@@ -15,7 +15,8 @@ String.prototype.toCamelCase = function (): string {
 };
 
 String.prototype.toKebabCase = function (): string {
-  return this.replace(/([a-z])([A-Z])/g, '$1-$2')
+  return this.replace(/_/g, '-')
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
     .replace(/\s+/g, '-')
     .toLowerCase();
 };
