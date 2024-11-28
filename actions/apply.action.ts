@@ -17,7 +17,6 @@ import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
 import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import hasLocaleYaml from '../lib/utils/has-locale-yaml';
-import { createFile } from '../lib/utils/create-file';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';
 import { EMOJIS } from '../lib/ui';
 import { createScreen } from '../lib/utils/create-screen';

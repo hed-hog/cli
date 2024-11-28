@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AbstractAction } from './abstract.action';
 import { Input } from '../commands';
-import { createFile } from '../lib/utils/create-file';
 import {
   updateNestCliJson,
   updatePackageJson,
@@ -15,6 +14,8 @@ import { getRootPath } from '../lib/utils/get-root-path';
 import { mkdir, writeFile } from 'fs/promises';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';
 import * as inquirer from 'inquirer';
+import { FileCreator } from '../lib/classes/FileCreator';
+import { TableApply } from '../lib/classes/TableApply';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -66,7 +67,11 @@ export class CreateAction extends AbstractAction {
     await this.createPackageJson(libraryPath, libraryName, removeDefaultDeps);
     await this.createTsconfigProduction(libraryPath);
 
-    await createFile(libraryPath, libraryName, 'module');
+    new FileCreator(
+      libraryPath,
+      { name: libraryName } as TableApply,
+      'module',
+    ).createFile();
     await createYaml(libraryPath);
 
     console.info(

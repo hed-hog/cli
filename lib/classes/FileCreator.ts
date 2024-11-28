@@ -126,7 +126,7 @@ export class FileCreator {
 
     const templateContent = await fs.readFile(templatePath, 'utf-8');
     const data = {
-      tableName: this.table.name,
+      tableNameCase: toObjectCase(this.table.name),
       options: {
         importServices: true,
         tablesWithRelations,
@@ -170,7 +170,7 @@ export class FileCreator {
   }
 
   private async generateFileContent(fieldsForSearch: string[]) {
-    console.log({ opt: this.options });
+    console.log({ tables: this.options.tablesWithRelations });
 
     const vars: any = {
       tableNameCase: this.table.name,
@@ -181,6 +181,15 @@ export class FileCreator {
       pkNameCase: this.table.pkName,
       hasLocale: this.table.hasLocale,
       fkNameLocaleCase: getLocaleYaml(this.libraryPath, this.table.name),
+      module: {
+        imports: [
+          `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
+          `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()} .controller';`,
+        ],
+        controllers: [`${this.table.name.toPascalCase()}Controller`],
+        providers: [`${this.table.name.toPascalCase()}Service`],
+        exports: [`${this.table.name.toPascalCase()}Service`],
+      },
     };
     for (const field in vars) {
       if (typeof vars[field] === 'string' && field.endsWith('Case')) {
