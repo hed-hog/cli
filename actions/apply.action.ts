@@ -127,25 +127,9 @@ export class ApplyAction extends AbstractAction {
         .filter(Boolean)
         .join(',');
 
-      console.log({
-        dtos: fields,
-        hasLocale,
-        tableName: toObjectCase(table.name),
-        tableNameRelation: toObjectCase(tableNameRelation),
-        hasRelationsWith: Boolean(screenWithRelations),
-        pkName: toObjectCase(pkName),
-        fkName: toObjectCase(fkName),
-        fields: tableApply
-          .getColumns()
-          .map((t) => t.name)
-          .map((field) => toObjectCase(field)),
-      });
-
       new DTOCreator(dtoFilePath, fields, hasLocale)
         .createDTOs()
         .then(() => console.log('DTOs criados com sucesso!'));
-
-      console.log({ tableApply, hasLocale });
 
       new FileCreator(this.librarySrcPath, tableApply, 'service', {
         fields: table.columns,

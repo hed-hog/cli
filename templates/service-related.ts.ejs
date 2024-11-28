@@ -24,7 +24,7 @@ export class <%= tableNameCase.pascal %>Service {
   async list(<%= fkNameCase.camel %>?: number, <%= pkNameCase.camel %>?: number) {
     const where: any = {};
     if (<%= fkNameCase.camel %> !== undefined) where.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
-    if (<%= pkNameCase.camel %> !== undefined) where.id = <%= pkNameCase.camel %>;
+    if (<%= pkNameCase.camel %> !== undefined) where.<%= pkNameCase.snake %> = <%= pkNameCase.camel %>;
 
     return this.paginationService.paginate(
       this.prismaService.<%= tableNameCase.camel %>,
@@ -38,10 +38,10 @@ export class <%= tableNameCase.pascal %>Service {
   }
 
   async update(<%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number, data: UpdateDTO) {
-    return this.prismaService.<%= tableNameCase.camel %>.update({
+    return this.prismaService.<%= tableNameCase.camel %>.updateMany({
       where: { 
         <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
-        id: <%= pkNameCase.camel %>
+        <%= pkNameCase.snake %>: <%= pkNameCase.camel %>
       },
       data,
     });
@@ -57,7 +57,7 @@ export class <%= tableNameCase.pascal %>Service {
     return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
       where: {
         <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
-        id: {
+        <%= pkNameCase.snake %>: {
           in: ids,
         },
       },

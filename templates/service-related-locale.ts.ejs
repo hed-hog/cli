@@ -61,18 +61,18 @@ export class <%= tableNameCase.pascal %>Service {
   }
 
   async update({
-    id,
+    <%= pkNameCase.camel %>,
     data,
     <%= fkNameCase.camel %>,
   }: {
-    id: number;
+    <%= pkNameCase.camel %>: number;
     data: UpdateDTO;
     <%= fkNameCase.camel %>: number;
   }) {
     return this.localeService.updateModelWithLocale(
       this.modelName,
       this.foreignKey,
-      id,
+      <%= pkNameCase.camel %>,
       data,
       {
         <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
@@ -87,10 +87,10 @@ export class <%= tableNameCase.pascal %>Service {
       );
     }
 
-    return this.prismaService.<% tableNameCase.snake %>.deleteMany({
+    return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
       where: {
         <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
-        id: {
+        <%= pkNameCase.snake %>: {
           in: ids,
         },
       },

@@ -30,9 +30,9 @@ export class <%= tableNameCase.pascal %>Controller {
     return this.<%= tableNameCase.camel %>Service.list(paginationParams);
   }
 
-  @Get(':id')
-  async get(@Param('id', ParseIntPipe) id: number) {
-    return this.<%= tableNameCase.camel %>Service.get(id);
+  @Get(':<%= pkNameCase.camel %>')
+  async get(@Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number) {
+    return this.<%= tableNameCase.camel %>Service.get(<%= pkNameCase.camel %>);
   }
 
   @Post()
@@ -40,13 +40,13 @@ export class <%= tableNameCase.pascal %>Controller {
     return this.<%= tableNameCase.camel %>Service.create(data);
   }
 
-  @Patch(':id')
+  @Patch(':<%= pkNameCase.camel %>')
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
     @Body() data: UpdateDTO,
   ) {
     return this.<%= tableNameCase.camel %>Service.update({
-      id,
+      <%= pkNameCase.camel %>,
       data,
     });
   }

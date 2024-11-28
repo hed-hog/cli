@@ -1,5 +1,4 @@
 import { Pagination } from '@hedhog/pagination';
-import { Locale } from '@hedhog/locale';
 import { Role } from '@hedhog/core';
 import {
   Body,
@@ -39,22 +38,21 @@ export class <%= tableNameCase.pascal %>Controller {
   list(
     @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
     @Pagination() paginationParams,
-    @Locale() locale,
   ) {
-    return this.<%= tableNameCase.camel %>Service.list(locale, <%= fkNameCase.camel %>, paginationParams);
+    return this.<%= tableNameCase.camel %>Service.list(<%= fkNameCase.camel %>, paginationParams);
   }
 
-  @Patch(':<%= tableNameCase.camel %>Id')
+  @Patch(':<%= pkNameCase.camel %>')
   update(
     @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
     @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
     @Body() data: UpdateDTO,
   ) {
-    return this.<%= tableNameCase.camel %>Service.update({
-      <%= pkNameCase.snake %>: <%= pkNameCase.camel %>,
+    return this.<%= tableNameCase.camel %>Service.update(
+      <%= fkNameCase.camel %>,
+      <%= pkNameCase.camel %>,
       data,
-      personId,
-    });
+    );
   }
 
   @Delete()

@@ -28,7 +28,7 @@ export class <%= tableNameCase.pascal %>Service {
     );
 
     if (paginationParams.search && !isNaN(+paginationParams.search)) {
-      OR.push({ id: { equals: +paginationParams.search } });
+      OR.push({ <%= pkNameCase.snake %>: { equals: +paginationParams.search } });
     }
 
     return this.paginationService.paginate(
@@ -42,9 +42,9 @@ export class <%= tableNameCase.pascal %>Service {
     );
   }
 
-  async get(<%= fkNameCase.camel %>: number) {
+  async get(<%= pkNameCase.camel %>: number) {
     return this.prismaService.<%= tableNameCase.snake %>.findUnique({
-      where: { id: <%= fkNameCase.camel %> },
+      where: { <%= pkNameCase.snake %>: <%= pkNameCase.camel %> },
     });
   }
 
@@ -54,9 +54,9 @@ export class <%= tableNameCase.pascal %>Service {
     });
   }
 
-  async update({ id, data }: { id: number; data: UpdateDTO }) {
+  async update({ <%= pkNameCase.camel %>, data }: { <%= pkNameCase.camel %>: number; data: UpdateDTO }) {
     return this.prismaService.<%= tableNameCase.snake %>.update({
-      where: { id },
+      where: { <%= pkNameCase.snake %>: <%- pkNameCase.camel %> },
       data,
     });
   }
@@ -70,7 +70,7 @@ export class <%= tableNameCase.pascal %>Service {
 
     return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
       where: {
-        id: {
+        <%= pkNameCase.snake %>: {
           in: ids,
         },
       },

@@ -41,11 +41,11 @@ export class <%= tableNameCase.pascal %>Service {
     );
   }
 
-  async update({ id, data }: { id: number; data: UpdateDTO }) {
+  async update({ <%= pkNameCase.camel %>, data }: { <%= pkNameCase.camel %>: number; data: UpdateDTO }) {
     return this.localeService.updateModelWithLocale(
       this.modelName,
       this.foreignKey,
-      id,
+      <%= pkNameCase.camel %>,
       data,
     );
   }
@@ -59,7 +59,7 @@ export class <%= tableNameCase.pascal %>Service {
 
     return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
       where: {
-        id: {
+        <%= pkNameCase.snake %>: {
           in: ids,
         },
       },

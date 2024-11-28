@@ -170,8 +170,6 @@ export class FileCreator {
   }
 
   private async generateFileContent(fieldsForSearch: string[]) {
-    console.log({ tables: this.options.tablesWithRelations });
-
     const vars: any = {
       tableNameCase: this.table.name,
       fieldsForSearch,
@@ -182,13 +180,21 @@ export class FileCreator {
       hasLocale: this.table.hasLocale,
       fkNameLocaleCase: getLocaleYaml(this.libraryPath, this.table.name),
       module: {
-        imports: [
-          `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
-          `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()} .controller';`,
-        ],
-        controllers: [`${this.table.name.toPascalCase()}Controller`],
-        providers: [`${this.table.name.toPascalCase()}Service`],
-        exports: [`${this.table.name.toPascalCase()}Service`],
+        imports: this.options.importServices
+          ? [
+              `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
+              `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
+            ]
+          : [],
+        controllers: this.options.importServices
+          ? [`${this.table.name.toPascalCase()}Controller`]
+          : [],
+        providers: this.options.importServices
+          ? [`${this.table.name.toPascalCase()}Service`]
+          : [],
+        exports: this.options.importServices
+          ? [`${this.table.name.toPascalCase()}Service`]
+          : [],
       },
     };
     for (const field in vars) {
