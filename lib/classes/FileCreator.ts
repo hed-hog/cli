@@ -180,15 +180,22 @@ export class FileCreator {
   private async generateFileContent(fieldsForSearch: string[]) {
     console.log({ fields: this.options.fields });
 
-    return render(await fs.readFile(this.getTemplatePath(), 'utf-8'), {
-      tableName: toObjectCase(this.table.name),
+    const vars: any = {
+      tableNameCase: this.table.name,
       fieldsForSearch,
-      relatedTableName: toObjectCase(String(this.options.hasRelationsWith)),
+      relatedTableNameCase: String(this.options.hasRelationsWith),
       options: this.options,
-      fkName: toObjectCase(this.table.fkName),
-      pkName: toObjectCase(this.table.pkName),
+      fkNameCase: this.table.fkName,
+      pkNameCase: this.table.pkName,
       hasLocale: hasLocaleYaml(this.libraryPath, this.table.name),
-      foreignKey: getLocaleYaml(this.libraryPath, this.table.name),
-    });
+    };
+
+    for (const field in vars) {
+      if (typeof vars[field] === 'string' && field.endsWith('Case')) {
+        vars[field] = toObjectCase(vars[field]);
+      }
+    }
+
+    return render(await fs.readFile(this.getTemplatePath(), 'utf-8'), vars);
   }
 }
