@@ -8,30 +8,39 @@ declare global {
   }
 }
 
-String.prototype.toCamelCase = function (): string {
-  return this.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) =>
-    index === 0 ? match.toLowerCase() : match.toUpperCase(),
-  ).replace(/\s+/g, '');
+String.prototype.toSnakeCase = function (): string {
+  return this.replace(/-/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, '_')
+    .toLowerCase();
 };
 
 String.prototype.toKebabCase = function (): string {
-  return this.replace(/_/g, '-')
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
+  return this.replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/\s+/g, '-')
     .toLowerCase();
 };
 
 String.prototype.toPascalCase = function (): string {
-  return this.replace(
-    /(\w)(\w*)/g,
-    (_, firstChar, rest) => firstChar.toUpperCase() + rest.toLowerCase(),
-  ).replace(/\s+/g, '');
+  return this.replace(/-/g, ' ')
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(
+      /(\w)(\w*)/g,
+      (_, firstChar, rest) => firstChar.toUpperCase() + rest.toLowerCase(),
+    )
+    .replace(/\s+/g, '');
 };
 
-String.prototype.toSnakeCase = function (): string {
-  return this.replace(/([a-z])([A-Z])/g, '$1_$2')
-    .replace(/\s+/g, '_')
-    .toLowerCase();
+String.prototype.toCamelCase = function (): string {
+  return this.replace(/[-_]+/g, ' ')
+    .replace(
+      /(\w)(\w*)/g,
+      (_, firstChar, rest) => firstChar.toUpperCase() + rest.toLowerCase(),
+    )
+    .replace(/^(\w)/, (match) => match.toLowerCase())
+    .replace(/\s+/g, '');
 };
 
 String.prototype.toScreamingSnakeCase = function (): string {

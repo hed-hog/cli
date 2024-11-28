@@ -1,7 +1,3 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-
 import { Pagination } from '@hedhog/pagination';
 import { Locale } from '@hedhog/locale';
 import {
@@ -18,30 +14,30 @@ import {
 } from '@nestjs/common';
 import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
-import { <%= toPascalCase(tableName) %>Service } from './<%= toKebabCase(tableName) %>.service';
+import { <%= tableNameCase.pascal %>Service } from './<%= tableNameCase.kebab %>.service';
 import { Role, DeleteDTO } from '@hedhog/core';
 
 @Role()
-@Controller('<%= toKebabCase(tableName) %>')
-export class <%= toPascalCase(tableName) %>Controller {
+@Controller('<%= tableNameCase.kebab %>')
+export class <%= tableNameCase.pascal %>Controller {
   constructor(
-    @Inject(forwardRef(() => <%= toPascalCase(tableName) %>Service))
-    private readonly <%= toCamelCase(tableName) %>Service: <%= toPascalCase(tableName) %>Service,
+    @Inject(forwardRef(() => <%= tableNameCase.pascal %>Service))
+    private readonly <%= tableNameCase.camel %>Service: <%= tableNameCase.pascal %>Service,
   ) {}
 
   @Get()
   async list(@Pagination() paginationParams) {
-    return this.<%= toCamelCase(tableName) %>Service.list(paginationParams);
+    return this.<%= tableNameCase.camel %>Service.list(paginationParams);
   }
 
   @Get(':id')
   async get(@Param('id', ParseIntPipe) id: number) {
-    return this.<%= toCamelCase(tableName) %>Service.get(id);
+    return this.<%= tableNameCase.camel %>Service.get(id);
   }
 
   @Post()
   async create(@Body() data: CreateDTO) {
-    return this.<%= toCamelCase(tableName) %>Service.create(data);
+    return this.<%= tableNameCase.camel %>Service.create(data);
   }
 
   @Patch(':id')
@@ -49,7 +45,7 @@ export class <%= toPascalCase(tableName) %>Controller {
     @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateDTO,
   ) {
-    return this.<%= toCamelCase(tableName) %>Service.update({
+    return this.<%= tableNameCase.camel %>Service.update({
       id,
       data,
     });
@@ -57,6 +53,6 @@ export class <%= toPascalCase(tableName) %>Controller {
 
   @Delete()
   async delete(@Body() data: DeleteDTO) {
-    return this.<%= toCamelCase(tableName) %>Service.delete(data);
+    return this.<%= tableNameCase.camel %>Service.delete(data);
   }
 }

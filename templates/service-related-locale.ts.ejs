@@ -1,8 +1,3 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-<% const getFirstWord = (str) => str.split('_')[0]; %>
-<% const getSecondWord = (str) => str.split('_')[1]; %>
-
 import { DeleteDTO } from '@hedhog/core';
 import { LocaleService } from '@hedhog/locale';
 import { PaginationDTO, PaginationService } from '@hedhog/pagination';
@@ -17,9 +12,9 @@ import { CreateDTO } from './dto/create.dto';
 import { UpdateDTO } from './dto/update.dto';
 
 @Injectable()
-export class PersonCustomService {
-  private readonly modelName = 'person_custom';
-  private readonly foreignKey = 'custom_id';
+export class <%= tableNameCase.pascal %>Service {
+  private readonly modelName = '<%= tableNameCase.value %>';
+  private readonly foreignKey = '<%= fkNameLocaleCase.value %>';
 
   constructor(
     @Inject(forwardRef(() => PrismaService))
@@ -32,31 +27,31 @@ export class PersonCustomService {
 
   async list(
     locale: string,
-    personId: number,
+    <%= fkNameCase.camel %>: number,
     paginationParams: PaginationDTO,
   ) {
     const where: any = {};
-    if (personId !== undefined) where.person_id = personId;
+    if (<%= fkNameCase.camel %> !== undefined) where.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
 
     return this.localeService.listModelWithLocale(
       locale,
       this.modelName,
       paginationParams,
       {
-        person_id: personId,
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
       },
     );
   }
 
-  async get(personCustomId: number) {
+  async get(<%= pkNameCase.camel %>: number) {
     return this.localeService.getModelWithLocale(
       this.modelName,
-      personCustomId,
+      <%= pkNameCase.camel %>,
     );
   }
 
-  async create(personId: number, data: CreateDTO) {
-    data.person_id = personId;
+  async create(<%= fkNameCase.camel %>: number, data: CreateDTO) {
+    data.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
 
     return this.localeService.createModelWithLocale(
       this.modelName,
@@ -68,11 +63,11 @@ export class PersonCustomService {
   async update({
     id,
     data,
-    personId,
+    <%= fkNameCase.camel %>,
   }: {
     id: number;
     data: UpdateDTO;
-    personId: number;
+    <%= fkNameCase.camel %>: number;
   }) {
     return this.localeService.updateModelWithLocale(
       this.modelName,
@@ -80,21 +75,21 @@ export class PersonCustomService {
       id,
       data,
       {
-        person_id: personId,
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
       },
     );
   }
 
-  async delete(personId: number, { ids }: DeleteDTO) {
+  async delete(<%= fkNameCase.camel %>: number, { ids }: DeleteDTO) {
     if (ids == undefined || ids == null) {
       throw new BadRequestException(
         'You must select at least one item to delete.',
       );
     }
 
-    return this.prismaService.person_custom.deleteMany({
+    return this.prismaService.<% tableNameCase.snake %>.deleteMany({
       where: {
-        person_id: personId,
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
         id: {
           in: ids,
         },

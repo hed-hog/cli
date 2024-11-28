@@ -21,11 +21,11 @@ export function toPascalCase(str: string): string {
 export function toObjectCase(value: string) {
   return {
     value,
-    toCamelCase: value.toCamelCase(),
-    toSnakeCase: value.toSnakeCase(),
-    toKebabCase: value.toKebabCase(),
-    toPascalCase: value.toPascalCase(),
-    toScreamingSnakeCase: value.toScreamingSnakeCase(),
+    camel: value.toCamelCase(),
+    snake: value.toSnakeCase(),
+    kebab: value.toKebabCase(),
+    pascal: value.toPascalCase(),
+    screamingSnake: value.toScreamingSnakeCase(),
   };
 }
 

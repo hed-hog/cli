@@ -7,7 +7,7 @@ function getLocaleYaml(libraryPath: string, name: string) {
     const filePath = path.join(libraryPath, '..', 'hedhog.yaml');
 
     if (!fs.existsSync(filePath)) {
-      return false;
+      return '';
     }
 
     const fileContents = fs.readFileSync(filePath, 'utf8');
@@ -22,10 +22,10 @@ function getLocaleYaml(libraryPath: string, name: string) {
       }
     }
 
-    return false;
+    return '';
   } catch (e) {
     console.error(e);
-    return false;
+    return '';
   }
 }
 
