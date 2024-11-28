@@ -34,7 +34,7 @@ export class <%= toPascalCase(tableName) %>Service {
     return this.paginationService.paginate(
       this.prismaService.<%= tableName %>,
       {
-        fields: '<%= fields.join(',') %>',
+        fields: '<%= fieldsForSearch.join(',') %>',
       },
       {
         where

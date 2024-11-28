@@ -15,6 +15,10 @@ export class TableApply {
     this.initHasLocale();
   }
 
+  get name() {
+    return this._table.name;
+  }
+
   get baseName() {
     if (!this._baseName) {
       this.initBaseName();

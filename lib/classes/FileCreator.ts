@@ -1,12 +1,13 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { toKebabCase } from '../utils/convert-string-cases';
+import { toKebabCase, toObjectCase } from '../utils/convert-string-cases';
 import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from '../utils/format-with-prettier';
 import { formatTypeScriptCode } from '../utils/format-typescript-code';
 import hasLocaleYaml from '../utils/has-locale-yaml';
 import getLocaleYaml from '../utils/get-fk-locale-yaml';
+import { TableApply } from './TableApply';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -28,14 +29,14 @@ interface IFields {
 
 export class FileCreator {
   private libraryPath: string;
-  private tableName: string;
+  private table: TableApply;
   private fileType: 'controller' | 'service' | 'module' | 'screen';
   private options: IOption;
   private hasLocale?: boolean;
 
   constructor(
     libraryPath: string,
-    tableName: string,
+    table: TableApply,
     fileType: 'controller' | 'service' | 'module' | 'screen',
     options: IOption = {
       useLibraryNamePath: false,
@@ -46,7 +47,7 @@ export class FileCreator {
     hasLocale?: boolean,
   ) {
     this.libraryPath = libraryPath;
-    this.tableName = tableName;
+    this.table = table;
     this.fileType = fileType;
     this.options = options;
     this.hasLocale = hasLocale;
@@ -56,24 +57,34 @@ export class FileCreator {
     const filePath = path.join(
       this.libraryPath,
       this.options.hasRelationsWith ?? '',
-      this.options.useLibraryNamePath ? toKebabCase(this.tableName) : 'src',
+      this.options.useLibraryNamePath ? toKebabCase(this.table.name) : 'src',
     );
+
+    console.log({
+      libraryPath: this.libraryPath,
+      tableName: this.table.name,
+      fileType: this.fileType,
+      options: this.options,
+      hasLocale: this.hasLocale,
+    });
 
     const tablesWithRelations = (this.options.tablesWithRelations ?? [])
       .map((t) => t.relations)
       .flat();
 
     if (
-      tablesWithRelations.includes(this.tableName) &&
+      tablesWithRelations.includes(this.table.name) &&
       this.fileType === 'module'
     ) {
       return;
     }
 
+    console.log({ tablesWithRelations });
+
     if (
       this.options.tablesWithRelations &&
       this.options.tablesWithRelations.length &&
-      this.options.tablesWithRelations[0].name === this.tableName &&
+      this.options.tablesWithRelations[0].name === this.table.name &&
       this.fileType === 'module'
     ) {
       await this.createParentModuleFile(tablesWithRelations);
@@ -89,10 +100,12 @@ export class FileCreator {
       .filter((field) => !field.isPrimary)
       .map((field) => field.name);
 
+    console.log({ fieldsForSearch });
+
     const fileContent = await this.generateFileContent(fieldsForSearch);
     const fileFullPath = path.join(
       filePath,
-      `${toKebabCase(this.tableName)}.${this.fileType}.ts`,
+      `${toKebabCase(this.table.name)}.${this.fileType}.ts`,
     );
 
     console.log('Creating file:', fileFullPath);
@@ -128,7 +141,7 @@ export class FileCreator {
 
     const templateContent = await fs.readFile(templatePath, 'utf-8');
     const data = {
-      tableName: this.tableName,
+      tableName: this.table.name,
       options: {
         importServices: true,
         tablesWithRelations,
@@ -140,38 +153,42 @@ export class FileCreator {
     await fs.writeFile(parentModulePath, formattedContent);
   }
 
-  private async generateFileContent(fieldsForSearch: string[]) {
-    const templatePath = path.join(
-      __dirname,
-      '..',
-      '..',
-      'templates',
-      `${this.fileType}.ts.ejs`,
-    );
-
+  private getTemplatePath() {
+    const baseTemplatePath = path.join(__dirname, '..', '..', 'templates');
+    const templatePath = path.join(baseTemplatePath, `${this.fileType}.ts.ejs`);
     const templateRelationsPath = path.join(
-      __dirname,
-      '..',
-      '..',
-      'templates',
+      baseTemplatePath,
       `${this.fileType}-related.ts.ejs`,
     );
-
-    return render(
-      await fs.readFile(
-        this.options.hasRelationsWith && this.fileType !== 'module'
-          ? templateRelationsPath
-          : templatePath,
-        'utf-8',
-      ),
-      {
-        tableName: this.tableName,
-        libraryName: this.tableName,
-        fieldsForSearch,
-        options: this.options,
-        hasLocale: hasLocaleYaml(this.libraryPath, this.tableName),
-        foreignKey: getLocaleYaml(this.libraryPath, this.tableName),
-      },
+    const templateRelationsLocalePath = path.join(
+      baseTemplatePath,
+      `${this.fileType}-related-locale.ts.ejs`,
     );
+    const templateLocalePath = path.join(
+      baseTemplatePath,
+      `${this.fileType}-locale.ts.ejs`,
+    );
+
+    if (this.hasLocale) {
+      return this.options.hasRelationsWith
+        ? templateRelationsLocalePath
+        : templateLocalePath;
+    }
+    return this.options.hasRelationsWith ? templateRelationsPath : templatePath;
+  }
+
+  private async generateFileContent(fieldsForSearch: string[]) {
+    console.log({ fields: this.options.fields });
+
+    return render(await fs.readFile(this.getTemplatePath(), 'utf-8'), {
+      tableName: toObjectCase(this.table.name),
+      fieldsForSearch,
+      relatedTableName: toObjectCase(String(this.options.hasRelationsWith)),
+      options: this.options,
+      fkName: toObjectCase(this.table.fkName),
+      pkName: toObjectCase(this.table.pkName),
+      hasLocale: hasLocaleYaml(this.libraryPath, this.table.name),
+      foreignKey: getLocaleYaml(this.libraryPath, this.table.name),
+    });
   }
 }

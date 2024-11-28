@@ -1,3 +1,8 @@
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+<% const getFirstWord = (str) => str.split('_')[0]; %>
+<% const getSecondWord = (str) => str.split('_')[1]; %>
+
 import { DeleteDTO } from '@hedhog/core';
 import { LocaleService } from '@hedhog/locale';
 import { PaginationDTO, PaginationService } from '@hedhog/pagination';

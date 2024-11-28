@@ -2,7 +2,9 @@
 <% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
 
-import { Role, OptionalParseIntPipe } from '@hedhog/core';
+import { Pagination } from '@hedhog/pagination';
+import { Locale } from '@hedhog/locale';
+import { Role } from '@hedhog/core';
 import {
   Body,
   Controller,
@@ -12,7 +14,6 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
   Inject,
   forwardRef
 } from '@nestjs/common';
@@ -22,11 +23,11 @@ import { UpdateDTO } from './dto/update.dto';
 import { DeleteDTO } from '@hedhog/core';
 
 @Role()
-@Controller('<%= toCamelCase(tableName) %>/:<%= toCamelCase(fkName) %>/<%= toCamelCase(tableName) %>')
+@Controller('<%= toKebabCase(relatedTableName) %>/:<%= toCamelCase(fkName) %>/<%= toKebabCase(tableName) %>')
 export class <%= toPascalCase(tableName) %>Controller {
 
   constructor(
-    @Inject(forwardRef(() => <%= toCamelCase(tableName) %>Service))
+    @Inject(forwardRef(() => <%= toPascalCase(tableName) %>Service))
     private readonly <%= toCamelCase(tableName) %>Service: <%= toPascalCase(tableName) %>Service
   ) {}
 

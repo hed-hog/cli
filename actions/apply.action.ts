@@ -148,7 +148,7 @@ export class ApplyAction extends AbstractAction {
 
       new FileCreator(
         this.librarySrcPath,
-        table.name,
+        tableApply,
         'service',
         {
           fields: table.columns,
@@ -158,12 +158,12 @@ export class ApplyAction extends AbstractAction {
         hasLocale,
       ).createFile();
 
-      new FileCreator(this.librarySrcPath, table.name, 'controller', {
+      new FileCreator(this.librarySrcPath, tableApply, 'controller', {
         useLibraryNamePath: true,
         hasRelationsWith: screenWithRelations,
       }).createFile();
 
-      new FileCreator(this.librarySrcPath, table.name, 'module', {
+      new FileCreator(this.librarySrcPath, tableApply, 'module', {
         useLibraryNamePath: true,
         importServices: true,
         hasRelationsWith: screenWithRelations,
