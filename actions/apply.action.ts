@@ -26,6 +26,7 @@ import { Table } from '../lib/types/table';
 import { TableFactory } from '../lib/classes/TableFactory';
 import { HedhogFile } from '../lib/classes/HedHogFile';
 import { FileCreator } from '../lib/classes/FileCreator';
+import TemplateProcessor from '../lib/classes/TemplateProcessor';
 
 export class ApplyAction extends AbstractAction {
   private libraryName = '';
@@ -510,8 +511,8 @@ export class ApplyAction extends AbstractAction {
     const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
     const hasLocale = this.hedhogFile.hasLocale(tableName);
     const extraTabs: any[] = [];
-    const extraVars: any[] = [];
-    const extraImports: any[] = [];
+    const extraVariables: any[] = [];
+    const extraImportStatements: any[] = [];
     const relatedItems = tablesWithRelations.flatMap((item) => item.name);
     const relationOfItems = tablesWithRelations
       .filter((i) => i.name.includes(relatedItems))
@@ -533,53 +534,11 @@ export class ApplyAction extends AbstractAction {
         .map((item: any) => item.relations)
         .flat();
 
-      for (const tableName of relationTables) {
-        const variableRendering = render(
-          await readFile(
-            path.join(
-              __dirname,
-              '..',
-              'templates',
-              'panel',
-              'tab-panel-ref.ts.ejs',
-            ),
-            'utf-8',
-          ),
-          { tableNameCase: toObjectCase(tableName) },
-        );
+      const processor = new TemplateProcessor(relationTables, this.libraryName);
+      const { extraVars, extraImports } = await processor.processAllTables();
 
-        const importsRendering = render(
-          await readFile(
-            path.join(
-              __dirname,
-              '..',
-              'templates',
-              'panel',
-              'tab-panel-imports.ts.ejs',
-            ),
-            'utf-8',
-          ),
-          { tableNameCase: toObjectCase(tableName) },
-        );
-
-        extraVars.push(variableRendering);
-        extraImports.push(importsRendering);
-      }
-
-      extraImports.push(
-        render(
-          await readFile(
-            path.join(
-              __dirname,
-              '..',
-              'templates',
-              'custom',
-              'import-use-app.ts.ejs',
-            ),
-            'utf-8',
-          ),
-        ),
-      );
+      extraVariables.push(...extraVars);
+      extraImportStatements.push(...extraImports);
 
       for (const relatedTable of relationOfItems) {
         const table: Table = tables.find(
@@ -635,8 +594,8 @@ export class ApplyAction extends AbstractAction {
           libraryName: this.libraryName,
           fields,
           extraTabs,
-          extraVars: extraVars.join('\n'),
-          extraImports: extraImports.join('\n'),
+          extraVars: extraVariables.join('\n'),
+          extraImports: extraImportStatements.join('\n'),
         },
       },
     ];
