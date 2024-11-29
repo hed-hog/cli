@@ -98,10 +98,6 @@ export class ApplyAction extends AbstractAction {
       }
 
       if (table.name.endsWith('_locale')) {
-        await this.updateTranslationServiceAndController(
-          baseTableName,
-          screenWithRelations,
-        );
         continue;
       }
 
@@ -623,44 +619,6 @@ export class ApplyAction extends AbstractAction {
           await writeFile(outputFilePath, formattedContent);
         }
       }
-    }
-  }
-
-  async updateTranslationServiceAndController(
-    baseTableName: string,
-    hasRelationsWith: string,
-  ) {
-    const controllerFilePath = path.join(
-      this.librarySrcPath,
-      hasRelationsWith ?? '',
-      baseTableName.toKebabCase(),
-      `${baseTableName.toKebabCase()}.controller.ts`,
-    );
-
-    try {
-      let controllerContent = await readFile(controllerFilePath, 'utf-8');
-      const localeDecorator = '@Locale() locale';
-      if (!controllerContent.includes(localeDecorator)) {
-        controllerContent = controllerContent.replace(
-          `async list(@Pagination() paginationParams) {`,
-          `async list(@Pagination() paginationParams, ${localeDecorator}){`,
-        );
-
-        controllerContent = controllerContent.replace(
-          `return this.${baseTableName.toCamelCase()}Service.list(paginationParams)`,
-          `return this.${baseTableName.toCamelCase()}Service.list(locale, paginationParams)`,
-        );
-      }
-
-      const importStatement = "import { Locale } from '@hedhog/locale';";
-      if (!controllerContent.includes(importStatement)) {
-        controllerContent = `${importStatement}\n${controllerContent}`;
-      }
-
-      const formattedContent = await formatTypeScriptCode(controllerContent);
-      await writeFile(controllerFilePath, formattedContent);
-    } catch (error) {
-      console.error(`Erro ao modificar controller: ${error.message}`);
     }
   }
 
