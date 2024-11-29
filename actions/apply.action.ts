@@ -3,7 +3,7 @@ import { AbstractAction } from '.';
 import { Input } from '../commands';
 import path = require('path');
 import * as yaml from 'yaml';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { DTOCreator } from '../lib/classes/DtoCreator';
 import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
 import { toObjectCase } from '../lib/utils/convert-string-cases';
@@ -137,6 +137,8 @@ export class ApplyAction extends AbstractAction {
         tablesWithRelations,
       }).createFile();
 
+      await this.addModuleTranslation();
+
       await createScreen(
         this.libraryFrontEndPath,
         this.libraryName,
@@ -167,9 +169,7 @@ export class ApplyAction extends AbstractAction {
     }
 
     const dependencyTables = await this.checkRelationsTable(tables);
-
     await addPackageJsonPeerDependencies(this.libraryName, dependencyTables);
-
     await this.installDependencies(
       this.libraryPath,
       [{ name: '', value: '' }],
@@ -180,7 +180,6 @@ export class ApplyAction extends AbstractAction {
       await readFile(this.hedhogFilePath, 'utf-8'),
     );
     const screensArray = Object.keys(hedhogFile2.screens);
-
     const YAMLContent = await readFile(this.hedhogFilePath, 'utf-8');
     const yamlData = yaml.parse(YAMLContent);
 
@@ -226,6 +225,40 @@ export class ApplyAction extends AbstractAction {
       routes: yamlData.routes,
     });
     await writeFile(this.hedhogFilePath, updatedYAML, 'utf-8');
+  }
+
+  async addModuleTranslation() {
+    const enTranslations: Record<string, string> = {};
+    const ptTranslations: Record<string, string> = {};
+
+    Object.entries(this.hedhogFile.screens).forEach(([key, value]) => {
+      enTranslations[key] = value.title.en;
+      ptTranslations[key] = value.title.pt;
+
+      if (value.relations) {
+        Object.entries(value.relations).forEach(
+          ([relationKey, relationValue]) => {
+            enTranslations[relationKey] = (relationValue as any).title.en;
+            ptTranslations[relationKey] = (relationValue as any).title.pt;
+          },
+        );
+      }
+    });
+    const enContent = JSON.stringify(enTranslations, null, 2);
+    const ptContent = JSON.stringify(ptTranslations, null, 2);
+
+    const basePath = path.join(
+      this.rootPath,
+      'lib',
+      'libs',
+      this.libraryName.toKebabCase(),
+      'frontend',
+      'translation',
+    );
+
+    mkdirSync(basePath, { recursive: true });
+    writeFileSync(path.join(basePath, 'en.json'), enContent, 'utf8');
+    writeFileSync(path.join(basePath, 'pt.json'), ptContent, 'utf8');
   }
 
   async screensWithRelations() {
