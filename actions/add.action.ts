@@ -412,6 +412,23 @@ export class AddAction extends AbstractAction {
         const frontendDestPath = join(this.directoryPath, 'admin', 'src');
         this.createScreenRouterFile();
 
+        const translationPath = join(frontendPath, 'translation');
+        if (existsSync(translationPath)) {
+          const localesDestPath = join(frontendDestPath, 'locales');
+          await mkdirRecursive(localesDestPath);
+
+          for (const localeFile of await readdir(translationPath)) {
+            const localeCode = localeFile.split('.')[0];
+            const localeDestPath = join(
+              localesDestPath,
+              localeCode,
+              'modules.json',
+            );
+            await mkdirRecursive(join(localesDestPath, localeCode));
+            await copyFile(join(translationPath, localeFile), localeDestPath);
+          }
+        }
+
         if (existsSync(handlersPath)) {
           this.showDebug('handlersPath', handlersPath);
           await mkdirRecursive(join(frontendFeaturesDestPath, dir));
