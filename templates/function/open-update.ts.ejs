@@ -1,7 +1,7 @@
-const openUpdate = (item: <%= tableNameRelatedCase.pascal %>) => {
-    const id = openSheet({
+const openUpdate<%= tableNameRelatedCase.pascal %> = (item: <%= tableNameRelatedCase.pascal %>) => {
+    const id = openDialog({
       children: () => (
-        <<%= tableNameRelatedCase.pascal %>UpdatePanel data={item} onUpdated={() => closeSheet(id)} />
+        <<%= tableNameRelatedCase.pascal %>UpdatePanel data={item} onUpdated={() => closeDialog(id)} />
       ),
       title: t('edit', { ns: '<%= tableNameRelatedCase.kebab %>' }),
       description: t('editText', { ns: '<%= tableNameRelatedCase.kebab %>' }),

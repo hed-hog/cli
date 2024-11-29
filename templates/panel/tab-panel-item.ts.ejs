@@ -22,7 +22,7 @@
       text: t('add', { ns: 'actions' }),
       variant: 'default',
       onClick: () => {
-        openCreate()
+        openCreate<%= tableNameRelatedCase.pascal %>()
       },
     },
     {
