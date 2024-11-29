@@ -118,6 +118,7 @@ export class FileCreator {
       '..',
       '..',
       'templates',
+      'module',
       'module-related.ts.ejs',
     );
 
@@ -137,17 +138,24 @@ export class FileCreator {
 
   private getTemplatePath() {
     const baseTemplatePath = path.join(__dirname, '..', '..', 'templates');
-    const templatePath = path.join(baseTemplatePath, `${this.fileType}.ts.ejs`);
+    const templatePath = path.join(
+      baseTemplatePath,
+      this.fileType,
+      `${this.fileType}.ts.ejs`,
+    );
     const templateRelationsPath = path.join(
       baseTemplatePath,
+      this.fileType,
       `${this.fileType}-related.ts.ejs`,
     );
     const templateRelationsLocalePath = path.join(
       baseTemplatePath,
+      this.fileType,
       `${this.fileType}-related-locale.ts.ejs`,
     );
     const templateLocalePath = path.join(
       baseTemplatePath,
+      this.fileType,
       `${this.fileType}-locale.ts.ejs`,
     );
 

@@ -1,2 +1,0 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-import { <%- toPascalCase(tableName) %> } from '@/types/models/<%= toPascalCase(tableName) %>.ts'

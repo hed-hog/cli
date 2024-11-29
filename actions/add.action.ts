@@ -548,6 +548,7 @@ export class AddAction extends AbstractAction {
         __dirname,
         '..',
         'templates',
+        'route',
         'router.tsx.ejs',
       );
       const routerDestPath = join(frontendDestPath, 'router.tsx');

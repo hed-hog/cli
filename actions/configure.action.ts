@@ -75,7 +75,7 @@ export class ConfigureAction extends AbstractAction {
 
       const assistenteInstructions = render(
         await readFile(
-          join(__dirname, '..', 'templates', 'assistent.ejs'),
+          join(__dirname, '..', 'templates', 'custom', 'assistent.ejs'),
           'utf-8',
         ),
       );

@@ -19,6 +19,25 @@
   ),
   buttons: [
     {
+      text: t('add', { ns: 'actions' }),
+      variant: 'default',
+      onClick: () => {
+        const openCreate = () => {
+          const id = openSheet({
+            title: t('create', { ns: 'actions' }),
+            description: t('createText', { ns: '<%= tableNameCase.kebab %>' }),
+            children: () => (
+              <<%= tableNameCase.pascal %>CreatePanel onCreated={() => closeSheet(id)} />
+            ),
+          })
+      
+          return id
+        }
+
+        openCreate()
+      },
+    },
+    {
       text: t('apply', { ns: 'actions' }),
       variant: 'default',
       onClick: () => {},

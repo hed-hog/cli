@@ -3,7 +3,7 @@ import { AbstractAction } from '.';
 import { Input } from '../commands';
 import path = require('path');
 import * as yaml from 'yaml';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, read, readFileSync, writeFileSync } from 'fs';
 import { DTOCreator } from '../lib/classes/DtoCreator';
 import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
 import { toObjectCase } from '../lib/utils/convert-string-cases';
@@ -359,6 +359,7 @@ export class ApplyAction extends AbstractAction {
           __dirname,
           '..',
           'templates',
+          'translation',
           'translation.json.ejs',
         );
         let fileContent = render(await readFile(templatePath, 'utf-8'), {
@@ -519,7 +520,13 @@ export class ApplyAction extends AbstractAction {
 
     if (relatedItems.includes(tableName)) {
       const templateContent = await readFile(
-        path.join(__dirname, '..', 'templates', 'tab-panel-item.ts.ejs'),
+        path.join(
+          __dirname,
+          '..',
+          'templates',
+          'panel',
+          'tab-panel-item.ts.ejs',
+        ),
         'utf-8',
       );
 
@@ -530,23 +537,50 @@ export class ApplyAction extends AbstractAction {
       for (const tableName of relationTables) {
         const variableRendering = render(
           await readFile(
-            path.join(__dirname, '..', 'templates', 'tab-panel-ref.ts.ejs'),
+            path.join(
+              __dirname,
+              '..',
+              'templates',
+              'panel',
+              'tab-panel-ref.ts.ejs',
+            ),
             'utf-8',
           ),
-          { tableName },
+          { tableNameCase: toObjectCase(tableName) },
         );
 
         const importsRendering = render(
           await readFile(
-            path.join(__dirname, '..', 'templates', 'tab-panel-imports.ts.ejs'),
+            path.join(
+              __dirname,
+              '..',
+              'templates',
+              'panel',
+              'tab-panel-imports.ts.ejs',
+            ),
             'utf-8',
           ),
-          { tableName },
+          { tableNameCase: toObjectCase(tableName) },
         );
 
         extraVars.push(variableRendering);
         extraImports.push(importsRendering);
       }
+
+      extraImports.push(
+        render(
+          await readFile(
+            path.join(
+              __dirname,
+              '..',
+              'templates',
+              'custom',
+              'import-use-app.ts.ejs',
+            ),
+            'utf-8',
+          ),
+        ),
+      );
 
       for (const relatedTable of relationOfItems) {
         const table: Table = tables.find(
@@ -584,6 +618,7 @@ export class ApplyAction extends AbstractAction {
     const tasks = [
       {
         subPath: 'react-query',
+        templateSubPath: 'async',
         templates: [
           'requests.ts.ejs',
           'requests-related.ts.ejs',
@@ -593,6 +628,7 @@ export class ApplyAction extends AbstractAction {
       },
       {
         subPath: 'components',
+        templateSubPath: 'panel',
         templates: ['create-panel.ts.ejs', 'update-panel.ts.ejs'],
         data: {
           tableName,
@@ -600,7 +636,7 @@ export class ApplyAction extends AbstractAction {
           libraryName: this.libraryName,
           fields,
           extraTabs,
-          extraVars,
+          extraVars: extraVars.join('\n'),
           extraImports: extraImports.join('\n'),
         },
       },
@@ -633,6 +669,7 @@ export class ApplyAction extends AbstractAction {
             __dirname,
             '..',
             'templates',
+            task.templateSubPath,
             template,
           );
           const fileContent = render(

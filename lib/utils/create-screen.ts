@@ -47,6 +47,7 @@ export async function createScreen(
     '..',
     '..',
     'templates',
+    fileType,
     `${fileType}.ts.ejs`,
   );
 
