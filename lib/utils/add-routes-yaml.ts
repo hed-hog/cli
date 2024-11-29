@@ -1,34 +1,25 @@
-import * as fs from 'fs';
-import * as yaml from 'yaml';
-import path = require('path');
 import { Menu } from '../types/menu';
 import { Screen } from '../types/screen';
+import { HedhogFile, Route } from '../classes/HedHogFile';
+import { join } from 'path';
 
-interface Route {
-  url: string;
-  method: string;
-  relations?: any;
-}
-
-interface HedhogData {
-  route?: Route[];
-  menu?: Menu[];
-  screen?: Screen[];
-}
-
-interface HedhogYaml {
-  data?: HedhogData;
-}
-
-export const addRoutesToYaml = (
+export const addRoutesToYaml = async (
   libraryPath: string,
   tableName: string,
   hasRelationsWith?: string,
-): void => {
+) => {
   try {
-    const filePath = path.join(libraryPath, '..', 'hedhog.yaml');
-    const fileContents = fs.readFileSync(filePath, 'utf8');
-    const yamlData: HedhogYaml = yaml.parse(fileContents) as HedhogYaml;
+    const filePath = join(libraryPath, '..', 'hedhog.yaml');
+    const hedhogFile = await new HedhogFile().load(filePath);
+
+    const table = hedhogFile.getTable(tableName);
+    const { data } = hedhogFile;
+
+    const primaryKeys = table.columns.filter(
+      (column) => column.type === 'pk' || column.isPrimary,
+    );
+
+    const primaryKey = primaryKeys.length ? primaryKeys[0].name : 'id';
 
     const relations = {
       role: [
@@ -40,33 +31,29 @@ export const addRoutesToYaml = (
       ],
     };
 
-    if (!yamlData.data) {
-      yamlData.data = {};
-    }
-
-    if (!yamlData.data.route) {
-      yamlData.data.route = [];
+    if (!data.route) {
+      data.route = [];
     }
 
     const newRoutes: Route[] = hasRelationsWith
       ? [
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName}`,
             method: 'GET',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName}`,
             method: 'POST',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}/:${tableName.split('_')[1]}Id`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName}/:${primaryKey}`,
             method: 'PATCH',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName.split('_')[1]}`,
+            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName}`,
             method: 'DELETE',
             relations,
           },
@@ -74,9 +61,13 @@ export const addRoutesToYaml = (
       : [
           { url: `/${tableName.toKebabCase()}`, method: 'GET', relations },
           { url: `/${tableName.toKebabCase()}`, method: 'POST', relations },
-          { url: `/${tableName.toKebabCase()}/:id`, method: 'GET', relations },
           {
-            url: `/${tableName.toKebabCase()}/:id`,
+            url: `/${tableName.toKebabCase()}/:${primaryKey}`,
+            method: 'GET',
+            relations,
+          },
+          {
+            url: `/${tableName.toKebabCase()}/:${primaryKey}`,
             method: 'PATCH',
             relations,
           },
@@ -89,16 +80,16 @@ export const addRoutesToYaml = (
 
     for (const route of newRoutes) {
       if (
-        !yamlData.data.route.some(
-          (r) => r.url === route.url && r.method === route.method,
+        !data.route.some(
+          (r: any) => r.url === route.url && r.method === route.method,
         )
       ) {
-        yamlData.data.route.push(route);
+        data.route.push(route);
       }
     }
 
-    if (!yamlData.data.menu) {
-      yamlData.data.menu = [];
+    if (!data.menu) {
+      data.menu = [];
     }
 
     const newMenus: Menu[] = [
@@ -115,13 +106,13 @@ export const addRoutesToYaml = (
     ];
 
     for (const menu of newMenus) {
-      if (!yamlData.data.menu.some((m) => m.slug === menu.slug)) {
-        yamlData.data.menu.push(menu);
+      if (!data.menu.some((m: any) => m.slug === menu.slug)) {
+        data.menu.push(menu);
       }
     }
 
-    if (!yamlData.data.screen) {
-      yamlData.data.screen = [];
+    if (!data.screen) {
+      data.screen = [];
     }
 
     const newScreens: Screen[] = [
@@ -140,13 +131,15 @@ export const addRoutesToYaml = (
     ];
 
     for (const screen of newScreens) {
-      if (!yamlData.data.screen.some((s) => s.slug === screen.slug)) {
-        yamlData.data.screen.push(screen);
+      if (!data.screen.some((s: any) => s.slug === screen.slug)) {
+        data.screen.push(screen);
       }
     }
 
-    const newYamlContent = yaml.stringify(yamlData);
-    fs.writeFileSync(filePath, newYamlContent, 'utf8');
+    hedhogFile.data = data;
+
+    await hedhogFile.save();
+
     console.info(`Routes added to ${filePath}`);
   } catch (error) {
     console.error('Error processing the YAML file:', error);

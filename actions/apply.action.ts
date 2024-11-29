@@ -186,6 +186,17 @@ export class ApplyAction extends AbstractAction {
     );
     const screensArray = Object.keys(hedhogFile2.screens);
 
+    const YAMLContent = await readFile(this.hedhogFilePath, 'utf-8');
+    const yamlData = yaml.parse(YAMLContent);
+
+    yamlData.routes = [];
+
+    const updatedYAML = yaml.stringify({
+      ...yamlData,
+      routes: yamlData.routes,
+    });
+    await writeFile(this.hedhogFilePath, updatedYAML, 'utf-8');
+
     for (const screen of screensArray) {
       await this.createScreenRouterFile(screen);
     }
@@ -469,7 +480,7 @@ export class ApplyAction extends AbstractAction {
       }));
 
     const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
-    const hasLocale = hasLocaleYaml(this.librarySrcPath, tableName);
+    const hasLocale = this.hedhogFile.hasLocale(tableName);
     const extraTabs: any[] = [];
     const extraVars: any[] = [];
     const extraImports: any[] = [];
