@@ -39,7 +39,7 @@ export class <%= tableNameCase.pascal %>Controller {
     @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
     @Pagination() paginationParams,
   ) {
-    return this.<%= tableNameCase.camel %>Service.list(<%= fkNameCase.camel %>, paginationParams);
+    return this.<%= tableNameCase.camel %>Service.list(paginationParams, <%= fkNameCase.camel %>);
   }
 
   @Patch(':<%= pkNameCase.camel %>')

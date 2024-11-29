@@ -1,4 +1,4 @@
-import { PaginationService } from '@hedhog/pagination';
+import { PaginationService, PaginationDTO } from '@hedhog/pagination';
 import { PrismaService } from '@hedhog/prisma';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateDTO } from './dto/create.dto';
@@ -13,7 +13,7 @@ export class <%= tableNameCase.pascal %>Service {
   ) {}
 
   async create(<%= fkNameCase.camel %>: number, data: CreateDTO) {
-    return this.prismaService.<%= tableNameCase.camel %>.create({
+    return this.prismaService.<%= tableNameCase.snake %>.create({
       data: {
         <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
         ...data,
@@ -21,15 +21,15 @@ export class <%= tableNameCase.pascal %>Service {
     });
   }
 
-  async list(<%= fkNameCase.camel %>?: number, <%= pkNameCase.camel %>?: number) {
+  async list(paginationParams: PaginationDTO, <%= fkNameCase.camel %>?: number) {
     const where: any = {};
     if (<%= fkNameCase.camel %> !== undefined) where.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
-    if (<%= pkNameCase.camel %> !== undefined) where.<%= pkNameCase.snake %> = <%= pkNameCase.camel %>;
 
     return this.paginationService.paginate(
-      this.prismaService.<%= tableNameCase.camel %>,
+      this.prismaService.<%= tableNameCase.snake %>,
       {
         fields: '<%= fieldsForSearch.join(',') %>',
+        ...paginationParams,
       },
       {
         where
@@ -38,7 +38,7 @@ export class <%= tableNameCase.pascal %>Service {
   }
 
   async update(<%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number, data: UpdateDTO) {
-    return this.prismaService.<%= tableNameCase.camel %>.updateMany({
+    return this.prismaService.<%= tableNameCase.snake %>.updateMany({
       where: { 
         <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
         <%= pkNameCase.snake %>: <%= pkNameCase.camel %>
