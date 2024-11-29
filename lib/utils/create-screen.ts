@@ -1,7 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as yaml from 'yaml';
-import { toKebabCase } from './convert-string-cases';
 import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from './format-with-prettier';
