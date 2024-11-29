@@ -643,10 +643,6 @@ export class ApplyAction extends AbstractAction {
     ];
 
     for (const task of tasks) {
-      if (!(await filterScreenCreation(this.librarySrcPath, tableName, task))) {
-        continue;
-      }
-
       const taskPath = path.join(
         frontendPath,
         tableName.toKebabCase(),

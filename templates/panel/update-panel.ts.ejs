@@ -27,8 +27,7 @@ const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
     const { data: item, isLoading } = use<%= toPascalCase(tableName) %>Get(data.id as number)
     const { mutate: <%= toCamelCase(tableName) %>Update } = use<%= toPascalCase(tableName) %>Update()
     const formRef = useRef<FormPanelRef>(null)
-    const { openSheet, confirm, closeSheet } = useApp();
-
+      
     <%- extraVars %>
 
     useEffectAfterFirstUpdate(() => {
