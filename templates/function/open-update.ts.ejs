@@ -1,0 +1,11 @@
+const openUpdate = (item: <%= tableNameRelatedCase.pascal %>) => {
+    const id = openSheet({
+      children: () => (
+        <<%= tableNameRelatedCase.pascal %>UpdatePanel data={item} onUpdated={() => closeSheet(id)} />
+      ),
+      title: t('edit', { ns: '<%= tableNameRelatedCase.kebab %>' }),
+      description: t('editText', { ns: '<%= tableNameRelatedCase.kebab %>' }),
+    })
+
+    return id
+}

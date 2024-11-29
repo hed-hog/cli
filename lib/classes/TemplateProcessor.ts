@@ -7,6 +7,7 @@ class TemplateProcessor {
   private relationTables: any[];
   private panelTemplatePath: string;
   private customTemplatePath: string;
+  private functionTemplatePath: string;
   private extraVars: string[];
   private extraImports: string[];
   private libraryName: string;
@@ -15,6 +16,13 @@ class TemplateProcessor {
     this.libraryName = libraryName;
     this.relationTables = relationTables;
     this.panelTemplatePath = join(__dirname, '..', '..', 'templates', 'panel');
+    this.functionTemplatePath = join(
+      __dirname,
+      '..',
+      '..',
+      'templates',
+      'function',
+    );
     this.customTemplatePath = join(
       __dirname,
       '..',
@@ -61,6 +69,26 @@ class TemplateProcessor {
     return { variableRendering, importPanelRendering, importsRendering };
   }
 
+  private async processRelatedFunctions(relatedTable: string): Promise<{
+    openUpdateRendering: string;
+    openCreateRendering: string;
+  }> {
+    const tableNameRelatedCase = toObjectCase(relatedTable);
+
+    const [openUpdateRendering, openCreateRendering] = await Promise.all([
+      this.renderTemplate(
+        join(this.functionTemplatePath, 'open-update.ts.ejs'),
+        { tableNameRelatedCase },
+      ),
+      this.renderTemplate(
+        join(this.functionTemplatePath, 'open-create.ts.ejs'),
+        { tableNameRelatedCase },
+      ),
+    ]);
+
+    return { openUpdateRendering, openCreateRendering };
+  }
+
   private async processStaticImports(): Promise<void> {
     const [useAppVars, useAppImports] = await Promise.all([
       this.renderTemplate(join(this.customTemplatePath, 'use-app-vars.ts.ejs')),
@@ -77,16 +105,19 @@ class TemplateProcessor {
     extraVars: string[];
     extraImports: string[];
   }> {
-    // Process static imports
     await this.processStaticImports();
-
-    // Process dynamic tables
     for (const tableName of this.relationTables) {
-      console.log({ relationTables: this.relationTables }); // Log for debugging
       const { variableRendering, importPanelRendering, importsRendering } =
         await this.processTable(tableName);
 
-      this.extraVars.push(variableRendering);
+      const { openUpdateRendering, openCreateRendering } =
+        await this.processRelatedFunctions(tableName);
+
+      this.extraVars.push(
+        variableRendering,
+        openCreateRendering,
+        openUpdateRendering,
+      );
       this.extraImports.push(importPanelRendering, importsRendering);
     }
 

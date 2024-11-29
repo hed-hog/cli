@@ -536,7 +536,6 @@ export class ApplyAction extends AbstractAction {
 
       const processor = new TemplateProcessor(relationTables, this.libraryName);
       const { extraVars, extraImports } = await processor.processAllTables();
-
       extraVariables.push(...extraVars);
       extraImportStatements.push(...extraImports);
 

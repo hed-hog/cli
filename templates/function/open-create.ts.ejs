@@ -1,0 +1,11 @@
+const openCreate<%= tableNameRelatedCase.camel %> = () => {
+    const id = openDialog({
+      title: t('create', { ns: 'actions' }),
+      description: t('createText', { ns: '<%= tableNameRelatedCase.kebab %>' }),
+      children: () => (
+        <<%= tableNameRelatedCase.pascal %>CreatePanel onCreated={() => closeDialog(id)} />
+      ),
+    })
+
+    return id
+}
