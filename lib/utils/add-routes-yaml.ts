@@ -38,22 +38,22 @@ export const addRoutesToYaml = async (
     const newRoutes: Route[] = hasRelationsWith
       ? [
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName}`,
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
             method: 'GET',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName}`,
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
             method: 'POST',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName}/:${primaryKey}`,
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
             method: 'PATCH',
             relations,
           },
           {
-            url: `/${hasRelationsWith}/:${hasRelationsWith}Id/${tableName}`,
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
             method: 'DELETE',
             relations,
           },
