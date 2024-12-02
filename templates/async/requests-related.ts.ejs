@@ -3,7 +3,6 @@
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
 <% const getFirstName = (str) => str.split('_')[0] %>
 <% const getSecondName = (str) => str.split('_')[1] %>
-<%- hasLocale ? "import { formatDataWithLocale } from '@hedhog/utils'" : "" %>	
 
 import { useApp } from "@/hooks/use-app";
 import { Delete, PaginationParams, PaginationResult } from "@/types";
