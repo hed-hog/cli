@@ -72,21 +72,27 @@ class TemplateProcessor {
   private async processRelatedFunctions(relatedTable: string): Promise<{
     openUpdateRendering: string;
     openCreateRendering: string;
+    openDeleteRendering: string;
   }> {
     const tableNameRelatedCase = toObjectCase(relatedTable);
 
-    const [openUpdateRendering, openCreateRendering] = await Promise.all([
-      this.renderTemplate(
-        join(this.functionTemplatePath, 'open-update.ts.ejs'),
-        { tableNameRelatedCase },
-      ),
-      this.renderTemplate(
-        join(this.functionTemplatePath, 'open-create.ts.ejs'),
-        { tableNameRelatedCase },
-      ),
-    ]);
+    const [openUpdateRendering, openCreateRendering, openDeleteRendering] =
+      await Promise.all([
+        this.renderTemplate(
+          join(this.functionTemplatePath, 'open-update.ts.ejs'),
+          { tableNameRelatedCase },
+        ),
+        this.renderTemplate(
+          join(this.functionTemplatePath, 'open-create.ts.ejs'),
+          { tableNameRelatedCase },
+        ),
+        this.renderTemplate(
+          join(this.functionTemplatePath, 'open-delete.ts.ejs'),
+          { tableNameRelatedCase, libraryName: this.libraryName },
+        ),
+      ]);
 
-    return { openUpdateRendering, openCreateRendering };
+    return { openUpdateRendering, openCreateRendering, openDeleteRendering };
   }
 
   private async processStaticImports(): Promise<void> {
@@ -110,13 +116,14 @@ class TemplateProcessor {
       const { variableRendering, importPanelRendering, importsRendering } =
         await this.processTable(tableName);
 
-      const { openUpdateRendering, openCreateRendering } =
+      const { openUpdateRendering, openCreateRendering, openDeleteRendering } =
         await this.processRelatedFunctions(tableName);
 
       this.extraVars.push(
         variableRendering,
         openCreateRendering,
         openUpdateRendering,
+        openDeleteRendering,
       );
       this.extraImports.push(importPanelRendering, importsRendering);
     }
