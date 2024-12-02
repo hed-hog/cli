@@ -17,7 +17,9 @@ export function requests() {
     }).then((res) => res.data);
   };
 
-  const <%= tableNameCase.camel %>Create = async ( <%= fkNameCase.camel %>: number, data: <%= tableNameCase.pascal %>Type) => {
+  const <%= tableNameCase.camel %>Create = async (params: { <%= fkNameCase.camel %>: number, data: <%= tableNameCase.pascal %>Type }) => {
+    const { <%= fkNameCase.camel %>, data } = params 
+    
     return request<<%= tableNameCase.pascal %>Type>({
       url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>`,
       method: HttpMethod.POST,
