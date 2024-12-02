@@ -69,6 +69,7 @@ export class CreateAction extends AbstractAction {
 
     new FileCreator(
       libraryPath,
+      libraryName,
       { name: libraryName } as TableApply,
       'module',
     ).createFile();
