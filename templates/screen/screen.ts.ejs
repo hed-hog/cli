@@ -14,12 +14,12 @@ export default function Page() {
   const [selectedItems, setSelectedItems] = useState<<%= tableNameCase.pascal %>[]>([])
   const { mutate: delete<%= tableNameCase.pascal %> } = use<%= tableNameCase.pascal %>Delete()
   const { openSheet, confirm, closeSheet } = useApp()
-  const { t } = useTranslation(['<%= tableNameCase.kebab %>', 'modules', 'actions'])
+  const { t } = useTranslation(['<%= libraryName %>.<%= tableNameCase.kebab %>', 'modules', 'actions'])
 
   const openCreate = () => {
     const id = openSheet({
-      title: t('create', { ns: 'actions' }),
-      description: t('createText', { ns: '<%= tableNameCase.kebab %>' }),
+      title: t('create', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+      description: t('createText', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
       children: () => (
         <<%= tableNameCase.pascal %>CreatePanel onCreated={() => closeSheet(id)} />
       ),
@@ -30,8 +30,8 @@ export default function Page() {
 
   const openDelete = (items: <%= tableNameCase.pascal %>[]) => {
     return confirm({
-      title: `${t('delete', { ns: 'actions' })} ${items.length} ${isPlural(items.length) ? t('items', { ns: 'actions' }) : t('item', { ns: 'actions' })}`,
-      description: t('deleteText', { ns: '<%= tableNameCase.kebab %>' }),
+      title: `${t('delete', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' })} ${items.length} ${isPlural(items.length) ? t('items', { ns: 'actions' }) : t('item', { ns: 'actions' })}`,
+      description: t('deleteText', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
     })
       .then(() =>
         delete<%= tableNameCase.pascal %>(
@@ -46,8 +46,8 @@ export default function Page() {
       children: () => (
         <<%= tableNameCase.pascal %>UpdatePanel data={item} onUpdated={() => closeSheet(id)} />
       ),
-      title: t('edit', { ns: '<%= tableNameCase.kebab %>' }),
-      description: t('editText', { ns: '<%= tableNameCase.kebab %>' }),
+      title: t('edit', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+      description: t('editText', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
     })
 
     return id
@@ -74,7 +74,7 @@ export default function Page() {
           {
             icon: <IconEdit className='mr-1 w-8 cursor-pointer' />,
             label: t('edit', { ns: 'actions' }),
-            tooltip: t('editTooltip', { ns: '<%= tableNameCase.kebab %>' }),
+            tooltip: t('editTooltip', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
             handler: (items: <%= tableNameCase.pascal %>[]) => {
               if (items.length === 1) openUpdate(items[0])
             },
@@ -83,7 +83,7 @@ export default function Page() {
           {
             icon: <IconTrash className='mr-1 w-8 cursor-pointer' />,
             label: t('delete', { ns: 'actions' }),
-            tooltip: t('deleteTooltip', { ns: '<%= tableNameCase.kebab %>' }),
+            tooltip: t('deleteTooltip', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
             variant: 'destructive',
             handler: (items: <%= tableNameCase.pascal %>[]) => {
               openDelete(items)
@@ -93,7 +93,7 @@ export default function Page() {
           {
             icon: <IconPlus className='mr-1 w-8 cursor-pointer' />,
             label: t('create', { ns: 'actions' }),
-            tooltip: t('createTooltip', { ns: '<%= tableNameCase.kebab %>' }),
+            tooltip: t('createTooltip', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
             variant: 'default',
             handler: () => {
               openCreate()
