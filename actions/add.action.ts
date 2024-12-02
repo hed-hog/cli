@@ -289,6 +289,11 @@ export class AddAction extends AbstractAction {
     parentPath: string,
     routeObjects: RouteObject[],
   ) {
+    console.log('extractPathsFromRoutes', {
+      parentPath,
+      routeObjects,
+    });
+
     for (const routeObject of routeObjects) {
       const fullPath = [parentPath, routeObject.path]
         .join('/')
@@ -375,6 +380,18 @@ export class AddAction extends AbstractAction {
     return file.replace('.ejs', '');
   }
 
+  async createModuleRoutesFile(hedhogPath: string, frontendDestPath: string) {
+    const hedHogFile = YAML.parse(await readFile(hedhogPath, 'utf-8'));
+
+    if (hedHogFile.routes) {
+      await writeFile(
+        join(frontendDestPath, 'routes', 'modules', `${this.module}.yaml`),
+        YAML.stringify({ routes: hedHogFile.routes }),
+        'utf-8',
+      );
+    }
+  }
+
   async copyFrontEndFiles() {
     this.showDebug('copyFrontEndFiles', {
       directoryPath: this.directoryPath,
@@ -383,6 +400,7 @@ export class AddAction extends AbstractAction {
     });
 
     if (existsSync(join(this.nodeModulePath, 'frontend'))) {
+      const hedhogPath = join(this.nodeModulePath, 'hedhog.yaml');
       const frontendPath = join(this.nodeModulePath, 'frontend');
       const frontendDestPath = join(this.directoryPath, 'admin', 'src');
       const frontendPagesDestPath = join(
@@ -514,6 +532,8 @@ export class AddAction extends AbstractAction {
         }
       }
 
+      await this.createModuleRoutesFile(hedhogPath, frontendDestPath);
+
       const routesMainPath = path.join(frontendDestPath, 'routes', 'main.yaml');
       const routesModulesPath = path.join(
         frontendDestPath,
@@ -523,8 +543,11 @@ export class AddAction extends AbstractAction {
       const routePaths = [routesMainPath];
 
       for (const file of await readdir(routesModulesPath)) {
+        console.log('route file', file);
         routePaths.push(path.join(routesModulesPath, file));
       }
+
+      console.log({ routePaths });
 
       const routeObjects = [];
 
