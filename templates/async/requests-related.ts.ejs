@@ -19,7 +19,7 @@ export function requests() {
 
   const <%= tableNameCase.camel %>Create = async ( <%= fkNameCase.camel %>: number, data: <%= tableNameCase.pascal %>Type) => {
     return request<<%= tableNameCase.pascal %>Type>({
-      url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>>`,
+      url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>`,
       method: HttpMethod.POST,
       data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>,
     }).then((res) => res.data);
