@@ -6,6 +6,7 @@ import useEffectAfterFirstUpdate from '@/hooks/use-effect-after-first-update'
 import { <%= tableNameCase.pascal %> } from '@/types/models'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
 <% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
 <% if (extraTabs.length) { %>
   import DataPanel from '@/components/panels/data-panel'

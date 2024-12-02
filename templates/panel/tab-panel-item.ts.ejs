@@ -15,16 +15,40 @@
           </span>
         </div>
       )}
+      menuActions={[
+        {
+          icon: <IconEdit className="mr-1 w-8 cursor-pointer" />,
+          label: t('edit', { ns: 'actions' }),
+          tooltip: t('editTooltip', { ns: 'contact.person' }),
+          handler: (items: <%= tableNameRelatedCase.pascal %>[]) => {
+            if (items.length === 1) openUpdate<%= tableNameRelatedCase.pascal %>(items[0]);
+          },
+          show: 'once'
+        },
+        {
+          icon: <IconTrash className="mr-1 w-8 cursor-pointer" />,
+          label: t('delete', { ns: 'actions' }),
+          tooltip: t('deleteTooltip', { ns: 'contact.person' }),
+          variant: 'destructive',
+          handler: (items: <%= tableNameRelatedCase.pascal %>[]) => {
+            openDelete<%= tableNameRelatedCase.pascal %>(items);
+          },
+          show: 'some'
+        },
+        {
+          icon: <IconPlus className="mr-1 w-8 cursor-pointer" />,
+          label: t('create', { ns: 'actions' }),
+          tooltip: t('createTooltip', { ns: 'contact.person' }),
+          variant: 'default',
+          handler: () => {
+            openCreate<%= tableNameRelatedCase.pascal %>();
+          },
+          show: 'none'
+        }
+      ]}
     />
   ),
   buttons: [
-    {
-      text: t('add', { ns: 'actions' }),
-      variant: 'default',
-      onClick: () => {
-        openCreate<%= tableNameRelatedCase.pascal %>()
-      },
-    },
     {
       text: t('apply', { ns: 'actions' }),
       variant: 'default',
