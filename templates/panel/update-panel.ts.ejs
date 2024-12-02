@@ -1,13 +1,9 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-
 import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
 import { Overlay } from '@/components/custom/overlay'
 import { TabPanel } from '@/components/panels/tab-panel'
-import { use<%= toPascalCase(tableName) %>Get, use<%= toPascalCase(tableName) %>Update } from '@/features/<%= libraryName %>/<%= toKebabCase(tableName) %>'
+import { use<%= tableNameCase.pascal %>Get, use<%= tableNameCase.pascal %>Update } from '@/features/<%= libraryName %>/<%= tableNameCase.kebab %>'
 import useEffectAfterFirstUpdate from '@/hooks/use-effect-after-first-update'
-import { <%= toPascalCase(tableName) %> } from '@/types/models'
+import { <%= tableNameCase.pascal %> } from '@/types/models'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 <% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
@@ -16,16 +12,16 @@ import { useTranslation } from 'react-i18next'
 <% } %>
 <%- extraImports %>
 
-export type <%= toPascalCase(tableName) %>UpdatePanelProps = {
-  data: <%= toPascalCase(tableName) %>
-  onUpdated?: (data: <%= toPascalCase(tableName) %>) => void
+export type <%= tableNameCase.pascal %>UpdatePanelProps = {
+  data: <%= tableNameCase.pascal %>
+  onUpdated?: (data: <%= tableNameCase.pascal %>) => void
 }
 
-const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
-  ({ data, onUpdated }: <%= toPascalCase(tableName) %>UpdatePanelProps, ref) => {
-    const { t } = useTranslation(['actions'])
-    const { data: item, isLoading } = use<%= toPascalCase(tableName) %>Get(data.id as number)
-    const { mutate: <%= toCamelCase(tableName) %>Update } = use<%= toPascalCase(tableName) %>Update()
+const <%= tableNameCase.pascal %>UpdatePanel = forwardRef(
+  ({ data, onUpdated }: <%= tableNameCase.pascal %>UpdatePanelProps, ref) => {
+    const { t } = useTranslation(['actions', 'fields', 'translation'])
+    const { data: item, isLoading } = use<%= tableNameCase.pascal %>Get(data.id as number)
+    const { mutate: <%= tableNameCase.camel %>Update } = use<%= tableNameCase.pascal %>Update()
     const formRef = useRef<FormPanelRef>(null)
       
     <%- extraVars %>
@@ -52,7 +48,7 @@ const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
                       <% fields.forEach((field, index, array) => { %>
                       {
                           name: '<%= field.name %>',
-                          label: { text: t('<%= field.name %>', { ns: 'translation' }) },
+                          label: { text: t('<%= tableNameCase.snake %>.<%= field.name %>', { ns: 'fields' }) },
                           type: <%- field.inputType %>,
                           required: true,
                           <% if (field.url) { %>url: '<%= field.url %>',<% } %>
@@ -64,7 +60,7 @@ const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
                   ]}
                   button={{ text: t('save', { ns: 'actions' }) }}
                   onSubmit={(data) => {
-                    <%= toCamelCase(tableName) %>Update({ id: data.id, data })
+                    <%= tableNameCase.camel %>Update({ id: data.id, data })
                     if (typeof onUpdated === 'function') {
                       onUpdated(data)
                     }
@@ -80,6 +76,6 @@ const <%= toPascalCase(tableName) %>UpdatePanel = forwardRef(
   }
 )
 
-<%= toPascalCase(tableName) %>UpdatePanel.displayName = '<%= toPascalCase(tableName) %>UpdatePanel'
+<%= tableNameCase.pascal %>UpdatePanel.displayName = '<%= tableNameCase.pascal %>UpdatePanel'
 
-export default <%= toPascalCase(tableName) %>UpdatePanel
+export default <%= tableNameCase.pascal %>UpdatePanel

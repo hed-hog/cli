@@ -1,58 +1,54 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-
 import { useApp } from '@/hooks/use-app'
 import { Delete, PaginationParams, PaginationResult } from '@/types'
-import { <%= toPascalCase(tableName) %> } from '@/types/models'
+import { <%= tableNameCase.pascal %> } from '@/types/models'
 import { HttpMethod } from '@/types/http-method'
 <%- hasLocale ? "import { formatDataWithLocale } from '@hedhog/utils'" : "" %>	
 
 export function requests() {
   const { request } = useApp()
 
-  const <%= toCamelCase(tableName) %>List = async (params: PaginationParams) => {
-    return request<PaginationResult<<%= toPascalCase(tableName) %>>>(
+  const <%= tableNameCase.camel %>List = async (params: PaginationParams) => {
+    return request<PaginationResult<<%= tableNameCase.pascal %>>>(
       {
-        url: '/<%= toKebabCase(tableName) %>',
+        url: '/<%= tableNameCase.kebab %>',
         params
       }
     ).then((res) => res.data)
   }
 
-  const <%= toCamelCase(tableName) %>Get = async (id: number) => {
-    return request<<%= toPascalCase(tableName) %>>(
+  const <%= tableNameCase.camel %>Get = async (id: number) => {
+    return request<<%= tableNameCase.pascal %>>(
       {
-        url: `/<%= toKebabCase(tableName) %>/${id}`
+        url: `/<%= tableNameCase.kebab %>/${id}`
       }
     ).then((res) => res.data)
   }
 
-  const <%= toCamelCase(tableName) %>Create = async (data: <%= toPascalCase(tableName) %> ) => {
-    return request<<%= toPascalCase(tableName) %>>(
+  const <%= tableNameCase.camel %>Create = async (data: <%= tableNameCase.pascal %> ) => {
+    return request<<%= tableNameCase.pascal %>>(
      { 
-        url: '/<%= toKebabCase(tableName) %>',
+        url: '/<%= tableNameCase.kebab %>',
         method: HttpMethod.POST,
         data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>
       }
     ).then((res) => res.data)
   }
 
-  const <%= toCamelCase(tableName) %>Delete = async (ids: number[]) => {
+  const <%= tableNameCase.camel %>Delete = async (ids: number[]) => {
     return request<Delete>(
       {
-        url: '/<%= toKebabCase(tableName) %>',
+        url: '/<%= tableNameCase.kebab %>',
         data: { ids },
         method: HttpMethod.DELETE
       }
     ).then((res) => res.data)
   }
 
-  const <%= toCamelCase(tableName) %>Update = async (params: {id: number; data: <%= toPascalCase(tableName) %>}) => {
+  const <%= tableNameCase.camel %>Update = async (params: {id: number; data: <%= tableNameCase.pascal %>}) => {
     const { id, data } = params
-    return request<<%= toPascalCase(tableName) %>>(
+    return request<<%= tableNameCase.pascal %>>(
       {
-        url: `/<%= toKebabCase(tableName) %>/${id}`,
+        url: `/<%= tableNameCase.kebab %>/${id}`,
         method: HttpMethod.PATCH,
         data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>
       }
@@ -60,10 +56,10 @@ export function requests() {
   }
 
   return {
-    <%= toCamelCase(tableName) %>Create,
-    <%= toCamelCase(tableName) %>Update,
-    <%= toCamelCase(tableName) %>Delete,
-    <%= toCamelCase(tableName) %>List,
-    <%= toCamelCase(tableName) %>Get,
+    <%= tableNameCase.camel %>Create,
+    <%= tableNameCase.camel %>Update,
+    <%= tableNameCase.camel %>Delete,
+    <%= tableNameCase.camel %>List,
+    <%= tableNameCase.camel %>Get,
   }
 }

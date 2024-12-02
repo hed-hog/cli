@@ -1,27 +1,23 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-
 import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
 <% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
-import { use<%= toPascalCase(tableName) %>Create } from '@/features/<%= libraryName %>/<%= toKebabCase(tableName) %>'
-import { <%= toPascalCase(tableName) %> } from '@/types/models'
+import { use<%= tableNameCase.pascal %>Create } from '@/features/<%= libraryName %>/<%= tableNameCase.kebab %>'
+import { <%= tableNameCase.pascal %> } from '@/types/models'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
-export type <%= toPascalCase(tableName) %>CreatePanelRef = {
+export type <%= tableNameCase.pascal %>CreatePanelRef = {
     submit: () => void
 }
 
-export type <%= toPascalCase(tableName) %>CreatePanelProps = {
-    onCreated?: (data: <%= toPascalCase(tableName) %>) => void
+export type <%= tableNameCase.pascal %>CreatePanelProps = {
+    onCreated?: (data: <%= tableNameCase.pascal %>) => void
 }
 
-const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
-    ({ onCreated }: <%= toPascalCase(tableName) %>CreatePanelProps, ref) => {
+const <%= tableNameCase.pascal %>CreatePanel = forwardRef(
+    ({ onCreated }: <%= tableNameCase.pascal %>CreatePanelProps, ref) => {
         const formRef = useRef<FormPanelRef>(null)
-        const { t } = useTranslation(['actions'])
-        const { mutateAsync: create<%= toPascalCase(tableName) %> } = use<%= toPascalCase(tableName) %>Create()
+        const { t } = useTranslation(['actions', 'fields', 'translation'])
+        const { mutateAsync: create<%= tableNameCase.pascal %> } = use<%= tableNameCase.pascal %>Create()
 
         useImperativeHandle(
             ref,
@@ -39,7 +35,7 @@ const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
                     <% fields.forEach((field, index, array) => { %>
                     {
                         name: '<%= field.name %>',
-                        label: { text: t('<%= field.name %>', { ns: 'translation' }) },
+                        label: { text: t('<%= tableNameCase.snake %>.<%= field.name %>', { ns: 'fields' }) },
                         type: <%- field.inputType %>,
                         required: true,
                         <% if (field.url) { %>url: '<%= field.url %>',<% } %>
@@ -51,7 +47,7 @@ const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
                 ]}
                 button={{ text: t('create', { ns: 'actions' }) }}
                 onSubmit={async (data) => {
-                    const createdData = await create<%= toPascalCase(tableName) %>(data)
+                    const createdData = await create<%= tableNameCase.pascal %>(data)
                     if (typeof onCreated === 'function') {
                         onCreated(createdData)
                     }
@@ -61,6 +57,6 @@ const <%= toPascalCase(tableName) %>CreatePanel = forwardRef(
     }
 )
 
-<%= toPascalCase(tableName) %>CreatePanel.displayName = '<%= toPascalCase(tableName) %>CreatePanel'
+<%= tableNameCase.pascal %>CreatePanel.displayName = '<%= tableNameCase.pascal %>CreatePanel'
 
-export default <%= toPascalCase(tableName) %>CreatePanel
+export default <%= tableNameCase.pascal %>CreatePanel

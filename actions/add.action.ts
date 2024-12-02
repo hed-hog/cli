@@ -429,13 +429,22 @@ export class AddAction extends AbstractAction {
 
         const frontendDestPath = join(this.directoryPath, 'admin', 'src');
         this.createScreenRouterFile();
+        const translationModulesPath = join(
+          frontendPath,
+          'translation',
+          'modules',
+        );
+        const translationFieldsPath = join(
+          frontendPath,
+          'translation',
+          'fields',
+        );
 
-        const translationPath = join(frontendPath, 'translation');
-        if (existsSync(translationPath)) {
+        if (existsSync(translationModulesPath)) {
           const localesDestPath = join(frontendDestPath, 'locales');
           await mkdirRecursive(localesDestPath);
 
-          for (const localeFile of await readdir(translationPath)) {
+          for (const localeFile of await readdir(translationModulesPath)) {
             const localeCode = localeFile.split('.')[0];
             const localeDestPath = join(
               localesDestPath,
@@ -443,7 +452,29 @@ export class AddAction extends AbstractAction {
               'modules.json',
             );
             await mkdirRecursive(join(localesDestPath, localeCode));
-            await copyFile(join(translationPath, localeFile), localeDestPath);
+            await copyFile(
+              join(translationModulesPath, localeFile),
+              localeDestPath,
+            );
+          }
+        }
+
+        if (existsSync(translationFieldsPath)) {
+          const localesDestPath = join(frontendDestPath, 'locales');
+          await mkdirRecursive(localesDestPath);
+
+          for (const localeFile of await readdir(translationFieldsPath)) {
+            const localeCode = localeFile.split('.')[0];
+            const localeDestPath = join(
+              localesDestPath,
+              localeCode,
+              'fields.json',
+            );
+            await mkdirRecursive(join(localesDestPath, localeCode));
+            await copyFile(
+              join(translationFieldsPath, localeFile),
+              localeDestPath,
+            );
           }
         }
 

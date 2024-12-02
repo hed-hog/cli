@@ -1,32 +1,28 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-
 import { useDefaultMutation } from '@/hooks/use-default-mutation'
 import { useQuery } from '@tanstack/react-query'
 import { requests } from './requests'
 
-const scope = '<%= toKebabCase(tableName) %>'
+const scope = '<%= tableNameCase.kebab %>'
 
-export function use<%= toPascalCase(tableName) %>Create() {
-  const { <%= toCamelCase(tableName) %>Create } = requests()
-  return useDefaultMutation(scope, 'create', <%= toCamelCase(tableName) %>Create)
+export function use<%= tableNameCase.pascal %>Create() {
+  const { <%= tableNameCase.camel %>Create } = requests()
+  return useDefaultMutation(scope, 'create', <%= tableNameCase.camel %>Create)
 }
 
-export function use<%= toPascalCase(tableName) %>Delete() {
-  const { <%= toCamelCase(tableName) %>Delete } = requests()
-  return useDefaultMutation(scope, 'delete', <%= toCamelCase(tableName) %>Delete)
+export function use<%= tableNameCase.pascal %>Delete() {
+  const { <%= tableNameCase.camel %>Delete } = requests()
+  return useDefaultMutation(scope, 'delete', <%= tableNameCase.camel %>Delete)
 }
 
-export function use<%= toPascalCase(tableName) %>Update() {
-  const { <%= toCamelCase(tableName) %>Update } = requests()
-  return useDefaultMutation(scope, 'update', <%= toCamelCase(tableName) %>Update)
+export function use<%= tableNameCase.pascal %>Update() {
+  const { <%= tableNameCase.camel %>Update } = requests()
+  return useDefaultMutation(scope, 'update', <%= tableNameCase.camel %>Update)
 }
 
-export function use<%= toPascalCase(tableName) %>Get(id: number) {
-  const { <%= toCamelCase(tableName) %>Get } = requests()
+export function use<%= tableNameCase.pascal %>Get(id: number) {
+  const { <%= tableNameCase.camel %>Get } = requests()
   return useQuery({
     queryKey: [scope, 'get'],
-    queryFn: () => <%= toCamelCase(tableName) %>Get(id),
+    queryFn: () => <%= tableNameCase.camel %>Get(id),
   })
 }

@@ -154,13 +154,44 @@ export class ApplyAction extends AbstractAction {
         },
       ).createFile();
 
-      await this.addModuleTranslation();
+      await this.generateTranslations(
+        this.hedhogFile.screens,
+        path.join(this.libraryPath, 'frontend', 'translation', 'modules'),
+        (key, value, en, pt) => {
+          en[key] = value.title.en;
+          pt[key] = value.title.pt;
+
+          if (value.relations) {
+            Object.entries(value.relations).forEach(
+              ([relationKey, relationValue]) => {
+                en[relationKey] = (relationValue as any).title.en;
+                pt[relationKey] = (relationValue as any).title.pt;
+              },
+            );
+          }
+        },
+      );
+      await this.generateTranslations(
+        this.hedhogFile.tables,
+        path.join(this.libraryPath, 'frontend', 'translation', 'fields'),
+        (tableName, table, en, pt) => {
+          table.columns.forEach((column: any) => {
+            if (column.locale) {
+              const key = `${tableName}.${column.name ?? column.type}`;
+              en[key] = column.locale.en;
+              pt[key] = column.locale.pt;
+            }
+          });
+        },
+      );
+
       new FileCreator(
         this.librarySrcPath,
         this.libraryName,
         tableApply,
         'screen',
       ).createFile();
+
       addRoutesToYaml(this.librarySrcPath, table.name, screenWithRelations);
 
       if (!screenWithRelations) {
@@ -239,38 +270,31 @@ export class ApplyAction extends AbstractAction {
     await writeFile(this.hedhogFilePath, updatedYAML, 'utf-8');
   }
 
-  async addModuleTranslation() {
+  async generateTranslations(
+    data: Record<string, any>,
+    basePath: string,
+    transformFn: (
+      key: string,
+      value: any,
+      en: Record<string, string>,
+      pt: Record<string, string>,
+    ) => void,
+  ) {
     const enTranslations: Record<string, string> = {};
     const ptTranslations: Record<string, string> = {};
 
-    Object.entries(this.hedhogFile.screens).forEach(([key, value]) => {
-      enTranslations[key] = value.title.en;
-      ptTranslations[key] = value.title.pt;
-
-      if (value.relations) {
-        Object.entries(value.relations).forEach(
-          ([relationKey, relationValue]) => {
-            enTranslations[relationKey] = (relationValue as any).title.en;
-            ptTranslations[relationKey] = (relationValue as any).title.pt;
-          },
-        );
-      }
+    Object.entries(data).forEach(([key, value]) => {
+      transformFn(key, value, enTranslations, ptTranslations);
     });
+
     const enContent = JSON.stringify(enTranslations, null, 2);
     const ptContent = JSON.stringify(ptTranslations, null, 2);
-
-    const basePath = path.join(
-      this.rootPath,
-      'lib',
-      'libs',
-      this.libraryName.toKebabCase(),
-      'frontend',
-      'translation',
-    );
 
     mkdirSync(basePath, { recursive: true });
     writeFileSync(path.join(basePath, 'en.json'), enContent, 'utf8');
     writeFileSync(path.join(basePath, 'pt.json'), ptContent, 'utf8');
+
+    console.log(`Translations generated successfully at: ${basePath}`);
   }
 
   async screensWithRelations() {
@@ -593,7 +617,13 @@ export class ApplyAction extends AbstractAction {
           'requests-related.ts.ejs',
           'handlers.ts.ejs',
         ],
-        data: { tableName, hasLocale, libraryName: this.libraryName, fields },
+        data: {
+          tableName,
+          tableNameCase: toObjectCase(tableName),
+          hasLocale,
+          libraryName: this.libraryName,
+          fields,
+        },
       },
       {
         subPath: 'components',
@@ -601,6 +631,7 @@ export class ApplyAction extends AbstractAction {
         templates: ['create-panel.ts.ejs', 'update-panel.ts.ejs'],
         data: {
           tableName,
+          tableNameCase: toObjectCase(tableName),
           hasLocale,
           libraryName: this.libraryName,
           fields,
