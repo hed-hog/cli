@@ -1,58 +1,53 @@
-<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
-<% const toCamelCase = (str) => str.replace(/_([a-z])/g, (_, char) => char.toUpperCase()); %>
-<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
-<% const getFirstPiece = (str) => str.split('_')[0]; %>
-
 import { PageTitle } from '@/components/custom/page-title'
 import DataPanel from '@/components/panels/data-panel'
-import { use<%= toPascalCase(tableName) %>Delete } from '@/features/<%= libraryName %>/<%= toKebabCase(tableName) %>'
+import { use<%= tableNameCase.pascal %>Delete } from '@/features/<%= libraryName %>/<%= tableNameCase.kebab %>'
 import { useApp } from '@/hooks/use-app'
 import { isPlural } from '@/lib/utils'
-import { <%= toPascalCase(tableName) %> } from '@/types/models'
+import { <%= tableNameCase.pascal %> } from '@/types/models'
 import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import <%= toPascalCase(tableName) %>CreatePanel from './components/<%= toKebabCase(tableName) %>-create-panel'
-import <%= toPascalCase(tableName) %>UpdatePanel from './components/<%= toKebabCase(tableName) %>-update-panel'
+import <%= tableNameCase.pascal %>CreatePanel from './components/<%= tableNameCase.kebab %>-create-panel'
+import <%= tableNameCase.pascal %>UpdatePanel from './components/<%= tableNameCase.kebab %>-update-panel'
 
 export default function Page() {
-  const [selectedItems, setSelectedItems] = useState<<%= toPascalCase(tableName) %>[]>([])
-  const { mutate: delete<%= toPascalCase(tableName) %> } = use<%= toPascalCase(tableName) %>Delete()
+  const [selectedItems, setSelectedItems] = useState<<%= tableNameCase.pascal %>[]>([])
+  const { mutate: delete<%= tableNameCase.pascal %> } = use<%= tableNameCase.pascal %>Delete()
   const { openSheet, confirm, closeSheet } = useApp()
-  const { t } = useTranslation(['<%= toKebabCase(tableName) %>', 'modules', 'actions'])
+  const { t } = useTranslation(['<%= tableNameCase.kebab %>', 'modules', 'actions'])
 
   const openCreate = () => {
     const id = openSheet({
       title: t('create', { ns: 'actions' }),
-      description: t('createText', { ns: '<%= toKebabCase(tableName) %>' }),
+      description: t('createText', { ns: '<%= tableNameCase.kebab %>' }),
       children: () => (
-        <<%= toPascalCase(tableName) %>CreatePanel onCreated={() => closeSheet(id)} />
+        <<%= tableNameCase.pascal %>CreatePanel onCreated={() => closeSheet(id)} />
       ),
     })
 
     return id
   }
 
-  const openDelete = (items: <%= toPascalCase(tableName) %>[]) => {
+  const openDelete = (items: <%= tableNameCase.pascal %>[]) => {
     return confirm({
       title: `${t('delete', { ns: 'actions' })} ${items.length} ${isPlural(items.length) ? t('items', { ns: 'actions' }) : t('item', { ns: 'actions' })}`,
-      description: t('deleteText', { ns: '<%= toKebabCase(tableName) %>' }),
+      description: t('deleteText', { ns: '<%= tableNameCase.kebab %>' }),
     })
       .then(() =>
-        delete<%= toPascalCase(tableName) %>(
+        delete<%= tableNameCase.pascal %>(
           items.map((item) => item.id).filter((id) => id !== undefined)
         )
       )
       .catch(() => setSelectedItems(items))
   }
 
-  const openUpdate = (item: <%= toPascalCase(tableName) %>) => {
+  const openUpdate = (item: <%= tableNameCase.pascal %>) => {
     const id = openSheet({
       children: () => (
-        <<%= toPascalCase(tableName) %>UpdatePanel data={item} onUpdated={() => closeSheet(id)} />
+        <<%= tableNameCase.pascal %>UpdatePanel data={item} onUpdated={() => closeSheet(id)} />
       ),
-      title: t('edit', { ns: '<%= toKebabCase(tableName) %>' }),
-      description: t('editText', { ns: '<%= toKebabCase(tableName) %>' }),
+      title: t('edit', { ns: '<%= tableNameCase.kebab %>' }),
+      description: t('editText', { ns: '<%= tableNameCase.kebab %>' }),
     })
 
     return id
@@ -60,17 +55,17 @@ export default function Page() {
 
   return (
     <>
-      <PageTitle title={t('<%= toCamelCase(tableName) %>', { ns: 'modules' })} />
+      <PageTitle title={t('<%= tableNameCase.snake %>', { ns: 'modules' })} />
       <DataPanel
-        url='/<%= toKebabCase(tableName) %>'
+        url='/<%= tableNameCase.kebab %>'
         layout='table'
-        id='<%= toKebabCase(tableName) %>'
+        id='<%= tableNameCase.kebab %>'
         selectable
         columns={[
           { key: 'id', header: 'ID', width: 64 },
-          { key: 'name', header: t('name', { ns: '<%= toKebabCase(tableName) %>' }) },
+          { key: 'name', header: t('name', { ns: '<%= tableNameCase.kebab %>' }) },
         ]}
-        selected={selectedItems as <%= toPascalCase(tableName) %>[]}
+        selected={selectedItems as <%= tableNameCase.pascal %>[]}
         multiple
         hasSearch
         sortable
@@ -79,8 +74,8 @@ export default function Page() {
           {
             icon: <IconEdit className='mr-1 w-8 cursor-pointer' />,
             label: t('edit', { ns: 'actions' }),
-            tooltip: t('editTooltip', { ns: '<%= toKebabCase(tableName) %>' }),
-            handler: (items: <%= toPascalCase(tableName) %>[]) => {
+            tooltip: t('editTooltip', { ns: '<%= tableNameCase.kebab %>' }),
+            handler: (items: <%= tableNameCase.pascal %>[]) => {
               if (items.length === 1) openUpdate(items[0])
             },
             show: 'once',
@@ -88,9 +83,9 @@ export default function Page() {
           {
             icon: <IconTrash className='mr-1 w-8 cursor-pointer' />,
             label: t('delete', { ns: 'actions' }),
-            tooltip: t('deleteTooltip', { ns: '<%= toKebabCase(tableName) %>' }),
+            tooltip: t('deleteTooltip', { ns: '<%= tableNameCase.kebab %>' }),
             variant: 'destructive',
-            handler: (items: <%= toPascalCase(tableName) %>[]) => {
+            handler: (items: <%= tableNameCase.pascal %>[]) => {
               openDelete(items)
             },
             show: 'some',
@@ -98,7 +93,7 @@ export default function Page() {
           {
             icon: <IconPlus className='mr-1 w-8 cursor-pointer' />,
             label: t('create', { ns: 'actions' }),
-            tooltip: t('createTooltip', { ns: '<%= toKebabCase(tableName) %>' }),
+            tooltip: t('createTooltip', { ns: '<%= tableNameCase.kebab %>' }),
             variant: 'default',
             handler: () => {
               openCreate()

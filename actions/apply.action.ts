@@ -13,7 +13,6 @@ import { render } from 'ejs';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';
 import { EMOJIS } from '../lib/ui';
-import { createScreen } from '../lib/utils/create-screen';
 import { getConfig } from '../lib/utils/get-config';
 import OpenAI from 'openai';
 import * as ora from 'ora';
@@ -119,36 +118,49 @@ export class ApplyAction extends AbstractAction {
         .createDTOs()
         .then(() => console.log('DTOs criados com sucesso!'));
 
-      new FileCreator(this.librarySrcPath, tableApply, 'service', {
-        fields: table.columns,
-        useLibraryNamePath: true,
-        hasRelationsWith: screenWithRelations,
-      }).createFile();
-
-      new FileCreator(this.librarySrcPath, tableApply, 'controller', {
-        useLibraryNamePath: true,
-        hasRelationsWith: screenWithRelations,
-      }).createFile();
-
-      new FileCreator(this.librarySrcPath, tableApply, 'module', {
-        useLibraryNamePath: true,
-        importServices: true,
-        hasRelationsWith: screenWithRelations,
-        tablesWithRelations,
-      }).createFile();
-
-      await this.addModuleTranslation();
-
-      await createScreen(
-        this.libraryFrontEndPath,
+      new FileCreator(
+        this.librarySrcPath,
         this.libraryName,
-        table.name,
-        'screen',
+        tableApply,
+        'service',
+        {
+          fields: table.columns,
+          useLibraryNamePath: true,
+          hasRelationsWith: screenWithRelations,
+        },
+      ).createFile();
+
+      new FileCreator(
+        this.librarySrcPath,
+        this.libraryName,
+        tableApply,
+        'controller',
         {
           useLibraryNamePath: true,
+          hasRelationsWith: screenWithRelations,
         },
-      );
+      ).createFile();
 
+      new FileCreator(
+        this.librarySrcPath,
+        this.libraryName,
+        tableApply,
+        'module',
+        {
+          useLibraryNamePath: true,
+          importServices: true,
+          hasRelationsWith: screenWithRelations,
+          tablesWithRelations,
+        },
+      ).createFile();
+
+      await this.addModuleTranslation();
+      new FileCreator(
+        this.librarySrcPath,
+        this.libraryName,
+        tableApply,
+        'screen',
+      ).createFile();
       addRoutesToYaml(this.librarySrcPath, table.name, screenWithRelations);
 
       if (!screenWithRelations) {
@@ -629,6 +641,7 @@ export class ApplyAction extends AbstractAction {
             await readFile(templatePath, 'utf-8'),
             task.data,
           );
+
           const formattedContent = await formatTypeScriptCode(fileContent);
           const outputFilePath = path.join(
             taskPath,

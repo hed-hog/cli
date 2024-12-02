@@ -1,12 +1,13 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { toKebabCase, toObjectCase } from '../utils/convert-string-cases';
+import { toObjectCase } from '../utils/convert-string-cases';
 import { render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from '../utils/format-with-prettier';
 import { formatTypeScriptCode } from '../utils/format-typescript-code';
 import getLocaleYaml from '../utils/get-fk-locale-yaml';
 import { TableApply } from './TableApply';
+import { filterScreenCreation } from '../utils/filter-screen-creation';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -28,12 +29,14 @@ interface IFields {
 
 export class FileCreator {
   private libraryPath: string;
+  private libraryName: string;
   private table: TableApply;
   private fileType: 'controller' | 'service' | 'module' | 'screen';
   private options: IOption;
 
   constructor(
     libraryPath: string,
+    libraryName: string,
     table: TableApply,
     fileType: 'controller' | 'service' | 'module' | 'screen',
     options: IOption = {
@@ -44,18 +47,52 @@ export class FileCreator {
     },
   ) {
     this.libraryPath = libraryPath;
+    this.libraryName = libraryName;
     this.table = table;
     this.fileType = fileType;
     this.options = options;
   }
 
-  async createFile() {
-    const filePath = path.join(
+  private getFileFullPath(): string {
+    if (this.fileType === 'screen') {
+      return path.join(
+        this.getFilePath(),
+        '..',
+        '..',
+        'frontend',
+        `${this.table.name.toKebabCase()}`,
+        'components',
+        `${this.table.name.toKebabCase()}.${this.fileType}.tsx.ejs`,
+      );
+    }
+
+    return path.join(
+      this.getFilePath(),
+      `${this.table.name.toKebabCase()}.${this.fileType}.ts`,
+    );
+  }
+
+  private getFilePath(): string {
+    if (this.fileType === 'screen') {
+      return path.join(this.libraryPath, this.table.name.toKebabCase());
+    }
+
+    return path.join(
       this.libraryPath,
       this.options.hasRelationsWith ?? '',
       this.options.useLibraryNamePath ? this.table.name.toKebabCase() : 'src',
     );
+  }
 
+  async createFile() {
+    if (this.fileType === 'screen') {
+      if (!(await filterScreenCreation(this.libraryPath, this.table.name))) {
+        return;
+      }
+    }
+
+    const filePath = this.getFilePath();
+    await fs.mkdir(filePath, { recursive: true });
     const tablesWithRelations = (this.options.tablesWithRelations ?? [])
       .map((t) => t.relations)
       .flat();
@@ -87,11 +124,7 @@ export class FileCreator {
       .map((field) => field.name);
 
     const fileContent = await this.generateFileContent(fieldsForSearch);
-    const fileFullPath = path.join(
-      filePath,
-      `${this.table.name.toKebabCase()}.${this.fileType}.ts`,
-    );
-
+    const fileFullPath = this.getFileFullPath();
     await fs.writeFile(
       fileFullPath,
       await formatWithPrettier(fileContent, {
@@ -165,6 +198,10 @@ export class FileCreator {
         : templatePath;
     }
 
+    if (this.fileType === 'screen') {
+      return templatePath;
+    }
+
     if (this.table.hasLocale) {
       return this.options.hasRelationsWith
         ? templateRelationsLocalePath
@@ -183,6 +220,7 @@ export class FileCreator {
       fkNameCase: this.table.fkName,
       pkNameCase: this.table.pkName,
       hasLocale: this.table.hasLocale,
+      libraryName: this.libraryName,
       fkNameLocaleCase: getLocaleYaml(this.libraryPath, this.table.name),
       module: {
         imports: this.options.importServices
