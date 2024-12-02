@@ -16,7 +16,7 @@ export type <%= tableNameCase.pascal %>CreatePanelProps = {
 const <%= tableNameCase.pascal %>CreatePanel = forwardRef(
     ({ onCreated }: <%= tableNameCase.pascal %>CreatePanelProps, ref) => {
         const formRef = useRef<FormPanelRef>(null)
-        const { t } = useTranslation(['actions', 'fields', 'translation'])
+        const { t } = useTranslation(['actions', 'fields', 'translations'])
         const { mutateAsync: create<%= tableNameCase.pascal %> } = use<%= tableNameCase.pascal %>Create()
 
         useImperativeHandle(
