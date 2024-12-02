@@ -102,6 +102,7 @@ export class ApplyAction extends AbstractAction {
         .filter(
           ({ type }) => !['pk', 'created_at', 'updated_at'].includes(type),
         )
+        .filter((field) => field.name !== tableApply.fkName)
         .map((column) => {
           const columnName = column.type === 'slug' ? 'slug' : column.name;
           const columnType = column.type === 'slug' ? 'varchar' : column.type;
@@ -543,8 +544,6 @@ export class ApplyAction extends AbstractAction {
         ...this.getComboboxProperties(field),
       }));
 
-    console.log({ fields });
-
     const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
     const hasLocale = this.hedhogFile.hasLocale(tableName);
     const extraTabs: any[] = [];
@@ -608,6 +607,7 @@ export class ApplyAction extends AbstractAction {
         extraTabs.push(renderedContent);
       }
     }
+    console.log({ name: tableApply });
 
     const tasks = [
       {
@@ -620,8 +620,11 @@ export class ApplyAction extends AbstractAction {
         ],
         data: {
           tableName,
-          tableNameCase: toObjectCase(tableName),
-          hasLocale,
+          tableNameCase: toObjectCase(tableApply.name),
+          tableNameRelatedCase: toObjectCase(tableApply.tableNameRelation),
+          fkNameCase: toObjectCase(tableApply.fkName),
+          pkNameCase: toObjectCase(tableApply.pkName),
+          hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
           fields,
         },
@@ -632,8 +635,11 @@ export class ApplyAction extends AbstractAction {
         templates: ['create-panel.ts.ejs', 'update-panel.ts.ejs'],
         data: {
           tableName,
-          tableNameCase: toObjectCase(tableName),
-          hasLocale,
+          tableNameCase: toObjectCase(tableApply.name),
+          tableNameRelatedCase: toObjectCase(tableApply.tableNameRelation),
+          fkNameCase: toObjectCase(tableApply.fkName),
+          pkNameCase: toObjectCase(tableApply.pkName),
+          hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
           fields,
           extraTabs,
