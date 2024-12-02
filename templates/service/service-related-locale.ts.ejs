@@ -51,7 +51,7 @@ export class <%= tableNameCase.pascal %>Service {
   }
 
   async create(<%= fkNameCase.camel %>: number, data: CreateDTO) {
-    data.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
+    (data as any).<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
 
     return this.localeService.createModelWithLocale(
       this.modelName,
