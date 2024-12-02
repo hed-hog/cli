@@ -33,7 +33,6 @@ export class ApplyAction extends AbstractAction {
   private hedhogFilePath = '';
   private libraryPath = '';
   private librarySrcPath = '';
-  private libraryFrontEndPath = '';
   private hedhogFile: HedhogFile = new HedhogFile();
 
   public async handle(inputs: Input[], options: Input[]) {
@@ -75,7 +74,6 @@ export class ApplyAction extends AbstractAction {
     }
 
     this.librarySrcPath = path.join(this.libraryPath, 'src');
-    this.libraryFrontEndPath = path.join(this.libraryPath, 'frontend');
     const tables = this.parseYamlFile(this.hedhogFilePath);
     this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
@@ -531,6 +529,7 @@ export class ApplyAction extends AbstractAction {
       .filter(
         (field) => !['pk', 'created_at', 'updated_at'].includes(field.type),
       )
+      .filter((field) => field.locale)
       .filter((field) => field.name || field.type === 'slug')
       .map((f) => {
         if (f.type === 'slug') {
@@ -543,6 +542,8 @@ export class ApplyAction extends AbstractAction {
         inputType: this.mapFieldTypeToInputType(field),
         ...this.getComboboxProperties(field),
       }));
+
+    console.log({ fields });
 
     const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
     const hasLocale = this.hedhogFile.hasLocale(tableName);
