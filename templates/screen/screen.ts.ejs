@@ -63,7 +63,9 @@ export default function Page() {
         selectable
         columns={[
           { key: 'id', header: 'ID', width: 64 },
-          { key: 'name', header: t('name', { ns: '<%= tableNameCase.kebab %>' }) },
+          <% fieldsForSearch.forEach((field) => { %>
+            { key: '<%= field %>', header: t('<%= field %>', { ns: '<%= tableNameCase.kebab %>' }) },
+          <% }) %>
         ]}
         selected={selectedItems as <%= tableNameCase.pascal %>[]}
         multiple

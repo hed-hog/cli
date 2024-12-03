@@ -72,6 +72,15 @@ export class FileCreator {
     );
   }
 
+  private filterFields(array: any[]) {
+    return array
+      .map((field) => AbstractTable.getColumnOptions(field))
+      .filter((field) => !['created_at', 'updated_at'].includes(field.name))
+      .filter((field) => !field.references)
+      .filter((field) => !field.isPrimary)
+      .map((field) => field.name);
+  }
+
   private getFilePath(): string {
     if (this.fileType === 'screen') {
       return path.join(this.libraryPath, this.table.name.toKebabCase());
@@ -115,15 +124,7 @@ export class FileCreator {
     }
 
     await fs.mkdir(filePath, { recursive: true });
-
-    const fieldsForSearch = (this.options.fields ?? [])
-      .map((field) => AbstractTable.getColumnOptions(field))
-      .filter((field) => !['created_at', 'updated_at'].includes(field.name))
-      .filter((field) => !field.references)
-      .filter((field) => !field.isPrimary)
-      .map((field) => field.name);
-
-    const fileContent = await this.generateFileContent(fieldsForSearch);
+    const fileContent = await this.generateFileContent();
     const fileFullPath = this.getFileFullPath();
     await fs.writeFile(
       fileFullPath,
@@ -211,10 +212,14 @@ export class FileCreator {
     return this.options.hasRelationsWith ? templateRelationsPath : templatePath;
   }
 
-  private async generateFileContent(fieldsForSearch: string[]) {
+  private async generateFileContent() {
+    console.log({
+      fieldsForSearch: this.filterFields(this.table.getColumns()),
+    });
+
     const vars: any = {
       tableNameCase: this.table.name,
-      fieldsForSearch,
+      fieldsForSearch: this.filterFields(this.table.getColumns()),
       relatedTableNameCase: String(this.options.hasRelationsWith),
       options: this.options,
       fkNameCase: this.table.fkName,
