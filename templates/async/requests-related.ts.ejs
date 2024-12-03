@@ -27,11 +27,13 @@ export function requests() {
     }).then((res) => res.data);
   };
 
-  const <%= tableNameCase.camel %>Update = async (
+  const <%= tableNameCase.camel %>Update = async (params: {
     <%= fkNameCase.camel %>: number,
     <%= pkNameCase.camel %>: number,
     data: <%= tableNameCase.pascal %>Type
-  ) => {
+  }) => {
+    const { <%= fkNameCase.camel %>, <%= pkNameCase.camel %>, data } = params
+
     return request<<%= tableNameCase.pascal %>Type>({
       url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>/${<%= pkNameCase.camel %>}`,
       method: HttpMethod.PATCH,

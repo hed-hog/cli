@@ -23,6 +23,6 @@ export function use<%= tableNameCase.pascal %>Get(<%= fkNameCase.camel %>: numbe
   const { <%= tableNameCase.camel %>Get } = requests()
   return useQuery({
     queryKey: [scope, 'get'],
-    queryFn: () => <%= tableNameCase.camel %>Get(<%= fkNameCase.camel %>, <%= pkNameCase.camel %>),
+    queryFn: () => <%= tableNameCase.camel %>Get({<%= fkNameCase.camel %>, <%= pkNameCase.camel %>}),
   })
 }
