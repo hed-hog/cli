@@ -3,7 +3,6 @@ import * as path from 'path';
 import { formatTypeScriptCode } from '../utils/format-typescript-code';
 import { render } from 'ejs';
 import { capitalize } from '../utils/convert-string-cases';
-import { Table } from '../../lib/types/table';
 import { Column } from '../types/column';
 
 export class DTOCreator {
@@ -21,25 +20,21 @@ export class DTOCreator {
     const dtoPath = path.join(this.libraryPath, 'dto');
     await fs.mkdir(dtoPath, { recursive: true });
 
-    await this.createCreateDTO(dtoPath);
-    await this.createUpdateDTO(dtoPath);
+    await this.createDTO('create', dtoPath);
+    await this.createDTO('update', dtoPath);
   }
 
   private getPrimitiveType(type: string): string {
-    switch (type) {
-      case 'varchar':
-      case 'date':
-      case 'text':
-        return 'string';
-      case 'int':
-      case 'decimal':
-      case 'fk':
-        return 'number';
-      case 'boolean':
-        return 'boolean';
-      default:
-        return 'string';
-    }
+    const typeMapping: Record<string, string> = {
+      varchar: 'string',
+      date: 'string',
+      text: 'string',
+      int: 'number',
+      decimal: 'number',
+      fk: 'number',
+      boolean: 'boolean',
+    };
+    return typeMapping[type] || 'string';
   }
 
   private async writeFormattedFile(filePath: string, content: string) {
@@ -64,60 +59,88 @@ export class DTOCreator {
     return fs.readFile(templatePath, 'utf-8');
   }
 
-  private hasOptional(column: Column) {
-    return column.isNullable === true || column.default !== undefined;
+  private hasOptional(column: Column): boolean {
+    return column.isNullable || column.default !== undefined;
   }
 
-  private async createCreateDTO(dtoPath: string) {
-    let importsSet = new Set<string>();
-    const dtoFields = [];
+  private async createDTO(type: 'create' | 'update', dtoPath: string) {
+    const importsSet = new Set<string>();
+    const dtoFields: string[] = [];
+    const dtoImports = new Set<string>();
     let hasOptional = false;
 
-    for (const f of this.fields) {
-      const importTemplateContent =
-        await this.loadTemplate('import.dto.ts.ejs');
-      const type = this.getPrimitiveType(f.type);
-      const renderedImport = render(importTemplateContent, {
-        type: capitalize(type),
-      });
-      importsSet.add(renderedImport);
+    if (type === 'create') {
+      // Process fields for "create" DTO
+      for (const field of this.fields) {
+        const primitiveType = this.getPrimitiveType(field.type);
+        dtoImports.add(primitiveType);
 
-      const fieldTemplateContent = await this.loadTemplate(
-        `${type}.dto.ts.ejs`,
-      );
-      let renderedField = render(fieldTemplateContent, {
-        fieldName: f.name,
-        optionalSignal: this.hasOptional(f) ? '?' : '',
-        isOptional: this.hasOptional(f),
-      });
-
-      if (this.hasOptional(f)) {
-        hasOptional = true;
+        const renderedField = await this.renderField(field, primitiveType);
+        if (this.hasOptional(field)) {
+          hasOptional = true;
+        }
+        dtoFields.push(renderedField);
       }
 
-      dtoFields.push(renderedField);
+      await this.addImports(dtoImports, importsSet, hasOptional);
+
+      const dtoContent = await this.renderDTO({
+        fields: dtoFields,
+        imports: Array.from(importsSet),
+        hasLocale: this.hasLocale,
+        templateName: `${type}.dto.ts.ejs`,
+      });
+
+      const filePath = path.join(dtoPath, `${type}.dto.ts`);
+      await this.writeFormattedFile(filePath, dtoContent);
+    } else if (type === 'update') {
+      // Render template for "update" DTO
+      const updateTemplateContent =
+        await this.loadTemplate('update.dto.ts.ejs');
+      const filePath = path.join(dtoPath, 'update.dto.ts');
+      await this.writeFormattedFile(filePath, updateTemplateContent);
     }
-
-    const imports = Array.from(importsSet);
-
-    if (hasOptional) {
-      imports.push("import { IsOptional } from 'class-validator';");
-    }
-
-    const createTemplateContent = await this.loadTemplate('create.dto.ts.ejs');
-    const createDTOContent = render(createTemplateContent, {
-      fields: dtoFields.join('\n\n'),
-      imports: imports.join('\n'),
-      hasLocale: this.hasLocale,
-    });
-
-    const createDtoFilePath = path.join(dtoPath, 'create.dto.ts');
-    await this.writeFormattedFile(createDtoFilePath, createDTOContent);
   }
 
-  private async createUpdateDTO(dtoPath: string) {
-    const updateTemplateContent = await this.loadTemplate('update.dto.ts.ejs');
-    const updateDtoFilePath = path.join(dtoPath, 'update.dto.ts');
-    await this.writeFormattedFile(updateDtoFilePath, updateTemplateContent);
+  private async renderField(field: Column, type: string): Promise<string> {
+    const templateContent = await this.loadTemplate(`${type}.dto.ts.ejs`);
+    return render(templateContent, {
+      fieldName: field.name,
+      optionalSignal: this.hasOptional(field) ? '?' : '',
+      isOptional: this.hasOptional(field),
+    });
+  }
+
+  private async addImports(
+    dtoImports: Set<string>,
+    importsSet: Set<string>,
+    hasOptional: boolean,
+  ) {
+    const importTemplateContent = await this.loadTemplate('import.dto.ts.ejs');
+    const types = Array.from(dtoImports).map((type) => `Is${capitalize(type)}`);
+    if (hasOptional) {
+      types.push('IsOptional');
+    }
+
+    const renderedImport = render(importTemplateContent, {
+      types: types.join(','),
+    });
+
+    importsSet.add(renderedImport);
+  }
+
+  private async renderDTO(params: {
+    fields: string[];
+    imports: string[];
+    hasLocale: boolean;
+    templateName: string;
+  }): Promise<string> {
+    const { fields, imports, hasLocale, templateName } = params;
+    const templateContent = await this.loadTemplate(templateName);
+    return render(templateContent, {
+      fields: fields.join('\n\n'),
+      imports: imports.join('\n'),
+      hasLocale,
+    });
   }
 }
