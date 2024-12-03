@@ -522,7 +522,6 @@ export class ApplyAction extends AbstractAction {
       .getTables()
       .find((t) => t.name === tableName) as Table;
     const tableApply = await TableFactory.create(table, this.hedhogFilePath);
-
     fields = fields
       .filter(
         (field) => !['pk', 'created_at', 'updated_at'].includes(field.type),
@@ -636,6 +635,11 @@ export class ApplyAction extends AbstractAction {
         templates: ['create-panel.ts.ejs', 'update-panel.ts.ejs'],
         data: {
           tableName,
+          relationTables: tablesWithRelations.filter(
+            (t) => t.name === tableApply.name,
+          ).length
+            ? relationOfItems.map((i) => toObjectCase(i)).map((i) => i.kebab)
+            : [],
           tableNameCase: toObjectCase(tableApply.name),
           tableNameRelatedCase: toObjectCase(tableApply.tableNameRelation),
           fkNameCase: toObjectCase(tableApply.fkName),
@@ -663,8 +667,6 @@ export class ApplyAction extends AbstractAction {
       for (const template of task.templates) {
         const isRelatedTemplate = template.endsWith('-related.ts.ejs');
         if ((isRelatedTemplate && hasRelations) || !isRelatedTemplate) {
-          console.log({ template, tableName: table.name });
-
           const templatePath = path.join(
             __dirname,
             '..',
