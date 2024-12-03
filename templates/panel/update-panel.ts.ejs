@@ -21,7 +21,14 @@ export type <%= tableNameCase.pascal %>UpdatePanelProps = {
 
 const <%= tableNameCase.pascal %>UpdatePanel = forwardRef(
   ({  <% if (hasRelations) { %> id, <% } %> data, onUpdated }: <%= tableNameCase.pascal %>UpdatePanelProps, ref) => {
-    const { t } = useTranslation(['actions', 'fields', 'translations'])
+    const { t } = useTranslation([
+    'actions', 
+    'fields', 
+    'translations',
+    <% relationTables.forEach((table) => { %>
+      '<%= libraryName %>.<%= table %>',
+    <% }) %>
+  ]);
     const { data: item, isLoading } = use<%= tableNameCase.pascal %>Get(<% if (hasRelations) { %> id, <% } %>data.id as number)
     const { mutate: <%= tableNameCase.camel %>Update } = use<%= tableNameCase.pascal %>Update()
     const formRef = useRef<FormPanelRef>(null)

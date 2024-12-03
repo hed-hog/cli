@@ -73,6 +73,8 @@ export class FileCreator {
   }
 
   private filterFields(array: any[]) {
+    console.log({ array });
+
     return array
       .map((field) => AbstractTable.getColumnOptions(field))
       .filter((field) => !['created_at', 'updated_at'].includes(field.name))
