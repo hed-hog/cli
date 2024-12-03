@@ -10,7 +10,7 @@
       url={`/<%= tableNameCase.kebab %>/${item?.id}/<%= tableNameRelatedCase.kebab %>`}
       render={(item: <%= tableNameRelatedCase.pascal %>) => (
         <div className='flex flex-row gap-2'>
-          <span className='relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold'>
+          <span className='relative px-[0.3rem] py-[0.2rem] text-sm'>
             {item.<%= mainField %>}
           </span>
         </div>
