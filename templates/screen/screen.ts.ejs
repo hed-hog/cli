@@ -14,7 +14,7 @@ export default function Page() {
   const [selectedItems, setSelectedItems] = useState<<%= tableNameCase.pascal %>[]>([])
   const { mutate: delete<%= tableNameCase.pascal %> } = use<%= tableNameCase.pascal %>Delete()
   const { openSheet, confirm, closeSheet } = useApp()
-  const { t } = useTranslation(['<%= libraryName %>.<%= tableNameCase.kebab %>', 'modules', 'actions'])
+  const { t } = useTranslation(['<%= libraryName %>.<%= tableNameCase.kebab %>', 'modules', 'actions', 'fields'])
 
   const openCreate = () => {
     const id = openSheet({
@@ -64,7 +64,7 @@ export default function Page() {
         columns={[
           { key: 'id', header: 'ID', width: 64 },
           <% fieldsForSearch.forEach((field) => { %>
-            { key: '<%= field %>', header: t('<%= field %>', { ns: '<%= tableNameCase.kebab %>' }) },
+            { key: '<%= field %>', header: t('<%= tableNameCase.snake %>.<%= field %>', { ns: 'fields' }) },
           <% }) %>
         ]}
         selected={selectedItems as <%= tableNameCase.pascal %>[]}

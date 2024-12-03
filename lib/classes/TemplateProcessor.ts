@@ -72,11 +72,11 @@ class TemplateProcessor {
       await Promise.all([
         this.renderTemplate(
           join(this.functionTemplatePath, 'open-update.ts.ejs'),
-          { tableNameRelatedCase },
+          { tableNameRelatedCase, libraryNameCase: this.libraryNameCase },
         ),
         this.renderTemplate(
           join(this.functionTemplatePath, 'open-create.ts.ejs'),
-          { tableNameRelatedCase },
+          { tableNameRelatedCase, libraryNameCase: this.libraryNameCase },
         ),
         this.renderTemplate(
           join(this.functionTemplatePath, 'open-delete.ts.ejs'),
