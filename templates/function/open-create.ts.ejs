@@ -1,7 +1,7 @@
 const openCreate<%= tableNameRelatedCase.pascal %> = () => {
     const id = openDialog({
-      title: t('create', { ns: 'actions' }),
-      description: t('createText', { ns: '<%= tableNameRelatedCase.kebab %>' }),
+      title: t('create', { ns: '<%= libraryNameCase.kebab %>.<%= tableNameRelatedCase.kebab %>' }),
+      description: t('createText', { ns: '<%= libraryNameCase.kebab %>.<%= tableNameRelatedCase.kebab %>' }),
       children: () => (
         <<%= tableNameRelatedCase.pascal %>CreatePanel id={Number(data.id)} onCreated={() => closeDialog(id)} />
       ),
