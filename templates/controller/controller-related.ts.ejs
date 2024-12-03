@@ -42,6 +42,14 @@ export class <%= tableNameCase.pascal %>Controller {
     return this.<%= tableNameCase.camel %>Service.list(paginationParams, <%= fkNameCase.camel %>);
   }
 
+  @Get(':<%= pkNameCase.camel %>')
+  get(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
+  ){
+    return this.<%= tableNameCase.camel %>Service.get(<%= fkNameCase.camel %>, <%= pkNameCase.camel %>);
+  }
+
   @Patch(':<%= pkNameCase.camel %>')
   update(
     @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,

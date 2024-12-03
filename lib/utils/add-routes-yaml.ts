@@ -43,6 +43,11 @@ export const addRoutesToYaml = async (
             relations,
           },
           {
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
+            method: 'GET',
+            relations,
+          },
+          {
             url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
             method: 'POST',
             relations,

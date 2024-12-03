@@ -21,6 +21,15 @@ export class <%= tableNameCase.pascal %>Service {
     });
   }
 
+  async get(<%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number) {
+    return this.prismaService.<%= tableNameCase.snake %>.findFirst({
+      where: {
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+        <%= pkNameCase.camel %>:<%= pkNameCase.camel %>,
+      },
+    });
+  }
+  
   async list(paginationParams: PaginationDTO, <%= fkNameCase.camel %>?: number) {
     const where: any = {};
     if (<%= fkNameCase.camel %> !== undefined) where.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
