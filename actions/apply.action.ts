@@ -619,6 +619,7 @@ export class ApplyAction extends AbstractAction {
           'requests.ts.ejs',
           'requests-related.ts.ejs',
           'handlers.ts.ejs',
+          'handlers-related.ts.ejs',
         ],
         data: {
           tableName,
@@ -663,11 +664,10 @@ export class ApplyAction extends AbstractAction {
       await mkdir(taskPath, { recursive: true });
 
       for (const template of task.templates) {
-        if (
-          (hasRelations && template === 'requests-related.ts.ejs') ||
-          (!hasRelations && template === 'requests.ts.ejs') ||
-          !template.includes('requests')
-        ) {
+        const isRelatedTemplate = template.endsWith('-related.ts.ejs');
+        if ((isRelatedTemplate && hasRelations) || !isRelatedTemplate) {
+          console.log({ template, tableName: table.name });
+
           const templatePath = path.join(
             __dirname,
             '..',

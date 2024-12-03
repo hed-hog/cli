@@ -10,12 +10,12 @@ export type <%= tableNameCase.pascal %>CreatePanelRef = {
 }
 
 export type <%= tableNameCase.pascal %>CreatePanelProps = {
-    <% if (hasRelations) { %>id: number<% } %>
+    <% if (hasRelations) { %> id: number <% } %>
     onCreated?: (data: <%= tableNameCase.pascal %>) => void
 }
 
 const <%= tableNameCase.pascal %>CreatePanel = forwardRef(
-    ({  <% if (hasRelations) { %>id,<% } %> onCreated }: <%= tableNameCase.pascal %>CreatePanelProps, ref) => {
+    ({  <% if (hasRelations) { %> id, <% } %> onCreated }: <%= tableNameCase.pascal %>CreatePanelProps, ref) => {
         const formRef = useRef<FormPanelRef>(null)
         const { t } = useTranslation(['actions', 'fields', 'translations'])
         const { mutateAsync: create<%= tableNameCase.pascal %> } = use<%= tableNameCase.pascal %>Create()
@@ -49,7 +49,7 @@ const <%= tableNameCase.pascal %>CreatePanel = forwardRef(
                 button={{ text: t('create', { ns: 'actions' }) }}
                 onSubmit={async (data) => {
                     const createdData = await create<%= tableNameCase.pascal %>({
-                        <% if (hasRelations) { %><%= fkNameCase.camel %>: Number(id),<% } %>
+                        <% if (hasRelations) { %> <%= fkNameCase.camel %>: Number(id), <% } %>
                         data
                     })
                     if (typeof onCreated === 'function') {

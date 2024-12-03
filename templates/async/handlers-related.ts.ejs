@@ -19,10 +19,10 @@ export function use<%= tableNameCase.pascal %>Update() {
   return useDefaultMutation(scope, 'update', <%= tableNameCase.camel %>Update)
 }
 
-export function use<%= tableNameCase.pascal %>Get(id: number) {
+export function use<%= tableNameCase.pascal %>Get(<%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number) {
   const { <%= tableNameCase.camel %>Get } = requests()
   return useQuery({
     queryKey: [scope, 'get'],
-    queryFn: () => <%= tableNameCase.camel %>Get(id),
+    queryFn: () => <%= tableNameCase.camel %>Get(<%= fkNameCase.camel %>, <%= pkNameCase.camel %>),
   })
 }

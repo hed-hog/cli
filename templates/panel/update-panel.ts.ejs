@@ -14,13 +14,13 @@ import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
 <%- extraImports %>
 
 export type <%= tableNameCase.pascal %>UpdatePanelProps = {
-  <%= if (hasRelations) { %> id: number <%= } %>
+  <% if (hasRelations) { %> id: number <% } %>
   data: <%= tableNameCase.pascal %>
   onUpdated?: (data: <%= tableNameCase.pascal %>) => void
 }
 
 const <%= tableNameCase.pascal %>UpdatePanel = forwardRef(
-  ({  <%= if (hasRelations) { %> id <%= } %>data, onUpdated }: <%= tableNameCase.pascal %>UpdatePanelProps, ref) => {
+  ({  <% if (hasRelations) { %> id, <% } %> data, onUpdated }: <%= tableNameCase.pascal %>UpdatePanelProps, ref) => {
     const { t } = useTranslation(['actions', 'fields', 'translations'])
     const { data: item, isLoading } = use<%= tableNameCase.pascal %>Get(data.id as number)
     const { mutate: <%= tableNameCase.camel %>Update } = use<%= tableNameCase.pascal %>Update()
@@ -63,9 +63,9 @@ const <%= tableNameCase.pascal %>UpdatePanel = forwardRef(
                   button={{ text: t('save', { ns: 'actions' }) }}
                   onSubmit={(data) => {
                     <%= tableNameCase.camel %>Update({ 
-                      <%= if (hasRelations) { %>
+                      <% if (hasRelations) { %>
                         <%= fkNameCase.camel %>: id,
-                      <%= }%>id: data.id, data })
+                      <% } %>id: data.id, data })
                     if (typeof onUpdated === 'function') {
                       onUpdated(data)
                     }
