@@ -8,12 +8,12 @@ import { Column } from '../types/column';
 
 export class DTOCreator {
   private libraryPath: string;
-  private table: Table;
+  private fields: Column[];
   private hasLocale: boolean;
 
-  constructor(libraryPath: string, table: Table, hasLocale: boolean) {
+  constructor(libraryPath: string, fields: Column[], hasLocale: boolean) {
     this.libraryPath = libraryPath;
-    this.table = table;
+    this.fields = fields;
     this.hasLocale = hasLocale;
   }
 
@@ -73,7 +73,7 @@ export class DTOCreator {
     const dtoFields = [];
     let hasOptional = false;
 
-    for (const f of this.table.columns) {
+    for (const f of this.fields) {
       const importTemplateContent =
         await this.loadTemplate('import.dto.ts.ejs');
       const type = this.getPrimitiveType(f.type);
@@ -90,13 +90,6 @@ export class DTOCreator {
         optionalSignal: this.hasOptional(f) ? '?' : '',
         isOptional: this.hasOptional(f),
       });
-
-      if (f.name === 'primary') {
-        console.log('========================');
-        console.log(this.libraryPath);
-        console.log('column', f.default, f);
-        console.log('========================');
-      }
 
       if (this.hasOptional(f)) {
         hasOptional = true;

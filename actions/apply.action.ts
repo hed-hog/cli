@@ -99,28 +99,9 @@ export class ApplyAction extends AbstractAction {
         .filter(
           ({ type }) => !['pk', 'created_at', 'updated_at'].includes(type),
         )
-        .filter((field) => field.name !== tableApply.fkName)
-        .map((column) => {
-          const columnName = column.type === 'slug' ? 'slug' : column.name;
-          const columnType = column.type === 'slug' ? 'varchar' : column.type;
-          if (!columnName) return '';
-          const lengthPart = column.length
-            ? `${column.length}`
-            : column.type === 'varchar'
-              ? '255'
-              : '';
-          return `${columnName}:${columnType || 'varchar'}:${lengthPart}:${Boolean(column.isNullable)}`;
-        })
-        .filter(Boolean)
-        .join(',');
+        .filter((field) => field.name !== tableApply.fkName);
 
-      if (table.name === 'person_contact') {
-        console.log('************');
-        console.log(table.columns);
-        console.log('************');
-      }
-
-      new DTOCreator(dtoFilePath, table, hasLocale)
+      new DTOCreator(dtoFilePath, fields, hasLocale)
         .createDTOs()
         .then(() => console.log('DTOs criados com sucesso!'));
 
