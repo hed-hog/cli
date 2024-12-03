@@ -1,1 +1,4 @@
 import { <%- tableNameCase.pascal %> } from '@/types/models/<%= tableNameCase.pascal %>.ts'
+import { use<%- tableNameCase.pascal %>Delete } from '@/features/<%= libraryNameCase.kebab %>/<%- tableNameCase.kebab %>'
+import <%= tableNameCase.pascal %>CreatePanel from '@/pages/<%= libraryNameCase.kebab %>/<%= tableNameCase.kebab%>/components/<%= tableNameCase.kebab %>-create-panel'
+import <%= tableNameCase.pascal %>UpdatePanel from '@/pages/<%= libraryNameCase.kebab %>/<%= tableNameCase.kebab%>/components/<%= tableNameCase.kebab %>-update-panel'

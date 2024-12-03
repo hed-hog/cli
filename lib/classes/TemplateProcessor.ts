@@ -10,10 +10,9 @@ class TemplateProcessor {
   private functionTemplatePath: string;
   private extraVars: string[];
   private extraImports: string[];
-  private libraryName: string;
+  private libraryNameCase: object;
 
   constructor(relationTables: any[], libraryName: string) {
-    this.libraryName = libraryName;
     this.relationTables = relationTables;
     this.panelTemplatePath = join(__dirname, '..', '..', 'templates', 'panel');
     this.functionTemplatePath = join(
@@ -32,6 +31,7 @@ class TemplateProcessor {
     );
     this.extraVars = [];
     this.extraImports = [];
+    this.libraryNameCase = toObjectCase(libraryName);
   }
 
   private async renderTemplate(
@@ -44,29 +44,21 @@ class TemplateProcessor {
 
   private async processTable(tableName: string): Promise<{
     variableRendering: string;
-    importPanelRendering: string;
     importsRendering: string;
   }> {
     const tableNameCase = toObjectCase(tableName);
-    const libraryNameCase = toObjectCase(this.libraryName);
+    const [variableRendering, importsRendering] = await Promise.all([
+      this.renderTemplate(
+        join(this.panelTemplatePath, 'tab-panel-vars.ts.ejs'),
+        { tableNameCase },
+      ),
+      this.renderTemplate(
+        join(this.panelTemplatePath, 'tab-panel-imports.ts.ejs'),
+        { tableNameCase, libraryNameCase: this.libraryNameCase },
+      ),
+    ]);
 
-    const [variableRendering, importPanelRendering, importsRendering] =
-      await Promise.all([
-        this.renderTemplate(
-          join(this.panelTemplatePath, 'tab-panel-ref.ts.ejs'),
-          { tableNameCase },
-        ),
-        this.renderTemplate(
-          join(this.panelTemplatePath, 'import-panel.ts.ejs'),
-          { tableNameCase, libraryNameCase },
-        ),
-        this.renderTemplate(
-          join(this.panelTemplatePath, 'tab-panel-imports.ts.ejs'),
-          { tableNameCase },
-        ),
-      ]);
-
-    return { variableRendering, importPanelRendering, importsRendering };
+    return { variableRendering, importsRendering };
   }
 
   private async processRelatedFunctions(relatedTable: string): Promise<{
@@ -88,7 +80,7 @@ class TemplateProcessor {
         ),
         this.renderTemplate(
           join(this.functionTemplatePath, 'open-delete.ts.ejs'),
-          { tableNameRelatedCase, libraryName: this.libraryName },
+          { tableNameRelatedCase, libraryNameCase: this.libraryNameCase },
         ),
       ]);
 
@@ -113,7 +105,7 @@ class TemplateProcessor {
   }> {
     await this.processStaticImports();
     for (const tableName of this.relationTables) {
-      const { variableRendering, importPanelRendering, importsRendering } =
+      const { variableRendering, importsRendering } =
         await this.processTable(tableName);
 
       const { openUpdateRendering, openCreateRendering, openDeleteRendering } =
@@ -125,7 +117,7 @@ class TemplateProcessor {
         openUpdateRendering,
         openDeleteRendering,
       );
-      this.extraImports.push(importPanelRendering, importsRendering);
+      this.extraImports.push(importsRendering);
     }
 
     return { extraVars: this.extraVars, extraImports: this.extraImports };

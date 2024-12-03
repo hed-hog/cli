@@ -39,9 +39,11 @@ export function requests() {
     }).then((res) => res.data);
   };
 
-  const <%= tableNameCase.camel %>Delete = async (<%= fkNameCase.camel %>: number, ids: number[]) => {
+  const <%= tableNameCase.camel %>Delete = async (params: { id: number, ids: number[] }) => {
+    const { id, ids } = params
+    
     return request<Delete>({
-      url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>`,
+      url: `/<%= tableNameRelatedCase.kebab %>/${id}/<%= tableNameCase.kebab %>`,
       method: HttpMethod.DELETE,
       data: { ids },
     }).then((res) => res.data);

@@ -545,7 +545,6 @@ export class ApplyAction extends AbstractAction {
       }));
 
     const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
-    const hasLocale = this.hedhogFile.hasLocale(tableName);
     const extraTabs: any[] = [];
     const extraVariables: any[] = [];
     const extraImportStatements: any[] = [];

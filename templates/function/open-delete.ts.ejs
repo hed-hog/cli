@@ -1,12 +1,13 @@
 const openDelete<%= tableNameRelatedCase.pascal %> = (items: <%= tableNameRelatedCase.pascal %>[]) => {
     return confirm({
       title: `${t('delete', { ns: 'actions' })} ${items.length} ${isPlural(items.length) ? t('items', { ns: 'actions' }) : t('item', { ns: 'actions' })}`,
-      description: t('deleteText', { ns: '<%= libraryName %>.<%= tableNameRelatedCase.kebab %>' })
+      description: t('deleteText', { ns: '<%= libraryNameCase.snake %>.<%= tableNameRelatedCase.kebab %>' })
     })
       .then(() =>
-        delete<%= tableNameRelatedCase.pascal %>(
-          items.map((item) => item.id).filter((id) => id !== undefined)
-        )
+      <%= tableNameRelatedCase.camel %>Delete({
+          id: Number(data.id),
+          ids: items.map((item) => item.id).filter((id) => id !== undefined)
+        })
       )
       .catch(() => setSelectedItems(items));
 };
