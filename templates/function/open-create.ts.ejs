@@ -3,7 +3,7 @@ const openCreate<%= tableNameRelatedCase.pascal %> = () => {
       title: t('create', { ns: 'actions' }),
       description: t('createText', { ns: '<%= tableNameRelatedCase.kebab %>' }),
       children: () => (
-        <<%= tableNameRelatedCase.pascal %>CreatePanel onCreated={() => closeDialog(id)} />
+        <<%= tableNameRelatedCase.pascal %>CreatePanel id={Number(data.id)} onCreated={() => closeDialog(id)} />
       ),
     })
 
