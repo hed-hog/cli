@@ -104,13 +104,23 @@ export class ApplyAction extends AbstractAction {
           const columnName = column.type === 'slug' ? 'slug' : column.name;
           const columnType = column.type === 'slug' ? 'varchar' : column.type;
           if (!columnName) return '';
-          const lengthPart = column.length ? `${column.length}` : '255';
+          const lengthPart = column.length
+            ? `${column.length}`
+            : column.type === 'varchar'
+              ? '255'
+              : '';
           return `${columnName}:${columnType || 'varchar'}:${lengthPart}:${Boolean(column.isNullable)}`;
         })
         .filter(Boolean)
         .join(',');
 
-      new DTOCreator(dtoFilePath, fields, hasLocale)
+      if (table.name === 'person_contact') {
+        console.log('************');
+        console.log(table.columns);
+        console.log('************');
+      }
+
+      new DTOCreator(dtoFilePath, table, hasLocale)
         .createDTOs()
         .then(() => console.log('DTOs criados com sucesso!'));
 

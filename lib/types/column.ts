@@ -13,4 +13,5 @@ export interface Column {
   };
   isNullable?: boolean;
   inputType?: string;
+  default?: any;
 }

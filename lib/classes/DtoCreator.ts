@@ -3,15 +3,17 @@ import * as path from 'path';
 import { formatTypeScriptCode } from '../utils/format-typescript-code';
 import { render } from 'ejs';
 import { capitalize } from '../utils/convert-string-cases';
+import { Table } from '../../lib/types/table';
+import { Column } from '../types/column';
 
 export class DTOCreator {
   private libraryPath: string;
-  private fields: string;
+  private table: Table;
   private hasLocale: boolean;
 
-  constructor(libraryPath: string, fields: string, hasLocale: boolean) {
+  constructor(libraryPath: string, table: Table, hasLocale: boolean) {
     this.libraryPath = libraryPath;
-    this.fields = fields;
+    this.table = table;
     this.hasLocale = hasLocale;
   }
 
@@ -21,13 +23,6 @@ export class DTOCreator {
 
     await this.createCreateDTO(dtoPath);
     await this.createUpdateDTO(dtoPath);
-  }
-
-  private parseFields(fields: string): any[] {
-    return fields.split(',').map((field) => {
-      const [name, type, length, isNullable] = field.split(':');
-      return { name, type, length, isNullable };
-    });
   }
 
   private getPrimitiveType(type: string): string {
@@ -69,13 +64,16 @@ export class DTOCreator {
     return fs.readFile(templatePath, 'utf-8');
   }
 
+  private hasOptional(column: Column) {
+    return column.isNullable === true || column.default !== undefined;
+  }
+
   private async createCreateDTO(dtoPath: string) {
-    const parsedFields = this.parseFields(this.fields);
     let importsSet = new Set<string>();
     const dtoFields = [];
     let hasOptional = false;
 
-    for (const f of parsedFields) {
+    for (const f of this.table.columns) {
       const importTemplateContent =
         await this.loadTemplate('import.dto.ts.ejs');
       const type = this.getPrimitiveType(f.type);
@@ -89,11 +87,18 @@ export class DTOCreator {
       );
       let renderedField = render(fieldTemplateContent, {
         fieldName: f.name,
-        optionalSignal: f.isNullable === 'true' ? '?' : '',
-        isOptional: f.isNullable === 'true',
+        optionalSignal: this.hasOptional(f) ? '?' : '',
+        isOptional: this.hasOptional(f),
       });
 
-      if (f.isNullable === 'true' || f.default !== undefined) {
+      if (f.name === 'primary') {
+        console.log('========================');
+        console.log(this.libraryPath);
+        console.log('column', f.default, f);
+        console.log('========================');
+      }
+
+      if (this.hasOptional(f)) {
         hasOptional = true;
       }
 
