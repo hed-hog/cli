@@ -49,10 +49,19 @@ export function requests() {
     }).then((res) => res.data);
   };
 
+  const <%= tableNameCase.camel %>Get = async (params: { <%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number }) => {
+    const { <%= fkNameCase.camel %>, <%= pkNameCase.camel %> } = params
+    
+    return request<<%= tableNameCase.pascal %>Type>({
+      url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>/${<%= pkNameCase.camel %>}`,
+    }).then((res) => res.data);
+  }
+
   return {
     <%= tableNameCase.camel %>Create,
     <%= tableNameCase.camel %>Update,
     <%= tableNameCase.camel %>Delete,
     <%= tableNameCase.camel %>List,
+    <%= tableNameCase.camel %>Get
   };
 }
