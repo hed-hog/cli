@@ -1,7 +1,7 @@
 const openUpdate<%= tableNameRelatedCase.pascal %> = (item<%= tableNameRelatedCase.pascal %>: <%= tableNameRelatedCase.pascal %>) => {
     const id = openDialog({
       children: () => (
-        <<%= tableNameRelatedCase.pascal %>UpdatePanel id={Number(item.id)} data={item<%= tableNameRelatedCase.pascal %>} onUpdated={() => closeDialog(id)} />
+        <<%= tableNameRelatedCase.pascal %>UpdatePanel id={Number(item?.id)} data={item<%= tableNameRelatedCase.pascal %>} onUpdated={() => closeDialog(id)} />
       ),
       title: t('edit', { ns: '<%= tableNameRelatedCase.kebab %>' }),
       description: t('editText', { ns: '<%= tableNameRelatedCase.kebab %>' }),
