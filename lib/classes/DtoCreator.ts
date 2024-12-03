@@ -93,7 +93,7 @@ export class DTOCreator {
         isOptional: f.isNullable === 'true',
       });
 
-      if (f.isNullable === 'true') {
+      if (f.isNullable === 'true' || f.default !== undefined) {
         hasOptional = true;
       }
 
