@@ -24,7 +24,8 @@ export function requests() {
     ).then((res) => res.data)
   }
 
-  const <%= tableNameCase.camel %>Create = async (data: <%= tableNameCase.pascal %> ) => {
+  const <%= tableNameCase.camel %>Create = async (params: { data: <%= tableNameCase.pascal %> }) => {
+    const { data } = params
     return request<<%= tableNameCase.pascal %>>(
      { 
         url: '/<%= tableNameCase.kebab %>',

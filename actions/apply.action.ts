@@ -607,7 +607,10 @@ export class ApplyAction extends AbstractAction {
         extraTabs.push(renderedContent);
       }
     }
-    console.log({ name: tableApply });
+
+    const hasRelations = tablesWithRelations.find((t) =>
+      t.relations.includes(tableName),
+    );
 
     const tasks = [
       {
@@ -627,6 +630,7 @@ export class ApplyAction extends AbstractAction {
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
           fields,
+          hasRelations,
         },
       },
       {
@@ -642,6 +646,7 @@ export class ApplyAction extends AbstractAction {
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
           fields,
+          hasRelations,
           extraTabs,
           extraVars: extraVariables.join('\n'),
           extraImports: extraImportStatements.join('\n'),
@@ -659,10 +664,6 @@ export class ApplyAction extends AbstractAction {
       await mkdir(taskPath, { recursive: true });
 
       for (const template of task.templates) {
-        const hasRelations = tablesWithRelations.find((t) =>
-          t.relations.includes(tableName),
-        );
-
         if (
           (hasRelations && template === 'requests-related.ts.ejs') ||
           (!hasRelations && template === 'requests.ts.ejs') ||
@@ -675,6 +676,7 @@ export class ApplyAction extends AbstractAction {
             task.templateSubPath,
             template,
           );
+
           const fileContent = render(
             await readFile(templatePath, 'utf-8'),
             task.data,
