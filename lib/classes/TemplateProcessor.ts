@@ -89,9 +89,9 @@ class TemplateProcessor {
 
   private async processStaticImports(): Promise<void> {
     const [useAppVars, useAppImports] = await Promise.all([
-      this.renderTemplate(join(this.customTemplatePath, 'use-app-vars.ts.ejs')),
+      this.renderTemplate(join(this.customTemplatePath, 'static-vars.ts.ejs')),
       this.renderTemplate(
-        join(this.customTemplatePath, 'import-use-app.ts.ejs'),
+        join(this.customTemplatePath, 'static-imports.ts.ejs'),
       ),
     ]);
 
