@@ -77,7 +77,7 @@ export class ApplyAction extends AbstractAction {
     const tables = this.parseYamlFile(this.hedhogFilePath);
     this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
-    const localeTables = [];
+    const localeTables: any[] = [];
     for (const table of this.hedhogFile.getTables()) {
       if (table.name.endsWith('_locale')) {
         localeTables.push(table);
@@ -170,7 +170,15 @@ export class ApplyAction extends AbstractAction {
         this.hedhogFile.tables,
         path.join(this.libraryPath, 'frontend', 'translation', 'fields'),
         (tableName, table, en, pt) => {
-          table.columns.forEach((column: any) => {
+          const localeTable = localeTables?.find(
+            (locale) => locale.name === `${tableName}_locale`,
+          );
+
+          if (localeTable) {
+            table.columns = table.columns.concat(localeTable.columns);
+          }
+
+          table.columns.forEach((column: Column) => {
             if (column.locale) {
               const key = `${tableName}.${column.name ?? column.type}`;
               en[key] = column.locale.en;
