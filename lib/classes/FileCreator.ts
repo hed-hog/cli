@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { toObjectCase } from '../utils/convert-string-cases';
-import { render } from 'ejs';
+import { name, render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
 import { formatWithPrettier } from '../utils/format-with-prettier';
 import { formatTypeScriptCode } from '../utils/format-typescript-code';
@@ -9,13 +9,13 @@ import getLocaleYaml from '../utils/get-fk-locale-yaml';
 import { TableApply } from './TableApply';
 import { filterScreenCreation } from '../utils/filter-screen-creation';
 import { Column } from '../types/column';
+import { Table } from '../types/table';
 
 interface IOption {
   useLibraryNamePath?: boolean;
   importServices?: boolean;
   hasRelationsWith?: string;
   tablesWithRelations?: IRelation[];
-  fields?: IFields[];
   localeTables?: any[];
 }
 
@@ -24,12 +24,12 @@ interface IRelation {
   relations: string[];
 }
 
-type FileType = 'controller' | 'service' | 'module' | 'screen';
-
 interface IFields {
   name: string;
-  type: string;
+  isLocale: boolean;
 }
+
+type FileType = 'controller' | 'service' | 'module' | 'screen';
 
 export class FileCreator {
   private libraryPath: string;
@@ -37,7 +37,7 @@ export class FileCreator {
   private table: TableApply;
   private fileType: 'controller' | 'service' | 'module' | 'screen';
   private options: IOption;
-  private fieldsForSearch: string[];
+  private fieldsForSearch: IFields[];
 
   constructor(
     libraryPath: string,
@@ -49,7 +49,6 @@ export class FileCreator {
       importServices: false,
       hasRelationsWith: '',
       tablesWithRelations: [],
-      fields: [],
       localeTables: [],
     },
   ) {
@@ -80,13 +79,18 @@ export class FileCreator {
     );
   }
 
-  private filterFields(array: any[]) {
+  private filterFields(array: Column[]) {
     return array
       .map((field) => AbstractTable.getColumnOptions(field))
       .filter((field) => !['created_at', 'updated_at'].includes(field.name))
       .filter((field) => !field.references)
       .filter((field) => !field.isPrimary)
-      .map((field) => field.name);
+      .map((field) => {
+        return {
+          name: field.name,
+          isLocale: false,
+        };
+      });
   }
 
   private getFilePath(): string {
@@ -145,7 +149,16 @@ export class FileCreator {
       const fieldLocaleTable = localeTable.columns.find(
         (c: Column) => c.locale,
       )?.name;
-      this.fieldsForSearch = [...this.fieldsForSearch, fieldLocaleTable];
+
+      if (fieldLocaleTable) {
+        this.fieldsForSearch = [
+          ...this.fieldsForSearch,
+          {
+            name: fieldLocaleTable,
+            isLocale: true,
+          },
+        ];
+      }
     }
 
     const fileContent = await this.generateFileContent();
@@ -237,11 +250,12 @@ export class FileCreator {
   }
 
   private async generateFileContent() {
-    console.log({ fieldsForSearch: this.fieldsForSearch });
-
     const vars: any = {
       tableNameCase: this.table.name,
-      fieldsForSearch: this.fieldsForSearch,
+      fieldsForSearch:
+        this.fileType === 'screen'
+          ? this.fieldsForSearch
+          : this.fieldsForSearch.map((f) => f.name),
       relatedTableNameCase: String(this.options.hasRelationsWith),
       options: this.options,
       fkNameCase: this.table.fkName,

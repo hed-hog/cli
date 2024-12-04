@@ -62,9 +62,12 @@ export default function Page() {
         id='<%= tableNameCase.kebab %>'
         selectable
         columns={[
-          { key: 'id', header: 'ID', width: 64 },
+          { key: 'id', header: 'ID', width: 64, isLocale: false },
           <% fieldsForSearch.forEach((field) => { %>
-            { key: '<%= field %>', header: t('<%= tableNameCase.snake %>.<%= field %>', { ns: 'fields' }) },
+            { key: '<%= field.name %>', 
+              header: t('<%= tableNameCase.snake %>.<%= field.name %>', { ns: 'fields' }),
+              isLocale: <%= field.isLocale %>,
+            },
           <% }) %>
         ]}
         selected={selectedItems as <%= tableNameCase.pascal %>[]}

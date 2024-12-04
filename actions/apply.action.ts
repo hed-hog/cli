@@ -119,7 +119,6 @@ export class ApplyAction extends AbstractAction {
         tableApply,
         'service',
         {
-          fields: table.columns,
           useLibraryNamePath: true,
           hasRelationsWith: screenWithRelations,
         },
