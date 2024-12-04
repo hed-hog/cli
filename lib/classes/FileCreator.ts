@@ -8,6 +8,7 @@ import { formatTypeScriptCode } from '../utils/format-typescript-code';
 import getLocaleYaml from '../utils/get-fk-locale-yaml';
 import { TableApply } from './TableApply';
 import { filterScreenCreation } from '../utils/filter-screen-creation';
+import { Column } from '../types/column';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -15,12 +16,15 @@ interface IOption {
   hasRelationsWith?: string;
   tablesWithRelations?: IRelation[];
   fields?: IFields[];
+  localeTables?: any[];
 }
 
 interface IRelation {
   name: string;
   relations: string[];
 }
+
+type FileType = 'controller' | 'service' | 'module' | 'screen';
 
 interface IFields {
   name: string;
@@ -33,24 +37,28 @@ export class FileCreator {
   private table: TableApply;
   private fileType: 'controller' | 'service' | 'module' | 'screen';
   private options: IOption;
+  private fieldsForSearch: string[];
 
   constructor(
     libraryPath: string,
     libraryName: string,
-    table: TableApply,
-    fileType: 'controller' | 'service' | 'module' | 'screen',
+    table?: TableApply,
+    fileType?: 'controller' | 'service' | 'module' | 'screen',
     options: IOption = {
       useLibraryNamePath: false,
       importServices: false,
       hasRelationsWith: '',
       tablesWithRelations: [],
+      fields: [],
+      localeTables: [],
     },
   ) {
     this.libraryPath = libraryPath;
     this.libraryName = libraryName;
-    this.table = table;
-    this.fileType = fileType;
+    this.table = table as TableApply;
+    this.fileType = fileType as FileType;
     this.options = options;
+    this.fieldsForSearch = [];
   }
 
   private getFileFullPath(): string {
@@ -73,8 +81,6 @@ export class FileCreator {
   }
 
   private filterFields(array: any[]) {
-    console.log({ array });
-
     return array
       .map((field) => AbstractTable.getColumnOptions(field))
       .filter((field) => !['created_at', 'updated_at'].includes(field.name))
@@ -126,6 +132,22 @@ export class FileCreator {
     }
 
     await fs.mkdir(filePath, { recursive: true });
+    this.fieldsForSearch = this.filterFields(this.table.getColumns());
+
+    let localeTable = null;
+    if (this.table.hasLocale && this.options.localeTables) {
+      localeTable = this.options.localeTables.find(
+        (locale) => locale.name === `${this.table.name}_locale`,
+      );
+    }
+
+    if (localeTable) {
+      const fieldLocaleTable = localeTable.columns.find(
+        (c: Column) => c.locale,
+      )?.name;
+      this.fieldsForSearch = [...this.fieldsForSearch, fieldLocaleTable];
+    }
+
     const fileContent = await this.generateFileContent();
     const fileFullPath = this.getFileFullPath();
     await fs.writeFile(
@@ -215,13 +237,11 @@ export class FileCreator {
   }
 
   private async generateFileContent() {
-    console.log({
-      fieldsForSearch: this.filterFields(this.table.getColumns()),
-    });
+    console.log({ fieldsForSearch: this.fieldsForSearch });
 
     const vars: any = {
       tableNameCase: this.table.name,
-      fieldsForSearch: this.filterFields(this.table.getColumns()),
+      fieldsForSearch: this.fieldsForSearch,
       relatedTableNameCase: String(this.options.hasRelationsWith),
       options: this.options,
       fkNameCase: this.table.fkName,

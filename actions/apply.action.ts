@@ -77,6 +77,13 @@ export class ApplyAction extends AbstractAction {
     const tables = this.parseYamlFile(this.hedhogFilePath);
     this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
+    const localeTables = [];
+    for (const table of this.hedhogFile.getTables()) {
+      if (table.name.endsWith('_locale')) {
+        localeTables.push(table);
+      }
+    }
+
     for (const table of this.hedhogFile.getTables()) {
       const tableApply = await TableFactory.create(table, this.hedhogFilePath);
       const screenWithRelations = tableApply.findTableWithRelation();
@@ -92,6 +99,7 @@ export class ApplyAction extends AbstractAction {
       await this.createTranslationFiles(baseTableName);
 
       if (table.name.endsWith('_locale')) {
+        localeTables.push(table);
         continue;
       }
 
@@ -177,6 +185,9 @@ export class ApplyAction extends AbstractAction {
         this.libraryName,
         tableApply,
         'screen',
+        {
+          localeTables,
+        },
       ).createFile();
 
       addRoutesToYaml(this.librarySrcPath, table.name, screenWithRelations);
