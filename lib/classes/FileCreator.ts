@@ -136,7 +136,10 @@ export class FileCreator {
     }
 
     await fs.mkdir(filePath, { recursive: true });
-    this.fieldsForSearch = this.filterFields(this.table.getColumns());
+
+    if (this.table.getColumns !== undefined) {
+      this.fieldsForSearch = this.filterFields(this.table.getColumns());
+    }
 
     let localeTable = null;
     if (this.table.hasLocale && this.options.localeTables) {
