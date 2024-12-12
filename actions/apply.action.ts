@@ -490,6 +490,7 @@ export class ApplyAction extends AbstractAction {
   }
 
   mapFieldTypeToInputType(field: Column) {
+    if (field.field) return `EnumFieldType.${field.field.toUpperCase()}`;
     if (field.type === 'fk' && field.references?.table === 'file') {
       return `EnumFieldType.FILE`;
     }
