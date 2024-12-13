@@ -6,6 +6,7 @@ export interface Column {
   length?: number;
   isPrimary: boolean;
   locale?: Locale;
+  field?: string;
   references?: {
     table: string;
     column: string;

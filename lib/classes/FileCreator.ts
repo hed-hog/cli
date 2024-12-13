@@ -9,7 +9,7 @@ import getLocaleYaml from '../utils/get-fk-locale-yaml';
 import { TableApply } from './TableApply';
 import { filterScreenCreation } from '../utils/filter-screen-creation';
 import { Column } from '../types/column';
-import { Table } from '../types/table';
+import { existsSync, mkdirSync } from 'fs';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -62,13 +62,21 @@ export class FileCreator {
 
   private getFileFullPath(): string {
     if (this.fileType === 'screen') {
-      return path.join(
+      const componentsPath = path.join(
         this.getFilePath(),
         '..',
         '..',
         'frontend',
         `${this.table.name.toKebabCase()}`,
         'components',
+      );
+
+      if (!existsSync(componentsPath)) {
+        mkdirSync(componentsPath);
+      }
+
+      return path.join(
+        componentsPath,
         `${this.table.name.toKebabCase()}.${this.fileType}.tsx.ejs`,
       );
     }
@@ -136,7 +144,10 @@ export class FileCreator {
     }
 
     await fs.mkdir(filePath, { recursive: true });
-    this.fieldsForSearch = this.filterFields(this.table.getColumns());
+
+    if (this.table.getColumns !== undefined) {
+      this.fieldsForSearch = this.filterFields(this.table.getColumns());
+    }
 
     let localeTable = null;
     if (this.table.hasLocale && this.options.localeTables) {
@@ -163,6 +174,7 @@ export class FileCreator {
 
     const fileContent = await this.generateFileContent();
     const fileFullPath = this.getFileFullPath();
+    console.log(`Creating file: ${fileFullPath}`);
     await fs.writeFile(
       fileFullPath,
       await formatWithPrettier(fileContent, {

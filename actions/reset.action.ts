@@ -14,11 +14,12 @@ import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
 export class ResetAction extends AbstractAction {
   public async handle() {
     console.info(chalk.yellow('Resetting the project...'));
-
     let directoryPath = '';
+    let libPath = '';
 
     try {
       directoryPath = await getRootPath();
+      libPath = join(directoryPath, 'lib');
       directoryPath = join(directoryPath, 'backend');
     } catch (error) {
       return console.error(chalk.red('Directory is not a hedhog project.'));
@@ -31,6 +32,7 @@ export class ResetAction extends AbstractAction {
     await this.checkEnvFile(directoryPath);
     await this.recreateDatabase(directoryPath);
     await this.resetAdminFrontEnd(directoryPath);
+    await this.resetLocalStorageFiles(libPath);
 
     console.info(chalk.green('Project reset successfully.'));
   }
@@ -65,6 +67,19 @@ export class ResetAction extends AbstractAction {
       spinner.succeed('Admin Frontend cleared.');
     } else {
       spinner.warn('No Admin Frontend found.');
+    }
+  }
+
+  async resetLocalStorageFiles(path: string) {
+    const spinner = ora('Reset Local Storage Files...').start();
+    const storagePath = join(path, 'storage');
+
+    if (existsSync(storagePath)) {
+      await this.unlinkDirectoryRecursive(storagePath);
+      await mkdir(storagePath, { recursive: true });
+      spinner.succeed('Local storage files cleared.');
+    } else {
+      spinner.warn('No Local storage files found.');
     }
   }
 
