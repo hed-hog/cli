@@ -138,7 +138,7 @@ export class HedhogFile {
 
   get screensWithRelations() {
     if (!this._content.screens) {
-      throw new Error('No screens found in the hedhog file');
+      return [];
     }
 
     const screens = this._content.screens || {};
