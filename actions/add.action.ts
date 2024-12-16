@@ -60,6 +60,7 @@ export class AddAction extends AbstractAction {
   private addModuleName = '';
   private packageName = '';
   private nodeModulePath = '';
+  private isAlreadyInstalled = false;
 
   private hasMigrations = false;
 
@@ -148,33 +149,42 @@ export class AddAction extends AbstractAction {
     await this.initDb();
 
     this.packagesAdded = packagesAdded;
+    this.isAlreadyInstalled = await this.alreadyInstalled();
 
-    await this.installPackage();
-    await this.checkDependencies();
-    await this.checkIfModuleExists();
-    const installedModule = await this.modifyAppModule();
-    this.hasMigrations = false;
+    console.log({
+      packageName: this.packageName,
+      alreadyInstall: this.isAlreadyInstalled,
+    });
 
-    if (installedModule) {
-      this.hasMigrations = await this.copyMigrationsFiles();
-    }
+    if (!this.isAlreadyInstalled) {
+      await this.installPackage();
+      await this.checkDependencies();
+      await this.checkIfModuleExists();
 
-    if (this.isDbConnected && this.hasMigrations) {
-      try {
-        await runScript('migrate:up', this.backendPath);
-      } catch (error) {
-        console.error(chalk.red('Error running migrations.'));
+      const installedModule = await this.modifyAppModule();
+      this.hasMigrations = false;
+
+      if (installedModule) {
+        this.hasMigrations = await this.copyMigrationsFiles();
       }
-      this.migrateRun = true;
+
+      if (this.isDbConnected && this.hasMigrations) {
+        try {
+          await runScript('migrate:up', this.backendPath);
+        } catch (error) {
+          console.error(chalk.red('Error running migrations.'));
+        }
+        this.migrateRun = true;
+      }
+
+      await this.applyHedhogFile();
+      if (this.module === 'admin') {
+        await this.modifyControllerApp();
+      }
+
+      await this.copyFrontEndFiles();
     }
 
-    await this.applyHedhogFile();
-
-    if (this.module === 'admin') {
-      await this.modifyControllerApp();
-    }
-
-    await this.copyFrontEndFiles();
     if (!this.silentComplete) {
       await this.updateLibsPrisma();
       await this.complete();
@@ -190,6 +200,19 @@ export class AddAction extends AbstractAction {
     return {
       packagesAdded,
     };
+  }
+
+  async alreadyInstalled(): Promise<boolean> {
+    const packageJsonPath = join(this.backendPath, 'package.json');
+    if (!existsSync(packageJsonPath)) return false;
+    try {
+      const packageJson = await readFile(packageJsonPath, 'utf-8');
+      const { dependencies } = JSON.parse(packageJson);
+      return dependencies?.[this.packageName] !== undefined;
+    } catch (error) {
+      console.error('Error reading or parsing package.json:', error);
+      return false;
+    }
   }
 
   // route management
