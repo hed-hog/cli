@@ -452,10 +452,29 @@ export class AddAction extends AbstractAction {
               'modules.json',
             );
             await mkdirRecursive(join(localesDestPath, localeCode));
-            await copyFile(
-              join(translationModulesPath, localeFile),
-              localeDestPath,
-            );
+
+            if (existsSync(localeDestPath)) {
+              const existingContent = JSON.parse(
+                await readFile(localeDestPath, 'utf-8'),
+              );
+              const newContent = JSON.parse(
+                await readFile(
+                  join(translationModulesPath, localeFile),
+                  'utf-8',
+                ),
+              );
+              const mergedContent = { ...existingContent, ...newContent };
+              await writeFile(
+                localeDestPath,
+                JSON.stringify(mergedContent, null, 2),
+                'utf-8',
+              );
+            } else {
+              await copyFile(
+                join(translationModulesPath, localeFile),
+                localeDestPath,
+              );
+            }
           }
         }
 
@@ -471,10 +490,29 @@ export class AddAction extends AbstractAction {
               'fields.json',
             );
             await mkdirRecursive(join(localesDestPath, localeCode));
-            await copyFile(
-              join(translationFieldsPath, localeFile),
-              localeDestPath,
-            );
+
+            if (existsSync(localeDestPath)) {
+              const existingContent = JSON.parse(
+                await readFile(localeDestPath, 'utf-8'),
+              );
+              const newContent = JSON.parse(
+                await readFile(
+                  join(translationFieldsPath, localeFile),
+                  'utf-8',
+                ),
+              );
+              const mergedContent = { ...existingContent, ...newContent };
+              await writeFile(
+                localeDestPath,
+                JSON.stringify(mergedContent, null, 2),
+                'utf-8',
+              );
+            } else {
+              await copyFile(
+                join(translationFieldsPath, localeFile),
+                localeDestPath,
+              );
+            }
           }
         }
 
