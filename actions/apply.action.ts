@@ -227,20 +227,23 @@ export class ApplyAction extends AbstractAction {
     const hedhogFile2 = yaml.parse(
       await readFile(this.hedhogFilePath, 'utf-8'),
     );
-    const screensArray = Object.keys(hedhogFile2.screens);
-    const YAMLContent = await readFile(this.hedhogFilePath, 'utf-8');
-    const yamlData = yaml.parse(YAMLContent);
 
-    yamlData.routes = [];
+    if (hedhogFile2.screens) {
+      const screensArray = Object.keys(hedhogFile2.screens);
+      const YAMLContent = await readFile(this.hedhogFilePath, 'utf-8');
+      const yamlData = yaml.parse(YAMLContent);
 
-    const updatedYAML = yaml.stringify({
-      ...yamlData,
-      routes: yamlData.routes,
-    });
-    await writeFile(this.hedhogFilePath, updatedYAML, 'utf-8');
+      yamlData.routes = [];
 
-    for (const screen of screensArray) {
-      await this.createScreenRouterFile(screen);
+      const updatedYAML = yaml.stringify({
+        ...yamlData,
+        routes: yamlData.routes,
+      });
+      await writeFile(this.hedhogFilePath, updatedYAML, 'utf-8');
+
+      for (const screen of screensArray) {
+        await this.createScreenRouterFile(screen);
+      }
     }
   }
 
@@ -364,12 +367,7 @@ export class ApplyAction extends AbstractAction {
 
   async createTranslationFiles(tableName: string) {
     const spinner = ora(`Create translation files...`).start();
-    const localesAdminFolder = join(
-      this.rootPath,
-      'admin',
-      'src',
-      'locales',
-    );
+    const localesAdminFolder = join(this.rootPath, 'admin', 'src', 'locales');
     const localesFolder = join(
       this.rootPath,
       'lib',
@@ -561,13 +559,7 @@ export class ApplyAction extends AbstractAction {
 
     if (relatedItems.includes(tableName)) {
       const templateContent = await readFile(
-        join(
-          __dirname,
-          '..',
-          'templates',
-          'panel',
-          'tab-panel-item.ts.ejs',
-        ),
+        join(__dirname, '..', 'templates', 'panel', 'tab-panel-item.ts.ejs'),
         'utf-8',
       );
 
@@ -589,9 +581,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-          name: 'id',
-          ...table.columns.find((f) => f.type === 'pk'),
-        };
+            name: 'id',
+            ...table.columns.find((f) => f.type === 'pk'),
+          };
 
         const vars: any = {
           tableNameCase: tableApply.name,
