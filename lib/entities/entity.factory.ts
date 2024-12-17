@@ -1,6 +1,6 @@
+import { AbstractDatabase } from '../databases';
 import { DataType } from '../types/data-type';
 import { AbstractEntity } from './abstract.entity';
-import { AbstractDatabase } from '../databases';
 
 export class EntityFactory {
   public static create(db: AbstractDatabase, name: string, data: DataType[]) {

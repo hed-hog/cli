@@ -1,10 +1,10 @@
 import chalk = require('chalk');
+import { existsSync } from 'fs';
+import { mkdir, readFile, writeFile } from 'fs/promises';
+import { join, sep } from 'node:path';
+import { tmpdir } from 'os';
 import { version } from '../../package.json';
 import { getNpmPackage } from './get-npm-package';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { join, sep } from 'path';
-import { tmpdir } from 'os';
-import { existsSync } from 'fs';
 
 const filePath = join(tmpdir(), 'hedhog-cli');
 

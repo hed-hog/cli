@@ -1,8 +1,7 @@
-import { readFile } from 'fs/promises';
+import { access, readFile } from 'fs/promises';
+import { join } from 'node:path';
 import { homedir } from 'os';
-import { join } from 'path';
 import { parse } from 'yaml';
-import { access } from 'fs/promises';
 import chalk = require('chalk');
 
 export const getConfig = async (path: string) => {

@@ -10,12 +10,30 @@ export class TableApply {
   private _pkName = '';
   private _fkName = '';
 
+
+  /**
+   * Constructor for TableApply.
+   *
+   * @param {Table} _table TypeORM Table instance.
+   * @description
+   * This constructor takes a TypeORM Table instance and applies
+   * additional properties required for the workflow of the hedhog
+   * project. It calls methods to set the base name, has locale,
+   * has relations, table name relation, and primary/foreign key
+   * names.
+   */
   constructor(private _table: Table) {
     this.initBaseName();
     this.initHasLocale();
   }
 
-  get name() {
+
+  /**
+   * @description
+   * Return the name of the table.
+   * @returns {string}
+   */
+  get name(): string {
     return this._table.name;
   }
 

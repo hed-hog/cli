@@ -1,5 +1,5 @@
 import { existsSync } from 'fs';
-import { join, posix } from 'path';
+import { join, posix } from 'node:path';
 import { CommandLoader } from '../../commands';
 
 const localBinPathSegments = [process.cwd(), 'node_modules', '@hedhog', 'cli'];

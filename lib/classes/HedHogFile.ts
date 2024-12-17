@@ -1,8 +1,8 @@
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { parse, stringify } from 'yaml';
-import { Table } from '../types/table';
 import { Menu } from '../types/menu';
+import { Table } from '../types/table';
 
 export interface Route {
   url: string;

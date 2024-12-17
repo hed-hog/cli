@@ -1,11 +1,10 @@
 import chalk = require('chalk');
-import * as fs from 'fs';
-import * as path from 'path';
-import { AbstractAction } from './abstract.action';
-import { Input } from '../commands';
-import { prettier } from '../lib/utils/formatting';
 import { execSync } from 'child_process';
+import * as fs from 'fs';
+import { join } from 'node:path';
+import { Input } from '../commands';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';
+import { AbstractAction } from './abstract.action';
 
 export class RefreshAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -18,10 +17,10 @@ export class RefreshAction extends AbstractAction {
       process.exit(1);
     }
 
-    const packageJsonPath = path.join(process.cwd(), 'package.json');
-    const appModulePath = path.join(process.cwd(), 'src/app.module.ts');
-    const packageLockPath = path.join(process.cwd(), 'package-lock.json');
-    const migrationsPath = path.join(process.cwd(), 'src/typeorm/migrations');
+    const packageJsonPath = join(process.cwd(), 'package.json');
+    const appModulePath = join(process.cwd(), 'src/app.module.ts');
+    const packageLockPath = join(process.cwd(), 'package-lock.json');
+    const migrationsPath = join(process.cwd(), 'src/typeorm/migrations');
 
     if (!fs.existsSync(packageJsonPath)) {
       console.error(chalk.red('package.json not found.'));
@@ -39,7 +38,7 @@ export class RefreshAction extends AbstractAction {
     if (fs.existsSync(migrationsPath)) {
       const files = fs.readdirSync(migrationsPath);
       for (const file of files) {
-        const filePath = path.join(migrationsPath, file);
+        const filePath = join(migrationsPath, file);
         if (fs.statSync(filePath).isFile()) {
           fs.unlinkSync(filePath);
           console.info(`Deleted file: ${filePath}`);

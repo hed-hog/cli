@@ -1,19 +1,19 @@
 import chalk = require('chalk');
-import { AbstractAction } from './abstract.action';
-import * as ora from 'ora';
-import { join } from 'path';
-import { getRootPath } from '../lib/utils/get-root-path';
-import { Input } from '../commands';
-import { createPromptModule } from 'inquirer';
-import { homedir } from 'os';
-import { existsSync } from 'fs';
-import { mkdirRecursive } from '../lib/utils/checkVersion';
-import { readFile } from 'fs/promises';
-import { createOpenIAAssistent } from '../lib/utils/create-openia-assistent';
 import { render } from 'ejs';
-import { saveConfig } from '../lib/utils/save-config';
-import { getConfig } from '../lib/utils/get-config';
+import { existsSync } from 'fs';
+import { readFile } from 'fs/promises';
+import { createPromptModule } from 'inquirer';
+import { join } from 'node:path';
+import * as ora from 'ora';
+import { homedir } from 'os';
+import { Input } from '../commands';
+import { mkdirRecursive } from '../lib/utils/checkVersion';
+import { createOpenIAAssistent } from '../lib/utils/create-openia-assistent';
 import { dropOpenIAAssistent } from '../lib/utils/drop-openia-assistent';
+import { getConfig } from '../lib/utils/get-config';
+import { getRootPath } from '../lib/utils/get-root-path';
+import { saveConfig } from '../lib/utils/save-config';
+import { AbstractAction } from './abstract.action';
 
 export class ConfigureAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {

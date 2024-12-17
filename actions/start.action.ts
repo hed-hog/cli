@@ -1,11 +1,11 @@
-import { AbstractAction } from './abstract.action';
-import chalk = require('chalk');
 import { spawn } from 'child_process';
-import { join } from 'path';
+import * as net from 'net';
+import { join } from 'node:path';
+import * as ora from 'ora';
 import { EMOJIS } from '../lib/ui';
 import { getRootPath } from '../lib/utils/get-root-path';
-import * as net from 'net';
-import * as ora from 'ora';
+import { AbstractAction } from './abstract.action';
+import chalk = require('chalk');
 
 export class StartAction extends AbstractAction {
   private spinner: ora.Ora = ora();

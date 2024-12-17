@@ -1,16 +1,15 @@
 import * as chalk from 'chalk';
 import { readFile } from 'fs';
+import { join } from 'node:path';
 import * as ora from 'ora';
-import { join } from 'path';
 import { AbstractRunner } from '../runners/abstract.runner';
 import { MESSAGES } from '../ui';
 import { normalizeToKebabOrSnakeCase } from '../utils/formatting';
 import { PackageManagerCommands } from './package-manager-commands';
 import { ProjectDependency } from './project.dependency';
-import { getNpmPackage } from '../utils/get-npm-package';
 
 export abstract class AbstractPackageManager {
-  constructor(protected runner: AbstractRunner) {}
+  constructor(protected runner: AbstractRunner) { }
 
   public async installGlobal(packageName: string) {
     const commandArguments = `${this.cli.install} -g ${packageName}`;
@@ -185,9 +184,8 @@ export abstract class AbstractPackageManager {
   }
 
   public async deleteDevelopment(dependencies: string[]) {
-    const commandArguments = `${this.cli.remove} ${
-      this.cli.saveDevFlag
-    } ${dependencies.join(' ')}`;
+    const commandArguments = `${this.cli.remove} ${this.cli.saveDevFlag
+      } ${dependencies.join(' ')}`;
     await this.delete(commandArguments);
   }
 

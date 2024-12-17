@@ -1,12 +1,12 @@
 import * as chalk from 'chalk';
+import { DockerRunner } from './docker.runner';
+import { NestJSRunner } from './nestjs.runner';
 import { NpmRunner } from './npm.runner';
+import { NpxRunner } from './npx.runner';
+import { PnpmRunner } from './pnpm.runner';
 import { Runner } from './runner';
 import { SchematicRunner } from './schematic.runner';
 import { YarnRunner } from './yarn.runner';
-import { PnpmRunner } from './pnpm.runner';
-import { NpxRunner } from './npx.runner';
-import { DockerRunner } from './docker.runner';
-import { NestJSRunner } from './nestjs.runner';
 
 export class RunnerFactory {
   public static create(runner: Runner) {

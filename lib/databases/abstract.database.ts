@@ -1,11 +1,11 @@
-import { Client } from 'pg';
-import { Database } from './database';
 import { Connection } from 'mysql2/promise';
+import { Client } from 'pg';
+import { DataSource } from 'typeorm';
 import { QueryOption } from '../types/query-option';
 import { RelationN2NResult } from '../types/relation-n2n-result';
-import EventEmitter = require('events');
 import { TransactionQueries } from '../types/transaction-queries';
-import { DataSource } from 'typeorm';
+import { Database } from './database';
+import EventEmitter = require('events');
 
 export class AbstractDatabase {
   private client: Client | Connection | null = null;
@@ -27,7 +27,7 @@ export class AbstractDatabase {
     protected password: string,
     protected database: string,
     protected port: number,
-  ) {}
+  ) { }
 
   getDataSource() {
     return new DataSource({
@@ -127,7 +127,7 @@ export class AbstractDatabase {
           if (
             columnsPg[i].data_type === 'USER-DEFINED' &&
             columnsPg[i].type.split('_')[
-              columnsPg[i].type.split('_').length - 1
+            columnsPg[i].type.split('_').length - 1
             ] === 'enum'
           ) {
             columnsPg[i].enum = await this.query(
@@ -160,16 +160,15 @@ export class AbstractDatabase {
           default: row.default !== null && row.default !== undefined,
           enum: row.enum,
         }));
-        break;
 
       case Database.MYSQL:
         const columnsMySql = await this.query(
           `SELECT column_name, is_nullable, data_type, column_default AS \`default\`, column_type FROM information_schema.columns WHERE table_name = '${tableName}'`,
         );
         const constraintsMySql = await this.query(`
-    SELECT 
-        kcu.column_name, 
-        kcu.table_name, 
+    SELECT
+        kcu.column_name,
+        kcu.table_name,
         tc.constraint_type
     FROM
         information_schema.table_constraints AS tc
@@ -183,7 +182,7 @@ export class AbstractDatabase {
             ON ccu.constraint_name = rc.unique_constraint_name
             AND ccu.constraint_schema = rc.unique_constraint_schema
             AND ccu.ordinal_position = kcu.ordinal_position
-    WHERE 
+    WHERE
         tc.table_name = '${tableName}';
     `);
 
@@ -207,9 +206,9 @@ export class AbstractDatabase {
           default: row.default !== null && row.default !== undefined,
           enum: row.column_type.includes('enum(')
             ? row.column_type
-                .match(/enum\((.*?)\)/)[1]
-                .split(',')
-                .map((e: any) => e.replace(/'/g, ''))
+              .match(/enum\((.*?)\)/)[1]
+              .split(',')
+              .map((e: any) => e.replace(/'/g, ''))
             : [],
         }));
     }
@@ -252,7 +251,7 @@ export class AbstractDatabase {
 
         return resultPg.length > 0
           ? (this.columnComment[`${tableName}.${columnName}`] =
-              resultPg[0].column_comment)
+            resultPg[0].column_comment)
           : '';
 
       case Database.MYSQL:
@@ -266,7 +265,7 @@ export class AbstractDatabase {
 
         return resultMysql.length > 0
           ? (this.columnComment[`${tableName}.${columnName}`] =
-              resultMysql[0].COLUMN_COMMENT)
+            resultMysql[0].COLUMN_COMMENT)
           : '';
     }
   }
@@ -733,23 +732,23 @@ export class AbstractDatabase {
         }
 
         return (this.relationN2N[`${tableNameOrigin}.${tableNameDestination}`] =
-          {
-            tableNameIntermediate,
-            columnNameOrigin,
-            columnNameDestination,
-            primaryKeyDestination,
-          });
+        {
+          tableNameIntermediate,
+          columnNameOrigin,
+          columnNameDestination,
+          primaryKeyDestination,
+        });
 
       case Database.MYSQL:
         const resultMysql1 = await this.query(
-          `SELECT 
-            kcu.TABLE_NAME, 
-            kcu.COLUMN_NAME, 
-            kcu.REFERENCED_TABLE_NAME AS foreign_table_name, 
+          `SELECT
+            kcu.TABLE_NAME,
+            kcu.COLUMN_NAME,
+            kcu.REFERENCED_TABLE_NAME AS foreign_table_name,
             kcu.REFERENCED_COLUMN_NAME AS foreign_column_name
-          FROM 
+          FROM
             information_schema.KEY_COLUMN_USAGE AS kcu
-          WHERE 
+          WHERE
             kcu.REFERENCED_TABLE_NAME = ?
             AND kcu.TABLE_SCHEMA = DATABASE();`,
           [tableNameOrigin],
@@ -757,14 +756,14 @@ export class AbstractDatabase {
 
         for (const row of resultMysql1) {
           const resultMysql2 = await this.query(
-            `SELECT 
-              kcu.TABLE_NAME, 
-              kcu.COLUMN_NAME, 
-              kcu.REFERENCED_TABLE_NAME AS foreign_table_name, 
+            `SELECT
+              kcu.TABLE_NAME,
+              kcu.COLUMN_NAME,
+              kcu.REFERENCED_TABLE_NAME AS foreign_table_name,
               kcu.REFERENCED_COLUMN_NAME AS foreign_column_name
-            FROM 
+            FROM
               information_schema.KEY_COLUMN_USAGE AS kcu
-            WHERE 
+            WHERE
               kcu.TABLE_NAME = ?
               AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
               AND kcu.TABLE_SCHEMA = DATABASE();`,
@@ -783,12 +782,12 @@ export class AbstractDatabase {
         }
 
         return (this.relationN2N[`${tableNameOrigin}.${tableNameDestination}`] =
-          {
-            tableNameIntermediate,
-            columnNameOrigin,
-            columnNameDestination,
-            primaryKeyDestination,
-          });
+        {
+          tableNameIntermediate,
+          columnNameOrigin,
+          columnNameDestination,
+          primaryKeyDestination,
+        });
 
       default:
         throw new Error(`Unsupported database type: ${this.type}`);

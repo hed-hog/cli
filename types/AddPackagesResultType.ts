@@ -1,0 +1,1 @@
+export type AddPackagesResultType = { packagesAdded: string[] }

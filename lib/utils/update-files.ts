@@ -1,25 +1,30 @@
 import chalk = require('chalk');
-import path = require('path');
-import * as fs from 'fs';
+import { copyFileSync, existsSync, promises, readFileSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { getRootPath } from './get-root-path';
 
 export async function updateNestCliJson(libraryName: string) {
   const rootPath = await getRootPath();
-  const nestCliPath = path.join(rootPath, 'lib', 'nest-cli.json');
-  const cliBackendPath = path.join(rootPath, 'backend', 'nest-cli.json');
+  const nestCliPath = join(rootPath, 'lib', 'nest-cli.json');
+  const cliBackendPath = join(rootPath, 'backend', 'nest-cli.json');
 
   try {
-    const nestCliExists = fs.existsSync(nestCliPath);
+    const nestCliExists =
+      existsSync(nestCliPath);
     if (!nestCliExists) {
-      if (fs.existsSync(cliBackendPath)) {
-        fs.copyFileSync(cliBackendPath, nestCliPath);
+      if (
+        existsSync(cliBackendPath)) {
+
+        copyFileSync(cliBackendPath, nestCliPath);
       } else {
         console.info(chalk.red('Error: nest-cli.json not found!'));
         process.exit(1);
       }
     }
 
-    const nestCliContent = JSON.parse(fs.readFileSync(nestCliPath, 'utf-8'));
+    const nestCliContent = JSON.parse(
+      readFileSync(nestCliPath, 'utf-8'));
     if (!nestCliContent.projects) {
       nestCliContent.projects = {};
     }
@@ -36,10 +41,11 @@ export async function updateNestCliJson(libraryName: string) {
 
     nestCliContent.projects[libraryName.toKebabCase()] = newProject;
 
-    await fs.promises.writeFile(
-      nestCliPath,
-      JSON.stringify(nestCliContent, null, 2),
-    );
+    await
+      writeFile(
+        nestCliPath,
+        JSON.stringify(nestCliContent, null, 2),
+      );
 
     console.info(
       chalk.green(
@@ -56,14 +62,17 @@ export async function updateNestCliJson(libraryName: string) {
 
 export async function updatePackageJson(libraryName: string) {
   const rootPath = await getRootPath();
-  const packageJsonPath = path.join(rootPath, 'lib', 'package.json');
+  const packageJsonPath = join(rootPath, 'lib', 'package.json');
 
   try {
-    const packageJsonExists = fs.existsSync(packageJsonPath);
+    const packageJsonExists =
+      existsSync(packageJsonPath);
     if (!packageJsonExists) {
-      if (fs.existsSync(path.join(rootPath, 'backend', 'package.json'))) {
-        fs.copyFileSync(
-          path.join(rootPath, 'backend', 'package.json'),
+      if (
+        existsSync(join(rootPath, 'backend', 'package.json'))) {
+
+        copyFileSync(
+          join(rootPath, 'backend', 'package.json'),
           packageJsonPath,
         );
       } else {
@@ -73,7 +82,8 @@ export async function updatePackageJson(libraryName: string) {
     }
 
     const packageJsonContent = JSON.parse(
-      fs.readFileSync(packageJsonPath, 'utf-8'),
+
+      readFileSync(packageJsonPath, 'utf-8'),
     );
 
     if (!packageJsonContent.jest) {
@@ -87,10 +97,11 @@ export async function updatePackageJson(libraryName: string) {
     const newMappingValue = `<rootDir>/libs/${libraryName.toKebabCase()}/src/$1`;
     packageJsonContent.jest.moduleNameMapper[newMappingKey] = newMappingValue;
 
-    await fs.promises.writeFile(
-      packageJsonPath,
-      JSON.stringify(packageJsonContent, null, 2),
-    );
+    await
+      promises.writeFile(
+        packageJsonPath,
+        JSON.stringify(packageJsonContent, null, 2),
+      );
 
     console.info(
       chalk.green(
@@ -108,7 +119,7 @@ export async function addPackageJsonPeerDependencies(
   dependencies: string[],
 ) {
   const rootPath = await getRootPath();
-  const packageJsonPath = path.join(
+  const packageJsonPath = join(
     rootPath,
     'lib',
     'libs',
@@ -117,14 +128,16 @@ export async function addPackageJsonPeerDependencies(
   );
 
   try {
-    const packageJsonExists = fs.existsSync(packageJsonPath);
+    const packageJsonExists =
+      existsSync(packageJsonPath);
     if (!packageJsonExists) {
       console.info(chalk.red('Error: package.json not found!'));
       return;
     }
 
     const packageJsonContent = JSON.parse(
-      fs.readFileSync(packageJsonPath, 'utf-8'),
+
+      readFileSync(packageJsonPath, 'utf-8'),
     );
 
     if (!packageJsonContent.peerDependencies) {
@@ -135,10 +148,11 @@ export async function addPackageJsonPeerDependencies(
       packageJsonContent.peerDependencies[dependency] = 'latest';
     });
 
-    await fs.promises.writeFile(
-      packageJsonPath,
-      JSON.stringify(packageJsonContent, null, 2),
-    );
+    await
+      promises.writeFile(
+        packageJsonPath,
+        JSON.stringify(packageJsonContent, null, 2),
+      );
 
     console.info(
       chalk.green(
@@ -153,14 +167,17 @@ export async function addPackageJsonPeerDependencies(
 
 export async function updateTsconfigPaths(libraryName: string) {
   const rootPath = await getRootPath();
-  const tsconfigPath = path.join(rootPath, 'lib', 'tsconfig.json');
+  const tsconfigPath = join(rootPath, 'lib', 'tsconfig.json');
 
   try {
-    const tsconfigExists = fs.existsSync(tsconfigPath);
+    const tsconfigExists =
+      existsSync(tsconfigPath);
     if (!tsconfigExists) {
-      if (fs.existsSync(path.join(rootPath, 'backend', 'tsconfig.json'))) {
-        fs.copyFileSync(
-          path.join(rootPath, 'backend', 'tsconfig.json'),
+      if (
+        existsSync(join(rootPath, 'backend', 'tsconfig.json'))) {
+
+        copyFileSync(
+          join(rootPath, 'backend', 'tsconfig.json'),
           tsconfigPath,
         );
       } else {
@@ -169,7 +186,8 @@ export async function updateTsconfigPaths(libraryName: string) {
       }
     }
 
-    const tsconfigContent = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
+    const tsconfigContent = JSON.parse(
+      readFileSync(tsconfigPath, 'utf-8'));
     if (!tsconfigContent.compilerOptions.paths) {
       tsconfigContent.compilerOptions.paths = {};
     }
@@ -185,10 +203,11 @@ export async function updateTsconfigPaths(libraryName: string) {
     tsconfigContent.compilerOptions.paths[newPathKeyWithWildcard] =
       newPathValueWithWildcard;
 
-    await fs.promises.writeFile(
-      tsconfigPath,
-      JSON.stringify(tsconfigContent, null, 2),
-    );
+    await
+      promises.writeFile(
+        tsconfigPath,
+        JSON.stringify(tsconfigContent, null, 2),
+      );
 
     console.info(
       chalk.green(

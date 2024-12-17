@@ -33,8 +33,7 @@ export const MESSAGES = {
   // tslint:disable-next-line:max-line-length
   HEDHOG_INFORMATION_PACKAGE_MANAGER_FAILED: `${EMOJIS.SMIRK}  cannot read your project package.json file, are you inside your project directory?`,
   HEDHOG_INFORMATION_PACKAGE_WARNING_FAILED: (dependencies: string[]) =>
-    `${
-      EMOJIS.SMIRK
+    `${EMOJIS.SMIRK
     }  failed to compare dependencies versions, please check that following packages are in the same minor version : \n ${dependencies.join(
       '\n',
     )}`,

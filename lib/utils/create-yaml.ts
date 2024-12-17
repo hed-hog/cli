@@ -1,9 +1,9 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { formatWithPrettier } from './format-with-prettier';
+import path = require('node:path');
 
 export async function createYaml(libraryPath: string) {
-  await fs.mkdir(libraryPath, { recursive: true });
+  await mkdir(libraryPath, { recursive: true });
 
   const yamlContent = `
 data: # Application-specific data definitions
@@ -49,7 +49,7 @@ tables: # Definitions for database tables
           table: locale
           column: id
           onDelete: RESTRICT
-    - name: name 
+    - name: name
       length: 100
     - name: description
       length: 512
@@ -83,7 +83,7 @@ tables: # Definitions for database tables
   `.trim();
 
   const yamlFilePath = path.join(libraryPath, `hedhog.yaml`);
-  await fs.writeFile(
+  await writeFile(
     yamlFilePath,
     await formatWithPrettier(yamlContent, {
       parser: 'yaml',

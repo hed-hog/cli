@@ -1,25 +1,25 @@
-import { clone, init } from 'isomorphic-git';
-import { Input } from '../commands';
-import { AbstractAction } from './abstract.action';
 import * as fs from 'fs';
+import { rm, writeFile } from 'fs/promises';
+import * as inquirer from 'inquirer';
+import { clone, init } from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
-import { generateRandomString } from '../lib/utils/generate-random-string';
-import { join } from 'path';
+import { createServer } from 'net';
+import { join } from 'node:path';
 import * as ora from 'ora';
+import { Input } from '../commands';
 import {
   AbstractPackageManager,
   PackageManagerFactory,
 } from '../lib/package-managers';
-import chalk = require('chalk');
-import { AddAction } from './add.action';
-import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
-import * as inquirer from 'inquirer';
 import { Runner, RunnerFactory } from '../lib/runners';
-import { createServer } from 'net';
-import { rm, writeFile } from 'fs/promises';
-import { testDatabaseConnection } from '../lib/utils/test-database-connection';
-import { runScript } from '../lib/utils/run-script';
+import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
+import { generateRandomString } from '../lib/utils/generate-random-string';
+import { runScript } from '../lib/utils/run-script';
+import { testDatabaseConnection } from '../lib/utils/test-database-connection';
+import { AbstractAction } from './abstract.action';
+import { AddAction } from './add.action';
+import chalk = require('chalk');
 
 export class NewAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {

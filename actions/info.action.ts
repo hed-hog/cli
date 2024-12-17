@@ -1,14 +1,14 @@
 import * as chalk from 'chalk';
 import { readFileSync } from 'fs';
+import { join } from 'node:path';
 import { platform, release } from 'os';
-import { join } from 'path';
 import {
   AbstractPackageManager,
   PackageManagerFactory,
 } from '../lib/package-managers';
 import { BANNER, MESSAGES } from '../lib/ui';
-import { AbstractAction } from './abstract.action';
 import osName from '../lib/utils/os-info.utils';
+import { AbstractAction } from './abstract.action';
 
 interface LockfileDependency {
   version: string;

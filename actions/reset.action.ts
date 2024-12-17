@@ -1,15 +1,15 @@
 import chalk = require('chalk');
-import { AbstractAction } from './abstract.action';
-import * as ora from 'ora';
 import { existsSync } from 'fs';
 import { lstat, mkdir, readdir, rmdir, unlink, writeFile } from 'fs/promises';
-import { join } from 'path';
-import { getFileContent } from '../lib/utils/get-file-content';
-import { testDatabaseConnection } from '../lib/utils/test-database-connection';
-import { recreateDatabase } from '../lib/utils/recreate-database';
-import { getEnvFileTemplate } from '../lib/utils/env-file-template';
-import { getRootPath } from '../lib/utils/get-root-path';
+import { join } from 'node:path';
+import * as ora from 'ora';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
+import { getEnvFileTemplate } from '../lib/utils/env-file-template';
+import { getFileContent } from '../lib/utils/get-file-content';
+import { getRootPath } from '../lib/utils/get-root-path';
+import { recreateDatabase } from '../lib/utils/recreate-database';
+import { testDatabaseConnection } from '../lib/utils/test-database-connection';
+import { AbstractAction } from './abstract.action';
 
 export class ResetAction extends AbstractAction {
   public async handle() {

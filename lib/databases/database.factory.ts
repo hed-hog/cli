@@ -1,7 +1,7 @@
 import * as chalk from 'chalk';
 import { Database } from './database';
-import { PostgresDatabase } from './postgres.database';
 import { MySQLDatabase } from './mysql.database';
+import { PostgresDatabase } from './postgres.database';
 
 export class DatabaseFactory {
   public static create(

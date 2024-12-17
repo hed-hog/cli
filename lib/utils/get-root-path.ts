@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join } from 'node:path';
 import { checkIsGitRepository } from './check-is-git-repository';
 
 export async function getRootPath(path = process.cwd()): Promise<string> {

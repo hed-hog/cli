@@ -1,21 +1,20 @@
 import chalk = require('chalk');
 import * as fs from 'fs';
-import * as path from 'path';
-import { AbstractAction } from './abstract.action';
+import { mkdir, writeFile } from 'fs/promises';
+import * as inquirer from 'inquirer';
+import { join } from 'node:path';
 import { Input } from '../commands';
+import { FileCreator } from '../lib/classes/FileCreator';
+import { TableApply } from '../lib/classes/TableApply';
+import { createYaml } from '../lib/utils/create-yaml';
+import { formatWithPrettier } from '../lib/utils/format-with-prettier';
+import { getRootPath } from '../lib/utils/get-root-path';
 import {
   updateNestCliJson,
   updatePackageJson,
   updateTsconfigPaths,
 } from '../lib/utils/update-files';
-import { createYaml } from '../lib/utils/create-yaml';
-import { toKebabCase } from '../lib/utils/convert-string-cases';
-import { getRootPath } from '../lib/utils/get-root-path';
-import { mkdir, writeFile } from 'fs/promises';
-import { formatWithPrettier } from '../lib/utils/format-with-prettier';
-import * as inquirer from 'inquirer';
-import { FileCreator } from '../lib/classes/FileCreator';
-import { TableApply } from '../lib/classes/TableApply';
+import { AbstractAction } from './abstract.action';
 
 export class CreateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -47,7 +46,7 @@ export class CreateAction extends AbstractAction {
 
     const rootPath = await getRootPath();
 
-    const libraryPath = path.join(
+    const libraryPath = join(
       rootPath,
       'lib',
       'libs',
@@ -135,7 +134,7 @@ export class CreateAction extends AbstractAction {
       await mkdir(libraryPath, { recursive: true });
     }
 
-    await writeFile(path.join(libraryPath, '.gitignore'), gitignoreContent);
+    await writeFile(join(libraryPath, '.gitignore'), gitignoreContent);
   }
 
   private async createPackageJson(
@@ -177,7 +176,7 @@ export class CreateAction extends AbstractAction {
       }
     }
 
-    const packageFilePath = path.join(libraryPath, 'package.json');
+    const packageFilePath = join(libraryPath, 'package.json');
     if (!fs.existsSync(libraryPath)) {
       await mkdir(libraryPath, { recursive: true });
     }
@@ -209,7 +208,7 @@ export class CreateAction extends AbstractAction {
       exclude: ['node_modules', 'dist', 'frontend'],
     };
 
-    const tsConfigFilePath = path.join(libraryPath, 'tsconfig.production.json');
+    const tsConfigFilePath = join(libraryPath, 'tsconfig.production.json');
 
     fs.writeFileSync(
       tsConfigFilePath,
@@ -218,7 +217,7 @@ export class CreateAction extends AbstractAction {
   }
 
   private async createIndexFile(libraryPath: string, libraryName: string) {
-    const srcPath = path.join(libraryPath, 'src');
+    const srcPath = join(libraryPath, 'src');
 
     if (!fs.existsSync(srcPath)) {
       fs.mkdirSync(srcPath, { recursive: true });
@@ -228,7 +227,7 @@ export class CreateAction extends AbstractAction {
   export * from './${libraryName.toKebabCase()}.module';
     `.trim();
 
-    const indexFilePath = path.join(srcPath, 'index.ts');
+    const indexFilePath = join(srcPath, 'index.ts');
     fs.writeFileSync(
       indexFilePath,
       await formatWithPrettier(indexContent, {

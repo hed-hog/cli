@@ -1,6 +1,6 @@
-import { join } from 'path';
-import { readFile } from 'fs/promises';
 import { render } from 'ejs';
+import { readFile } from 'fs/promises';
+import { join } from 'node:path';
 import { toObjectCase } from '../utils/convert-string-cases';
 
 class TemplateProcessor {

@@ -1,9 +1,9 @@
-import * as fs from 'fs';
+import { readdir } from 'node:fs/promises';
 import { AbstractPackageManager } from './abstract.package-manager';
 import { NpmPackageManager } from './npm.package-manager';
 import { PackageManager } from './package-manager';
-import { YarnPackageManager } from './yarn.package-manager';
 import { PnpmPackageManager } from './pnpm.package-manager';
+import { YarnPackageManager } from './yarn.package-manager';
 
 export class PackageManagerFactory {
   public static create(name: PackageManager | string): AbstractPackageManager {
@@ -23,7 +23,7 @@ export class PackageManagerFactory {
     const DEFAULT_PACKAGE_MANAGER = PackageManager.NPM;
 
     try {
-      const files = await fs.promises.readdir(process.cwd());
+      const files = await readdir(process.cwd());
 
       const hasYarnLockFile = files.includes('yarn.lock');
       if (hasYarnLockFile) {

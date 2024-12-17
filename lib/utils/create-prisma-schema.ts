@@ -1,6 +1,6 @@
-import { join } from 'path';
-import { mkdirRecursive } from './checkVersion';
 import { writeFile } from 'fs/promises';
+import { join } from 'node:path';
+import { mkdirRecursive } from './checkVersion';
 
 export async function createPrismaSchema(
   path: string,

@@ -9,10 +9,21 @@ import {
 import { Input } from '../commands';
 import { debug } from '../lib/utils/debug';
 
+/**
+ * The base class for all actions in the hedhog CLI.
+ * It provides common functionality for handling inputs, options, and extra flags.
+ * @abstract
+ */
 export class ActionBase {
   protected debug = false;
   private envVars: any = false;
 
+  /**
+   * Reads the given .env file and parses it into a key-value object.
+   * The object is also stored in the `envVars` property of this class.
+   * @param envPath The path to the .env file.
+   * @returns The parsed key-value object.
+   */
   async parseEnvFile(envPath: string) {
     if (this.envVars) {
       return this.envVars;
@@ -47,12 +58,25 @@ export class ActionBase {
     }
   }
 
+  /**
+   * Logs debug information to the console if debugging is enabled.
+   * Utilizes the `debug` utility function to output the provided arguments.
+   * @param args The arguments to be logged as debug information.
+   */
   showDebug(...args: any[]) {
     if (this.debug) {
       debug(...args);
     }
   }
 
+  /**
+   * Installs the provided dependencies using the specified package manager.
+   * Logs information messages when the installation starts and finishes.
+   * If the installation fails, logs an error message and exits the process with code 1.
+   * @param libraryPath The path to the library where the dependencies should be installed.
+   * @param options The options for the install operation.
+   * @param dependencies The dependencies to be installed.
+   */
   public async installDependencies(
     libraryPath: string,
     options: Input[],

@@ -6,7 +6,7 @@ export class AbstractRunner {
   constructor(
     protected binary: string,
     protected args: string[] = [],
-  ) {}
+  ) { }
 
   public async run(
     command: string,

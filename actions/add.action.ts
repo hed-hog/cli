@@ -1,27 +1,27 @@
 import chalk = require('chalk');
-import { Input } from '../commands';
-import { PackageManagerFactory } from '../lib/package-managers';
-import { AbstractAction } from './abstract.action';
-import * as ora from 'ora';
+import { render } from 'ejs';
 import { existsSync } from 'fs';
 import { copyFile, mkdir, readdir, readFile, writeFile } from 'fs/promises';
-import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
-import { join, sep } from 'path';
-import { Runner, RunnerFactory } from '../lib/runners';
-import { runScript } from '../lib/utils/run-script';
-import { getRootPath } from '../lib/utils/get-root-path';
-import { render } from 'ejs';
-import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
-import { getNpmPackage } from '../lib/utils/get-npm-package';
-import { mkdirRecursive } from '../lib/utils/checkVersion';
+import { join, sep } from 'node:path';
+import * as ora from 'ora';
 import * as YAML from 'yaml';
+import { Input } from '../commands';
 import { Database, DatabaseFactory } from '../lib/databases';
-import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
-import { EntityFactory } from '../lib/entities/entity.factory';
 import { AbstractEntity } from '../lib/entities/abstract.entity';
-import { TableFactory } from '../lib/tables/table.factory';
+import { EntityFactory } from '../lib/entities/entity.factory';
+import { PackageManagerFactory } from '../lib/package-managers';
+import { Runner, RunnerFactory } from '../lib/runners';
 import { AbstractTable } from '../lib/tables/abstract.table';
-import path = require('path');
+import { TableFactory } from '../lib/tables/table.factory';
+import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
+import { mkdirRecursive } from '../lib/utils/checkVersion';
+import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
+import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
+import { getNpmPackage } from '../lib/utils/get-npm-package';
+import { getRootPath } from '../lib/utils/get-root-path';
+import { runScript } from '../lib/utils/run-script';
+import { AddPackagesResultType } from '../types';
+import { AbstractAction } from './abstract.action';
 
 interface TableDependency {
   tableName: string;
@@ -39,6 +39,7 @@ type RouteObject = {
   children?: RouteObject[];
   content?: string;
 };
+
 
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
@@ -64,7 +65,17 @@ export class AddAction extends AbstractAction {
 
   private hasMigrations = false;
 
-  private async initPaths() {
+  /**
+   * Initializes various paths required for module setup.
+   *
+   * This method sets up the directory paths for the backend, admin,
+   * app module, app controller, and node modules. It retrieves the root
+   * directory path and constructs specific sub-paths for different components.
+   * Additionally, it logs debugging information about the initialized paths.
+   *
+   * Throws an error if the current directory is not a valid Hedhog project.
+   */
+  private async initPaths(): Promise<void> {
     try {
       this.directoryPath = await getRootPath();
       this.backendPath = join(this.directoryPath, 'backend');
@@ -81,7 +92,7 @@ export class AddAction extends AbstractAction {
           `@hedhog`,
           `${this.module}`,
         ));
-      this.srcPath = path.join(this.adminPath, 'src');
+      this.srcPath = join(this.adminPath, 'src');
 
       this.showDebug({
         directoryPath: this.directoryPath,
@@ -98,12 +109,32 @@ export class AddAction extends AbstractAction {
     }
   }
 
-  private async initNames() {
+  /**
+   * Initializes module name and package name variables.
+   *
+   * This method takes the value of the `module` property and initializes
+   * the `addModuleName` and `packageName` properties. The `addModuleName`
+   * is set to the name of the module with the first letter capitalized
+   * followed by 'Module', and the `packageName` is set to the name of the
+   * package prefixed with '@hedhog/'.
+   * @returns {void}
+   */
+  private async initNames(): Promise<void> {
     this.addModuleName = `${this.capitalizeFirstLetter(this.module)}Module`;
     this.packageName = `@hedhog/${this.module}`;
   }
 
-  private async initDb() {
+  /**
+   * Initializes database connection.
+   *
+   * This method parses the environment file, extracts database connection
+   * parameters, and creates a database instance. It also sets up event listeners
+   * for queries and transactions. Finally, it tests whether the database
+   * connection is successful and logs the connection status.
+   *
+   * @returns {Promise<void>}
+   */
+  private async initDb(): Promise<void> {
     const envVars = await this.parseEnvFile(join(this.backendPath, '.env'));
     const type = getDbTypeFromConnectionString(envVars.DATABASE_URL);
 
@@ -127,11 +158,26 @@ export class AddAction extends AbstractAction {
     this.showDebug('Database connection status:', this.isDbConnected);
   }
 
+  /**
+   * Handles the add action.
+   *
+   * This method takes an array of inputs and options, and an optional array of
+   * packages that have been added. It initializes the paths, module name, and
+   * package name, and checks if the package is already installed. If the package
+   * is not installed, it installs the package and checks its dependencies. It
+   * then checks if the module exists and applies the Hedhog file. Finally, it
+   * copies the frontend files, updates the libs prisma, and completes the action.
+   *
+   * @param {Input[]} inputs - An array of inputs for the add action.
+   * @param {Input[]} options - An array of options for the add action.
+   * @param {string[]} packagesAdded - An optional array of packages that have been added.
+   * @returns {Promise<AddPackagesResultType>} A promise that resolves with an object containing the packages added.
+   */
   public async handle(
     inputs: Input[],
     options: Input[],
     packagesAdded: string[] = [],
-  ) {
+  ): Promise<AddPackagesResultType> {
     this.silentComplete = Boolean(
       options.find(({ name }) => name === 'silentComplete')?.value,
     );
@@ -626,8 +672,8 @@ export class AddAction extends AbstractAction {
 
       await this.createModuleRoutesFile(hedhogPath, frontendDestPath);
 
-      const routesMainPath = path.join(frontendDestPath, 'routes', 'main.yaml');
-      const routesModulesPath = path.join(
+      const routesMainPath = join(frontendDestPath, 'routes', 'main.yaml');
+      const routesModulesPath = join(
         frontendDestPath,
         'routes',
         'modules',
@@ -636,7 +682,7 @@ export class AddAction extends AbstractAction {
 
       for (const file of await readdir(routesModulesPath)) {
         console.log('route file', file);
-        routePaths.push(path.join(routesModulesPath, file));
+        routePaths.push(join(routesModulesPath, file));
       }
 
       console.log({ routePaths });
@@ -659,7 +705,7 @@ export class AddAction extends AbstractAction {
         .map((route) => route.content)
         .join(',')}`;
 
-      const routerTemplatePath = path.join(
+      const routerTemplatePath = join(
         __dirname,
         '..',
         'templates',
@@ -726,8 +772,8 @@ export class AddAction extends AbstractAction {
   }
 
   async createScreenRouterFile() {
-    const routesDirPath = path.join(this.srcPath, 'routes', 'modules');
-    const routesYAMLPath = path.join(routesDirPath, `${this.module}.yaml`);
+    const routesDirPath = join(this.srcPath, 'routes', 'modules');
+    const routesYAMLPath = join(routesDirPath, `${this.module}.yaml`);
     await mkdir(routesDirPath, { recursive: true });
     const backendPath = join('', 'backend');
     const hedhogFilePath = join(
@@ -1552,7 +1598,11 @@ export class AddAction extends AbstractAction {
     return false;
   }
 
-  async installPackage() {
+  /**
+   * Installs the package into the given directory. If the package is already installed at the latest version, does nothing.
+   * @returns {boolean} True if the package was installed, false if the package was already installed at the latest version.
+   */
+  async installPackage(): Promise<boolean> {
     if (
       !(await this.checkIfPackageExists(this.directoryPath, this.packageName))
     ) {

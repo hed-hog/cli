@@ -1,31 +1,31 @@
 import chalk = require('chalk');
-import { AbstractAction } from '.';
-import { Input } from '../commands';
-import path = require('path');
-import * as yaml from 'yaml';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { DTOCreator } from '../lib/classes/DtoCreator';
-import { readFile, mkdir, writeFile, readdir } from 'fs/promises';
-import { toObjectCase } from '../lib/utils/convert-string-cases';
-import { getRootPath } from '../lib/utils/get-root-path';
-import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
+import { createHash } from 'crypto';
 import { render } from 'ejs';
-import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
-import { formatWithPrettier } from '../lib/utils/format-with-prettier';
-import { EMOJIS } from '../lib/ui';
-import { getConfig } from '../lib/utils/get-config';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import { join } from 'node:path';
 import OpenAI from 'openai';
 import * as ora from 'ora';
-import { mkdirRecursive } from '../lib/utils/checkVersion';
 import { homedir } from 'os';
-import { createHash } from 'crypto';
-import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
+import * as yaml from 'yaml';
+import { AbstractAction } from '.';
+import { Input } from '../commands';
+import { DTOCreator } from '../lib/classes/DtoCreator';
+import { FileCreator } from '../lib/classes/FileCreator';
+import { HedhogFile } from '../lib/classes/HedHogFile';
+import { TableFactory } from '../lib/classes/TableFactory';
+import TemplateProcessor from '../lib/classes/TemplateProcessor';
 import { Column } from '../lib/types/column';
 import { Table } from '../lib/types/table';
-import { TableFactory } from '../lib/classes/TableFactory';
-import { HedhogFile } from '../lib/classes/HedHogFile';
-import { FileCreator } from '../lib/classes/FileCreator';
-import TemplateProcessor from '../lib/classes/TemplateProcessor';
+import { EMOJIS } from '../lib/ui';
+import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
+import { mkdirRecursive } from '../lib/utils/checkVersion';
+import { toObjectCase } from '../lib/utils/convert-string-cases';
+import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
+import { formatWithPrettier } from '../lib/utils/format-with-prettier';
+import { getConfig } from '../lib/utils/get-config';
+import { getRootPath } from '../lib/utils/get-root-path';
+import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
 
 export class ApplyAction extends AbstractAction {
   private libraryName = '';
@@ -46,7 +46,7 @@ export class ApplyAction extends AbstractAction {
 
     this.rootPath = await getRootPath();
 
-    this.hedhogFilePath = path.join(
+    this.hedhogFilePath = join(
       this.rootPath,
       'lib',
       'libs',
@@ -54,7 +54,7 @@ export class ApplyAction extends AbstractAction {
       'hedhog.yaml',
     );
 
-    this.libraryPath = path.join(
+    this.libraryPath = join(
       this.rootPath,
       'lib',
       'libs',
@@ -73,7 +73,7 @@ export class ApplyAction extends AbstractAction {
       process.exit(1);
     }
 
-    this.librarySrcPath = path.join(this.libraryPath, 'src');
+    this.librarySrcPath = join(this.libraryPath, 'src');
     const tables = this.parseYamlFile(this.hedhogFilePath);
     this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
@@ -87,7 +87,7 @@ export class ApplyAction extends AbstractAction {
     for (const table of this.hedhogFile.getTables()) {
       const tableApply = await TableFactory.create(table, this.hedhogFilePath);
       const screenWithRelations = tableApply.findTableWithRelation();
-      const dtoFilePath = path.join(
+      const dtoFilePath = join(
         this.librarySrcPath,
         screenWithRelations ?? '',
         table.name.toKebabCase(),
@@ -150,7 +150,7 @@ export class ApplyAction extends AbstractAction {
 
       await this.generateTranslations(
         this.hedhogFile.screens,
-        path.join(this.libraryPath, 'frontend', 'translation', 'modules'),
+        join(this.libraryPath, 'frontend', 'translation', 'modules'),
         (key, value, en, pt) => {
           en[key] = value.title.en;
           pt[key] = value.title.pt;
@@ -167,7 +167,7 @@ export class ApplyAction extends AbstractAction {
       );
       await this.generateTranslations(
         this.hedhogFile.tables,
-        path.join(this.libraryPath, 'frontend', 'translation', 'fields'),
+        join(this.libraryPath, 'frontend', 'translation', 'fields'),
         (tableName, table, en, pt) => {
           const localeTable = localeTables?.find(
             (locale) => locale.name === `${tableName}_locale`,
@@ -201,7 +201,7 @@ export class ApplyAction extends AbstractAction {
 
       if (!screenWithRelations) {
         await this.updateParentModule(
-          path.join(
+          join(
             this.librarySrcPath,
             `${this.libraryName.toKebabCase()}.module.ts`,
           ),
@@ -296,8 +296,8 @@ export class ApplyAction extends AbstractAction {
     const ptContent = JSON.stringify(ptTranslations, null, 2);
 
     mkdirSync(basePath, { recursive: true });
-    writeFileSync(path.join(basePath, 'en.json'), enContent, 'utf8');
-    writeFileSync(path.join(basePath, 'pt.json'), ptContent, 'utf8');
+    writeFileSync(join(basePath, 'en.json'), enContent, 'utf8');
+    writeFileSync(join(basePath, 'pt.json'), ptContent, 'utf8');
 
     console.log(`Translations generated successfully at: ${basePath}`);
   }
@@ -351,9 +351,9 @@ export class ApplyAction extends AbstractAction {
 
   async getTablesFromLibs() {
     const tables = {} as any;
-    const hedhogLibsPath = path.join(this.rootPath, 'lib', 'libs');
+    const hedhogLibsPath = join(this.rootPath, 'lib', 'libs');
     for (const folder of await readdir(hedhogLibsPath)) {
-      const hedhogFilePath = path.join(hedhogLibsPath, folder, 'hedhog.yaml');
+      const hedhogFilePath = join(hedhogLibsPath, folder, 'hedhog.yaml');
       if (existsSync(hedhogFilePath)) {
         const hedhogFile = this.parseYamlFile(hedhogFilePath);
         tables[folder] = hedhogFile;
@@ -364,13 +364,13 @@ export class ApplyAction extends AbstractAction {
 
   async createTranslationFiles(tableName: string) {
     const spinner = ora(`Create translation files...`).start();
-    const localesAdminFolder = path.join(
+    const localesAdminFolder = join(
       this.rootPath,
       'admin',
       'src',
       'locales',
     );
-    const localesFolder = path.join(
+    const localesFolder = join(
       this.rootPath,
       'lib',
       'libs',
@@ -383,7 +383,7 @@ export class ApplyAction extends AbstractAction {
       if (folder.isDirectory()) {
         spinner.info(`Creating translation file for ${folder.name}...`);
 
-        const folderPath = path.join(
+        const folderPath = join(
           localesFolder,
           tableName.toKebabCase(),
           'locales',
@@ -392,11 +392,11 @@ export class ApplyAction extends AbstractAction {
 
         await mkdirRecursive(folderPath);
 
-        const filePath = path.join(
+        const filePath = join(
           folderPath,
           `${this.libraryName}.${tableName.toKebabCase()}.json`,
         );
-        const templatePath = path.join(
+        const templatePath = join(
           __dirname,
           '..',
           'templates',
@@ -440,13 +440,13 @@ export class ApplyAction extends AbstractAction {
 
   async messageToOpenIaAssistent(assistantId: string, content: string) {
     const hash = createHash('sha256').update(content).digest('hex');
-    const cacheDirPath = path.join(
+    const cacheDirPath = join(
       homedir(),
       '.hedhog',
       'cache',
       `assistant-${assistantId}`,
     );
-    const cacheFilePath = path.join(cacheDirPath, hash);
+    const cacheFilePath = join(cacheDirPath, hash);
 
     if (existsSync(cacheFilePath)) {
       return await readFile(cacheFilePath, 'utf-8');
@@ -550,7 +550,7 @@ export class ApplyAction extends AbstractAction {
         ...this.getComboboxProperties(field),
       }));
 
-    const frontendPath = path.join(this.librarySrcPath, '..', 'frontend');
+    const frontendPath = join(this.librarySrcPath, '..', 'frontend');
     const extraTabs: any[] = [];
     const extraVariables: any[] = [];
     const extraImportStatements: any[] = [];
@@ -561,7 +561,7 @@ export class ApplyAction extends AbstractAction {
 
     if (relatedItems.includes(tableName)) {
       const templateContent = await readFile(
-        path.join(
+        join(
           __dirname,
           '..',
           'templates',
@@ -589,9 +589,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-            name: 'id',
-            ...table.columns.find((f) => f.type === 'pk'),
-          };
+          name: 'id',
+          ...table.columns.find((f) => f.type === 'pk'),
+        };
 
         const vars: any = {
           tableNameCase: tableApply.name,
@@ -666,7 +666,7 @@ export class ApplyAction extends AbstractAction {
     ];
 
     for (const task of tasks) {
-      const taskPath = path.join(
+      const taskPath = join(
         frontendPath,
         tableName.toKebabCase(),
         task.subPath,
@@ -677,7 +677,7 @@ export class ApplyAction extends AbstractAction {
       for (const template of task.templates) {
         const isRelatedTemplate = template.endsWith('-related.ts.ejs');
         if ((isRelatedTemplate && hasRelations) || !isRelatedTemplate) {
-          const templatePath = path.join(
+          const templatePath = join(
             __dirname,
             '..',
             'templates',
@@ -691,7 +691,7 @@ export class ApplyAction extends AbstractAction {
           );
 
           const formattedContent = await formatTypeScriptCode(fileContent);
-          const outputFilePath = path.join(
+          const outputFilePath = join(
             taskPath,
             template
               .replace('-related', '')

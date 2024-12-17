@@ -1,7 +1,6 @@
 import EventEmitter = require('events');
+import { Table } from 'typeorm';
 import { AbstractDatabase } from '../databases';
-import { Table, TableColumn } from 'typeorm';
-import { writeFile } from 'fs/promises';
 
 export class AbstractTable {
   private eventEmitter = new EventEmitter();

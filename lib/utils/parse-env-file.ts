@@ -1,11 +1,11 @@
-import * as fs from 'fs';
+import { existsSync, readFileSync } from "node:fs";
 
 export function parseEnvFile(filePath: string): Record<string, string> {
-  if (!fs.existsSync(filePath)) {
+  if (!existsSync(filePath)) {
     throw new Error(`Arquivo .env não encontrado no caminho: ${filePath}`);
   }
 
-  const envContent = fs.readFileSync(filePath, 'utf-8');
+  const envContent = readFileSync(filePath, 'utf-8');
   const envVariables: Record<string, string> = {};
 
   envContent.split('\n').forEach((line) => {

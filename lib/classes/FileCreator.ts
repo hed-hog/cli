@@ -1,15 +1,15 @@
+import { render } from 'ejs';
+import { existsSync, mkdirSync } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { toObjectCase } from '../utils/convert-string-cases';
-import { name, render } from 'ejs';
 import { AbstractTable } from '../tables/abstract.table';
-import { formatWithPrettier } from '../utils/format-with-prettier';
+import { Column } from '../types/column';
+import { toObjectCase } from '../utils/convert-string-cases';
+import { filterScreenCreation } from '../utils/filter-screen-creation';
 import { formatTypeScriptCode } from '../utils/format-typescript-code';
+import { formatWithPrettier } from '../utils/format-with-prettier';
 import getLocaleYaml from '../utils/get-fk-locale-yaml';
 import { TableApply } from './TableApply';
-import { filterScreenCreation } from '../utils/filter-screen-creation';
-import { Column } from '../types/column';
-import { existsSync, mkdirSync } from 'fs';
 
 interface IOption {
   useLibraryNamePath?: boolean;
@@ -278,9 +278,9 @@ export class FileCreator {
       module: {
         imports: this.options.importServices
           ? [
-              `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
-              `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
-            ]
+            `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
+            `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
+          ]
           : [],
         controllers: this.options.importServices
           ? [`${this.table.name.toPascalCase()}Controller`]

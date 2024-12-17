@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { join } from 'path';
+import { join } from 'node:path';
 
 const TSCONFIG_BUILD_JSON = 'tsconfig.build.json';
 const TSCONFIG_JSON = 'tsconfig.json';

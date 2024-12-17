@@ -1,10 +1,10 @@
 import chalk = require('chalk');
+import * as bcrypt from 'bcryptjs';
 import { AbstractDatabase } from '../databases';
+import { DataHash } from '../types/data-hash';
 import { DataType } from '../types/data-type';
 import { Locale } from '../types/locale';
 import EventEmitter = require('events');
-import { DataHash } from '../types/data-hash';
-import * as bcrypt from 'bcryptjs';
 
 export class AbstractEntity {
   private locale: { [key: string]: number } = {};
@@ -14,7 +14,7 @@ export class AbstractEntity {
     protected db: AbstractDatabase,
     protected name: string,
     protected data: DataType[],
-  ) {}
+  ) { }
 
   on(event: string, listener: (...args: any[]) => void) {
     return this.eventEmitter.on(event, listener);

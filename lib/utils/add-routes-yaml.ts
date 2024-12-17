@@ -1,7 +1,7 @@
+import { join } from 'node:path';
+import { HedhogFile, Route } from '../classes/HedHogFile';
 import { Menu } from '../types/menu';
 import { Screen } from '../types/screen';
-import { HedhogFile, Route } from '../classes/HedHogFile';
-import { join } from 'path';
 
 export const addRoutesToYaml = async (
   libraryPath: string,
@@ -37,51 +37,51 @@ export const addRoutesToYaml = async (
 
     const newRoutes: Route[] = hasRelationsWith
       ? [
-          {
-            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
-            method: 'GET',
-            relations,
-          },
-          {
-            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
-            method: 'GET',
-            relations,
-          },
-          {
-            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
-            method: 'POST',
-            relations,
-          },
-          {
-            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
-            method: 'PATCH',
-            relations,
-          },
-          {
-            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
-            method: 'DELETE',
-            relations,
-          },
-        ]
+        {
+          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
+          method: 'GET',
+          relations,
+        },
+        {
+          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
+          method: 'GET',
+          relations,
+        },
+        {
+          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
+          method: 'POST',
+          relations,
+        },
+        {
+          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
+          method: 'PATCH',
+          relations,
+        },
+        {
+          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
+          method: 'DELETE',
+          relations,
+        },
+      ]
       : [
-          { url: `/${tableName.toKebabCase()}`, method: 'GET', relations },
-          { url: `/${tableName.toKebabCase()}`, method: 'POST', relations },
-          {
-            url: `/${tableName.toKebabCase()}/:${primaryKey}`,
-            method: 'GET',
-            relations,
-          },
-          {
-            url: `/${tableName.toKebabCase()}/:${primaryKey}`,
-            method: 'PATCH',
-            relations,
-          },
-          {
-            url: `/${tableName.toKebabCase()}`,
-            method: 'DELETE',
-            relations,
-          },
-        ];
+        { url: `/${tableName.toKebabCase()}`, method: 'GET', relations },
+        { url: `/${tableName.toKebabCase()}`, method: 'POST', relations },
+        {
+          url: `/${tableName.toKebabCase()}/:${primaryKey}`,
+          method: 'GET',
+          relations,
+        },
+        {
+          url: `/${tableName.toKebabCase()}/:${primaryKey}`,
+          method: 'PATCH',
+          relations,
+        },
+        {
+          url: `/${tableName.toKebabCase()}`,
+          method: 'DELETE',
+          relations,
+        },
+      ];
 
     for (const route of newRoutes) {
       if (

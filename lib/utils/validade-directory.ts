@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
+import { dirname } from 'node:path';
 
 export function validateDirectory(dirPath: string): boolean {
   if (existsSync(dirPath)) {

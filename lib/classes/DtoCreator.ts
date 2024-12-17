@@ -1,9 +1,9 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { formatTypeScriptCode } from '../utils/format-typescript-code';
 import { render } from 'ejs';
-import { capitalize } from '../utils/convert-string-cases';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { Column } from '../types/column';
+import { capitalize } from '../utils/convert-string-cases';
+import { formatTypeScriptCode } from '../utils/format-typescript-code';
 
 export class DTOCreator {
   private libraryPath: string;
@@ -17,8 +17,8 @@ export class DTOCreator {
   }
 
   async createDTOs() {
-    const dtoPath = path.join(this.libraryPath, 'dto');
-    await fs.mkdir(dtoPath, { recursive: true });
+    const dtoPath = join(this.libraryPath, 'dto');
+    await mkdir(dtoPath, { recursive: true });
 
     await this.createDTO('create', dtoPath);
     await this.createDTO('update', dtoPath);
@@ -44,11 +44,11 @@ export class DTOCreator {
       trailingComma: 'all',
       semi: true,
     });
-    await fs.writeFile(filePath, formattedContent);
+    await writeFile(filePath, formattedContent);
   }
 
   private async loadTemplate(templateName: string): Promise<string> {
-    const templatePath = path.join(
+    const templatePath = join(
       __dirname,
       '..',
       '..',
@@ -56,7 +56,7 @@ export class DTOCreator {
       'dto',
       templateName,
     );
-    return fs.readFile(templatePath, 'utf-8');
+    return readFile(templatePath, 'utf-8');
   }
 
   private hasOptional(column: Column): boolean {
@@ -91,13 +91,13 @@ export class DTOCreator {
         templateName: `${type}.dto.ts.ejs`,
       });
 
-      const filePath = path.join(dtoPath, `${type}.dto.ts`);
+      const filePath = join(dtoPath, `${type}.dto.ts`);
       await this.writeFormattedFile(filePath, dtoContent);
     } else if (type === 'update') {
       // Render template for "update" DTO
       const updateTemplateContent =
         await this.loadTemplate('update.dto.ts.ejs');
-      const filePath = path.join(dtoPath, 'update.dto.ts');
+      const filePath = join(dtoPath, 'update.dto.ts');
       await this.writeFormattedFile(filePath, updateTemplateContent);
     }
   }
