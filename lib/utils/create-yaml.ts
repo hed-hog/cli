@@ -2,7 +2,16 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { formatWithPrettier } from './format-with-prettier';
 import path = require('node:path');
 
-export async function createYaml(libraryPath: string) {
+/**
+ * Creates a basic `hedhog.yaml` file in the given library path if it does not
+ * exist. The created file contains some basic route and table definitions for
+ * demonstration purposes.
+ *
+ * @param {string} libraryPath - The path to the library directory where the
+ *   `hedhog.yaml` file should be created.
+ * @returns {Promise<void>} - A promise that resolves when the file is created.
+ */
+export async function createYaml(libraryPath: string): Promise<void> {
   await mkdir(libraryPath, { recursive: true });
 
   const yamlContent = `

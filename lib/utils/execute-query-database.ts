@@ -1,3 +1,20 @@
+import { FieldPacket } from 'mysql2';
+import { QueryResult } from 'typeorm';
+
+/**
+ * Execute a SQL query on a database.
+ *
+ * @param {string} type The type of database. Either 'postgres' or 'mysql'.
+ * @param {string} host The hostname of the database.
+ * @param {number} port The port number of the database.
+ * @param {string} user The username to use to connect to the database.
+ * @param {string} password The password to use to connect to the database.
+ * @param {string} database The name of the database to use.
+ * @param {string} query The SQL query to execute.
+ *
+ * @returns {Promise<import('pg').QueryResult | import('mysql2').RowDataPacket[][] | boolean | [QueryResult, FieldPacket[]]>}
+ *   The result of the query if the query was successful, otherwise false.
+ */
 export async function executeQueryDatabase(
   type: 'postgres' | 'mysql',
   host: string,
@@ -6,7 +23,7 @@ export async function executeQueryDatabase(
   password: string,
   database: string,
   query: string,
-) {
+): Promise<import('pg').QueryResult | import('mysql2').RowDataPacket[][] | boolean | [QueryResult, FieldPacket[]]> {
   try {
     if (type === 'postgres') {
       const { Client } = await import('pg');
@@ -30,7 +47,7 @@ export async function executeQueryDatabase(
         database,
         port,
       });
-      const result = await connection.query(query);
+      const result = await connection.query(query) as unknown as [QueryResult, FieldPacket[]];
       await connection.end();
       return result;
     }

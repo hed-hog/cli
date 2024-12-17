@@ -1,8 +1,8 @@
 import chalk = require('chalk');
 import { existsSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
+import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
-import { tmpdir } from 'os';
 import { version } from '../../package.json';
 import { getNpmPackage } from './get-npm-package';
 

@@ -1,7 +1,7 @@
 import * as chalk from 'chalk';
 import { readFileSync } from 'fs';
+import { platform, release } from 'node:os';
 import { join } from 'node:path';
-import { platform, release } from 'os';
 import {
   AbstractPackageManager,
   PackageManagerFactory,

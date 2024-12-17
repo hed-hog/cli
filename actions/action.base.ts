@@ -1,12 +1,12 @@
 import chalk = require('chalk');
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
-import { EMOJIS } from '../lib/ui';
+import { Input } from '../commands';
 import {
   AbstractPackageManager,
   PackageManagerFactory,
 } from '../lib/package-managers';
-import { Input } from '../commands';
+import { EMOJIS } from '../lib/ui';
 import { debug } from '../lib/utils/debug';
 
 /**

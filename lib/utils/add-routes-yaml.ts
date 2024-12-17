@@ -3,11 +3,25 @@ import { HedhogFile, Route } from '../classes/HedHogFile';
 import { Menu } from '../types/menu';
 import { Screen } from '../types/screen';
 
+/**
+ * Adds routes, menus, and screens to the `hedhog.yaml` file for a specific table.
+ *
+ * This function updates the `hedhog.yaml` file by adding routes, menus, and screens
+ * for the specified table. If relations are provided, it associates the routes with
+ * the related table.
+ *
+ * @param {string} libraryPath - The path to the library directory where the `hedhog.yaml` file is located.
+ * @param {string} tableName - The name of the table for which routes, menus, and screens are to be added.
+ * @param {string} [hasRelationsWith] - Optional. The name of the related table to associate with the routes.
+ *
+ * @returns {Promise<void>} - A promise that resolves when the YAML file is successfully updated, or rejects with an error.
+ */
+
 export const addRoutesToYaml = async (
   libraryPath: string,
   tableName: string,
   hasRelationsWith?: string,
-) => {
+): Promise<void> => {
   try {
     const filePath = join(libraryPath, '..', 'hedhog.yaml');
     const hedhogFile = await new HedhogFile().load(filePath);

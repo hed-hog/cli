@@ -1,6 +1,6 @@
 import { access, readFile } from 'fs/promises';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { homedir } from 'os';
 import { parse } from 'yaml';
 import chalk = require('chalk');
 

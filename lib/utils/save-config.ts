@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { homedir } from 'os';
 import { parse, stringify } from 'yaml';
 
 export const saveConfig = async (config: any) => {

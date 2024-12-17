@@ -13,7 +13,7 @@ import { PackageManagerFactory } from '../lib/package-managers';
 import { Runner, RunnerFactory } from '../lib/runners';
 import { AbstractTable } from '../lib/tables/abstract.table';
 import { TableFactory } from '../lib/tables/table.factory';
-import { AddPackagesResult } from '../lib/types/add-packages-result';
+import type { AddPackagesResult } from '../lib/types/add-packages-result';
 import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';

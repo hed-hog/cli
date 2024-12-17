@@ -1,12 +1,12 @@
 import chalk = require('chalk');
-import { createHash } from 'crypto';
 import { render } from 'ejs';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import { createHash } from 'node:crypto';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import OpenAI from 'openai';
 import * as ora from 'ora';
-import { homedir } from 'os';
 import * as yaml from 'yaml';
 import { AbstractAction } from '.';
 import { Input } from '../commands';
