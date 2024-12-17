@@ -13,6 +13,7 @@ import { PackageManagerFactory } from '../lib/package-managers';
 import { Runner, RunnerFactory } from '../lib/runners';
 import { AbstractTable } from '../lib/tables/abstract.table';
 import { TableFactory } from '../lib/tables/table.factory';
+import { AddPackagesResult } from '../lib/types/add-packages-result';
 import { BANNER, EMOJIS, MESSAGES } from '../lib/ui';
 import { mkdirRecursive } from '../lib/utils/checkVersion';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
@@ -20,7 +21,6 @@ import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-con
 import { getNpmPackage } from '../lib/utils/get-npm-package';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { runScript } from '../lib/utils/run-script';
-import { AddPackagesResultType } from '../types';
 import { AbstractAction } from './abstract.action';
 
 interface TableDependency {
@@ -171,13 +171,13 @@ export class AddAction extends AbstractAction {
    * @param {Input[]} inputs - An array of inputs for the add action.
    * @param {Input[]} options - An array of options for the add action.
    * @param {string[]} packagesAdded - An optional array of packages that have been added.
-   * @returns {Promise<AddPackagesResultType>} A promise that resolves with an object containing the packages added.
+   * @returns {Promise<AddPackagesResult>} A promise that resolves with an object containing the packages added.
    */
   public async handle(
     inputs: Input[],
     options: Input[],
     packagesAdded: string[] = [],
-  ): Promise<AddPackagesResultType> {
+  ): Promise<AddPackagesResult> {
     this.silentComplete = Boolean(
       options.find(({ name }) => name === 'silentComplete')?.value,
     );
