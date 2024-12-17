@@ -24,7 +24,6 @@ function getLocaleYaml(libraryPath: string, name: string) {
 
     return '';
   } catch (e) {
-    console.error(e);
     return '';
   }
 }
