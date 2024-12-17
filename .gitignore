@@ -9,10 +9,12 @@ lib/**/*.js
 commands/**/*.js
 actions/**/*.js
 bin/**/*.js
+types/**/*.js
 lib/**/*.d.ts
 commands/**/*.d.ts
 actions/**/*.d.ts
 bin/**/*.d.ts
+types/**/*.d.ts
 
 # configuration
 renovate.json
