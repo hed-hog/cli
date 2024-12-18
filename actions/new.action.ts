@@ -768,7 +768,7 @@ ${this.detectIfVolumeIsPath(dataVolume)}`;
   async configureGit(directory: string, skipGit: boolean = false) {
     const results = [];
     const spinner = ora('Configure git in project folder').start();
-    // await this.deleteGitFolder(directory); // Use a função para remover a pasta .git
+    await this.deleteGitFolder(directory); // Use a função para remover a pasta .git
     if (!skipGit) {
       results.push(await init({ dir: directory, fs }));
     }
