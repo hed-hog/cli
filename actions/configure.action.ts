@@ -1,8 +1,8 @@
 import chalk = require('chalk');
 import { render } from 'ejs';
-import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import { createPromptModule } from 'inquirer';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import * as ora from 'ora';

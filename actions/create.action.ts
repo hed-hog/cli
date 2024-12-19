@@ -1,7 +1,7 @@
 import chalk = require('chalk');
-import * as fs from 'fs';
-import { mkdir, writeFile } from 'fs/promises';
 import * as inquirer from 'inquirer';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Input } from '../commands';
 import { FileCreator } from '../lib/classes/FileCreator';
@@ -97,7 +97,7 @@ export class CreateAction extends AbstractAction {
   }
 
   private async checkLibraryExistence(libraryPath: string, force: boolean) {
-    if (fs.existsSync(libraryPath)) {
+    if (existsSync(libraryPath)) {
       if (force) {
         console.warn(
           chalk.yellow(
@@ -130,7 +130,7 @@ export class CreateAction extends AbstractAction {
 /node_modules
     `.trim();
 
-    if (!fs.existsSync(libraryPath)) {
+    if (!existsSync(libraryPath)) {
       await mkdir(libraryPath, { recursive: true });
     }
 
@@ -177,7 +177,7 @@ export class CreateAction extends AbstractAction {
     }
 
     const packageFilePath = join(libraryPath, 'package.json');
-    if (!fs.existsSync(libraryPath)) {
+    if (!existsSync(libraryPath)) {
       await mkdir(libraryPath, { recursive: true });
     }
     await writeFile(
@@ -210,7 +210,7 @@ export class CreateAction extends AbstractAction {
 
     const tsConfigFilePath = join(libraryPath, 'tsconfig.production.json');
 
-    fs.writeFileSync(
+    writeFileSync(
       tsConfigFilePath,
       JSON.stringify(tsconfigProductionContent, null, 2),
     );
@@ -219,8 +219,8 @@ export class CreateAction extends AbstractAction {
   private async createIndexFile(libraryPath: string, libraryName: string) {
     const srcPath = join(libraryPath, 'src');
 
-    if (!fs.existsSync(srcPath)) {
-      fs.mkdirSync(srcPath, { recursive: true });
+    if (!existsSync(srcPath)) {
+      mkdirSync(srcPath, { recursive: true });
     }
 
     const indexContent = `
@@ -228,7 +228,7 @@ export class CreateAction extends AbstractAction {
     `.trim();
 
     const indexFilePath = join(srcPath, 'index.ts');
-    fs.writeFileSync(
+    writeFileSync(
       indexFilePath,
       await formatWithPrettier(indexContent, {
         parser: 'typescript',

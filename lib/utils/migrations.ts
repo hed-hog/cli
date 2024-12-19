@@ -1,8 +1,7 @@
-import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
-import path = require('path');
-import { prettier } from './formatting';
+import { existsSync } from 'node:fs';
 import { formatWithPrettier } from './format-with-prettier';
+import path = require('node:path');
 
 export async function createMigrationDirectory(
   libraryPath: string,

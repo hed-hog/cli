@@ -1,7 +1,7 @@
 import chalk = require('chalk');
 import { render } from 'ejs';
-import { existsSync } from 'fs';
 import { copyFile, mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import { existsSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import * as ora from 'ora';
 import * as YAML from 'yaml';

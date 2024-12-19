@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 import { Command } from '@commander-js/extra-typings';
+import 'reflect-metadata';
 import { CommandLoader } from '../commands';
+import { checkVersion } from '../lib/utils/checkVersion';
+import '../lib/utils/global-string';
 import {
   loadLocalBinCommandLoader,
   localBinExists,
 } from '../lib/utils/local-binaries';
-import { checkVersion } from '../lib/utils/checkVersion';
-import 'reflect-metadata';
-import '../lib/utils/global-string';
 
 const bootstrap = async () => {
   const debug = true;

@@ -1,9 +1,9 @@
-import * as fs from 'fs';
 import { rm, writeFile } from 'fs/promises';
 import * as inquirer from 'inquirer';
 import { clone, init } from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 import { createServer } from 'net';
+import * as fs from 'node:fs';
 import { join } from 'node:path';
 import * as ora from 'ora';
 import { Input } from '../commands';

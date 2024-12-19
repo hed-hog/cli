@@ -1,7 +1,7 @@
 import { render } from 'ejs';
-import { existsSync, mkdirSync } from 'fs';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import { mkdir, readFile, writeFile } from 'fs/promises';
+import { existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { AbstractTable } from '../tables/abstract.table';
 import { Column } from '../types/column';
 import { toObjectCase } from '../utils/convert-string-cases';
@@ -62,7 +62,7 @@ export class FileCreator {
 
   private getFileFullPath(): string {
     if (this.fileType === 'screen') {
-      const componentsPath = path.join(
+      const componentsPath = join(
         this.getFilePath(),
         '..',
         '..',
@@ -75,13 +75,13 @@ export class FileCreator {
         mkdirSync(componentsPath);
       }
 
-      return path.join(
+      return join(
         componentsPath,
         `${this.table.name.toKebabCase()}.${this.fileType}.tsx.ejs`,
       );
     }
 
-    return path.join(
+    return join(
       this.getFilePath(),
       `${this.table.name.toKebabCase()}.${this.fileType}.ts`,
     );
@@ -103,10 +103,10 @@ export class FileCreator {
 
   private getFilePath(): string {
     if (this.fileType === 'screen') {
-      return path.join(this.libraryPath, this.table.name.toKebabCase());
+      return join(this.libraryPath, this.table.name.toKebabCase());
     }
 
-    return path.join(
+    return join(
       this.libraryPath,
       this.options.hasRelationsWith ?? '',
       this.options.useLibraryNamePath ? this.table.name.toKebabCase() : 'src',
@@ -121,7 +121,7 @@ export class FileCreator {
     }
 
     const filePath = this.getFilePath();
-    await fs.mkdir(filePath, { recursive: true });
+    await mkdir(filePath, { recursive: true });
     const tablesWithRelations = (this.options.tablesWithRelations ?? [])
       .map((t) => t.relations)
       .flat();
@@ -143,7 +143,7 @@ export class FileCreator {
       return;
     }
 
-    await fs.mkdir(filePath, { recursive: true });
+    await mkdir(filePath, { recursive: true });
 
     if (this.table.getColumns !== undefined) {
       this.fieldsForSearch = this.filterFields(this.table.getColumns());
@@ -175,7 +175,7 @@ export class FileCreator {
     const fileContent = await this.generateFileContent();
     const fileFullPath = this.getFileFullPath();
     console.log(`Creating file: ${fileFullPath}`);
-    await fs.writeFile(
+    await writeFile(
       fileFullPath,
       await formatWithPrettier(fileContent, {
         parser: 'typescript',
@@ -190,13 +190,13 @@ export class FileCreator {
   }
 
   private async createParentModuleFile(tablesWithRelations: string[]) {
-    const parentModulePath = path.join(
+    const parentModulePath = join(
       this.libraryPath,
       this.options.tablesWithRelations![0].name,
       `${this.options.tablesWithRelations![0].name}.module.ts`,
     );
 
-    const templatePath = path.join(
+    const templatePath = join(
       __dirname,
       '..',
       '..',
@@ -205,7 +205,7 @@ export class FileCreator {
       'module-related.ts.ejs',
     );
 
-    const templateContent = await fs.readFile(templatePath, 'utf-8');
+    const templateContent = await readFile(templatePath, 'utf-8');
     const data = {
       tableNameCase: toObjectCase(this.table.name),
       options: {
@@ -216,27 +216,27 @@ export class FileCreator {
 
     const renderedContent = render(templateContent, data);
     const formattedContent = await formatTypeScriptCode(renderedContent);
-    await fs.writeFile(parentModulePath, formattedContent);
+    await writeFile(parentModulePath, formattedContent);
   }
 
   private getTemplatePath() {
-    const baseTemplatePath = path.join(__dirname, '..', '..', 'templates');
-    const templatePath = path.join(
+    const baseTemplatePath = join(__dirname, '..', '..', 'templates');
+    const templatePath = join(
       baseTemplatePath,
       this.fileType,
       `${this.fileType}.ts.ejs`,
     );
-    const templateRelationsPath = path.join(
+    const templateRelationsPath = join(
       baseTemplatePath,
       this.fileType,
       `${this.fileType}-related.ts.ejs`,
     );
-    const templateRelationsLocalePath = path.join(
+    const templateRelationsLocalePath = join(
       baseTemplatePath,
       this.fileType,
       `${this.fileType}-related-locale.ts.ejs`,
     );
-    const templateLocalePath = path.join(
+    const templateLocalePath = join(
       baseTemplatePath,
       this.fileType,
       `${this.fileType}-locale.ts.ejs`,
@@ -299,6 +299,6 @@ export class FileCreator {
       }
     }
 
-    return render(await fs.readFile(this.getTemplatePath(), 'utf-8'), vars);
+    return render(await readFile(this.getTemplatePath(), 'utf-8'), vars);
   }
 }

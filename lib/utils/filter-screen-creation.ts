@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 import * as yaml from 'yaml';
-import path = require('path');
+import path = require('node:path');
 
 /**
  * Checks if a screen should be created based on the presence of the table name

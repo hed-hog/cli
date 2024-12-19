@@ -1,6 +1,6 @@
-import * as fs from 'fs';
-import path = require('path');
+import * as fs from 'node:fs';
 import * as yaml from 'yaml';
+import path = require('node:path');
 
 function getLocaleYaml(libraryPath: string, name: string) {
   try {

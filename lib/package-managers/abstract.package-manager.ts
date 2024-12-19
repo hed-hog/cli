@@ -1,5 +1,5 @@
 import * as chalk from 'chalk';
-import { readFile } from 'fs';
+import { readFile } from 'node:fs';
 import { join } from 'node:path';
 import * as ora from 'ora';
 import { AbstractRunner } from '../runners/abstract.runner';

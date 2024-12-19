@@ -1,6 +1,6 @@
 import chalk = require('chalk');
-import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
+import { existsSync } from 'node:fs';
 import { Input } from '../commands';
 import {
   AbstractPackageManager,

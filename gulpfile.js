@@ -4,7 +4,7 @@
  * the tasks. The tasks are really inside tools/gulp/tasks.
  */
 
-const path = require('path');
+const path = require('node:path');
 
 const projectDir = __dirname;
 const tsconfigPath = path.join(projectDir, 'tools/gulp/tsconfig.json');

@@ -1,5 +1,5 @@
 import * as chalk from 'chalk';
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { platform, release } from 'node:os';
 import { join } from 'node:path';
 import {

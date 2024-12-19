@@ -1,5 +1,5 @@
-import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
+import { existsSync } from 'node:fs';
 import { parse, stringify } from 'yaml';
 import { Menu } from '../types/menu';
 import { Table } from '../types/table';

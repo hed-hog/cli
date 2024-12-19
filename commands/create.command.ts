@@ -1,7 +1,7 @@
 import { Command } from '@commander-js/extra-typings';
+import { throwError } from '../lib/utils/throw-error';
 import { AbstractCommand } from './abstract.command';
 import { Input } from './command.input';
-import { throwError } from '../lib/utils/throw-error';
 
 export class CreateCommand extends AbstractCommand {
   public load(program: Command) {

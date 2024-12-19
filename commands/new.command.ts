@@ -1,8 +1,8 @@
 import { Command } from '@commander-js/extra-typings';
-import { AbstractCommand } from './abstract.command';
-import { Input } from './command.input';
 import { throwError } from '../lib/utils/throw-error';
 import { validateDirectory } from '../lib/utils/validade-directory';
+import { AbstractCommand } from './abstract.command';
+import { Input } from './command.input';
 
 export class NewCommand extends AbstractCommand {
   public load(program: Command) {

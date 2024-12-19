@@ -1,6 +1,6 @@
 import chalk = require('chalk');
-import { existsSync } from 'fs';
 import { lstat, mkdir, readdir, rmdir, unlink, writeFile } from 'fs/promises';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import * as ora from 'ora';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';

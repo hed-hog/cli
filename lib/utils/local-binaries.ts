@@ -1,4 +1,4 @@
-import { existsSync } from 'fs';
+import { existsSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import { CommandLoader } from '../../commands';
 

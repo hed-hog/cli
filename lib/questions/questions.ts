@@ -13,6 +13,25 @@ export const generateInput = (name: string, message: string): any => {
   });
 };
 
+/**
+ * Generates a function that creates a selection prompt configuration object.
+ *
+ * @param name - The name of the selection prompt.
+ * @returns A function that takes a message string and returns another function.
+ *          This returned function takes an array of choices and returns an object
+ *          representing the selection prompt configuration.
+ *
+ * @example
+ * const selectPrompt = generateSelect('example');
+ * const promptConfig = selectPrompt('Choose an option')(['Option 1', 'Option 2']);
+ * // promptConfig will be:
+ * // {
+ * //   type: 'list',
+ * //   name: 'example',
+ * //   message: 'Choose an option',
+ * //   choices: ['Option 1', 'Option 2']
+ * // }
+ */
 export const generateSelect = (
   name: string,
 ): ((message: string) => (choices: string[]) => any) => {

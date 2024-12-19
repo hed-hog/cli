@@ -1,6 +1,6 @@
 import chalk = require('chalk');
 import { execSync } from 'child_process';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import { join } from 'node:path';
 import { Input } from '../commands';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';

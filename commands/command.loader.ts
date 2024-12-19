@@ -1,5 +1,5 @@
-import * as chalk from 'chalk';
 import { Command } from '@commander-js/extra-typings';
+import * as chalk from 'chalk';
 import {
   AddAction,
   ConfigureAction,
@@ -7,20 +7,21 @@ import {
   InfoAction,
   NewAction,
 } from '../actions';
-import { AddCommand } from './add.command';
-import { NewCommand } from './new.command';
-import { ERROR_PREFIX } from '../lib/ui';
-import { InfoCommand } from './info.command';
-import { CreateCommand } from './create.command';
-import { StartCommand } from './start.command';
-import { StartAction } from '../actions/start.action';
-import { RefreshCommand } from './refresh.command';
-import { RefreshAction } from '../actions/refresh.action';
-import { ResetCommand } from './reset.command';
-import { ResetAction } from '../actions/reset.action';
-import { ApplyCommand } from './apply.command';
 import { ApplyAction } from '../actions/apply.action';
+import { RefreshAction } from '../actions/refresh.action';
+import { ResetAction } from '../actions/reset.action';
+import { StartAction } from '../actions/start.action';
+import { ERROR_PREFIX } from '../lib/ui';
+import { AddCommand } from './add.command';
+import { ApplyCommand } from './apply.command';
 import { ConfigureCommand } from './configure.command';
+import { CreateCommand } from './create.command';
+import { InfoCommand } from './info.command';
+import { NewCommand } from './new.command';
+import { RefreshCommand } from './refresh.command';
+import { ResetCommand } from './reset.command';
+import { StartCommand } from './start.command';
+
 export class CommandLoader {
   public static async load(program: Command): Promise<void> {
     new NewCommand(new NewAction()).load(program);
