@@ -748,7 +748,7 @@ ${this.detectIfVolumeIsPath(dataVolume)}`;
         await fs.promises.rm(`${directory}/.git`, { recursive: true });
         break; // Se a remoção for bem-sucedida, saia do loop
       } catch (err) {
-        if (err.code === 'EBUSY') {
+        if (err.code === 'EBUSY' || err.code === 'EPERM') {
           console.warn(
             `Attempt ${attempt + 1} failed: resource busy or locked.`,
           );

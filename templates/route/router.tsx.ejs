@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, RouteObject } from 'react-router-dom'
 import GeneralError from './pages/errors/general-error.tsx'
 import MaintenanceError from './pages/errors/maintenance-error.tsx'
 import NotFoundError from './pages/errors/not-found-error.tsx'
@@ -15,6 +15,18 @@ const routes = [
     path: '/forgot-password',
     lazy: async () => ({
       Component: (await import('./pages/auth/forgot-password.tsx')).default,
+    }),
+  },
+  {
+    path: '/email-sent',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/email-sent.tsx')).default,
+    }),
+  },
+  {
+    path: '/password-recovery/:code',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/password-recovery.tsx')).default,
     }),
   },
   {
@@ -59,6 +71,6 @@ const routes = [
   { path: '*', Component: NotFoundError },
 ]
 
-const router = createBrowserRouter(routes)
+const router = createBrowserRouter(routes as RouteObject[])
 
 export default router
