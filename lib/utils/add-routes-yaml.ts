@@ -16,7 +16,6 @@ import { Screen } from '../types/screen';
  *
  * @returns {Promise<void>} - A promise that resolves when the YAML file is successfully updated, or rejects with an error.
  */
-
 export const addRoutesToYaml = async (
   libraryPath: string,
   tableName: string,

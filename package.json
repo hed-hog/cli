@@ -10,12 +10,31 @@
     "dev": "tsc --watch",
     "prod": "ts-node ./scripts/deploy.ts",
     "postprod": "npm run clean",
-    "clean": "gulp clean:bundle"
+    "clean": "gulp clean:bundle",
+    "diff": "git diff --output diff.md",
+    "project": "npm run clean && sh scripts/get_all_ts.sh . > project.md"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "hedhog",
+    "cli",
+    "command-line interface",
+    "typescript",
+    "nestjs",
+    "developer tools",
+    "module management",
+    "database migrations",
+    "scaffolding",
+    "dynamic applications",
+    "scalable applications",
+    "automation",
+    "backend tools",
+    "project setup",
+    "devops",
+    "workflow optimization"
+  ],
+  "author": "https://github.com/hcodebr",
+  "license": "MIT",
+  "description": "The @hedhog/cli is a command-line interface designed to streamline development processes within the Hedhog ecosystem. It provides utilities for managing configurations, creating modules, handling database migrations, and scaffolding projects. The CLI is tailored for developers building scalable and dynamic applications, ensuring seamless integration with the Hedhog libraries and tools.",
   "dependencies": {
     "@commander-js/extra-typings": "^12.1.0",
     "@types/bcryptjs": "^2.4.6",
@@ -53,5 +72,17 @@
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0"
-  }
+  },
+  "main": "gulpfile.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hed-hog/cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hed-hog/cli/issues"
+  },
+  "homepage": "https://github.com/hed-hog/cli#readme"
 }

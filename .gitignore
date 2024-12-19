@@ -23,3 +23,7 @@ renovate.json
 /sample
 
 yarn.lock
+
+# docs
+diff.md
+project.md
