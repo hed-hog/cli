@@ -56,7 +56,35 @@ export class ResetAction extends AbstractAction {
           spinner.info(`Clearing ${dir}/${module}...`);
           this.unlinkDirectoryRecursive(join(adminPath, 'src', dir, module));
         }
+
+        for (const locale of ['en', 'pt']) {
+          const localePath = join(adminPath, 'src', 'locales', locale);
+          if (existsSync(localePath)) {
+            const localeFiles = await readdir(localePath);
+            for (const file of localeFiles) {
+              if (modules.some((module) => file.includes(module))) {
+                spinner.info(`Deleting ${locale}/${file}...`);
+                await unlink(join(localePath, file));
+              }
+            }
+          }
+        }
       }
+
+      const routerTemplatePath = join(
+        __dirname,
+        '..',
+        'templates',
+        'route',
+        'router.tsx.ejs',
+      );
+      const routerContent = await getFileContent(routerTemplatePath);
+      await writeFile(
+        join(adminPath, 'src', 'router.tsx'),
+        routerContent,
+        'utf-8',
+      );
+      spinner.succeed('Router template set as default.');
 
       const moduleRoutesPath = join(adminPath, 'src', 'routes', 'modules');
       if (existsSync(moduleRoutesPath)) {
