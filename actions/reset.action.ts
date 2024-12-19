@@ -10,6 +10,7 @@ import { getRootPath } from '../lib/utils/get-root-path';
 import { recreateDatabase } from '../lib/utils/recreate-database';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { AbstractAction } from './abstract.action';
+import { render, renderFile } from 'ejs';
 
 export class ResetAction extends AbstractAction {
   public async handle() {
@@ -63,7 +64,7 @@ export class ResetAction extends AbstractAction {
             const localeFiles = await readdir(localePath);
             for (const file of localeFiles) {
               if (modules.some((module) => file.includes(module))) {
-                spinner.info(`Deleting ${locale}/${file}...`);
+                spinner.info(`Deleting locales/${locale}/${file}...`);
                 await unlink(join(localePath, file));
               }
             }
@@ -78,12 +79,17 @@ export class ResetAction extends AbstractAction {
         'route',
         'router.tsx.ejs',
       );
-      const routerContent = await getFileContent(routerTemplatePath);
+
+      const routerContent = await renderFile(routerTemplatePath, {
+        routes: [],
+      });
+
       await writeFile(
         join(adminPath, 'src', 'router.tsx'),
         routerContent,
         'utf-8',
       );
+
       spinner.succeed('Router template set as default.');
 
       const moduleRoutesPath = join(adminPath, 'src', 'routes', 'modules');
