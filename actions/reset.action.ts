@@ -63,8 +63,6 @@ export class ResetAction extends AbstractAction {
           if (existsSync(localePath)) {
             const localeFiles = await readdir(localePath);
             for (const file of localeFiles) {
-              console.log({ file });
-
               if (
                 modules.some((module) => file.includes(module)) ||
                 ['fields', 'modules'].some((keyword) => file.includes(keyword))
