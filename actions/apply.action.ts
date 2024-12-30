@@ -336,7 +336,6 @@ export class ApplyAction extends AbstractAction {
 
     const tablesFromLibs = await this.getTablesFromLibs();
     const dependencyModuleNames = new Set<string>();
-
     for (const relationTable of relationTables) {
       for (const libTables of Object.keys(tablesFromLibs)) {
         if (
@@ -355,6 +354,7 @@ export class ApplyAction extends AbstractAction {
   async getTablesFromLibs() {
     const tables = {} as any;
     const hedhogLibsPath = join(this.rootPath, 'lib', 'libs');
+
     for (const folder of await readdir(hedhogLibsPath)) {
       const hedhogFilePath = join(hedhogLibsPath, folder, 'hedhog.yaml');
       if (existsSync(hedhogFilePath)) {
@@ -581,9 +581,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-          name: 'id',
-          ...table.columns.find((f) => f.type === 'pk'),
-        };
+            name: 'id',
+            ...table.columns.find((f) => f.type === 'pk'),
+          };
 
         const vars: any = {
           tableNameCase: tableApply.name,
@@ -702,13 +702,17 @@ export class ApplyAction extends AbstractAction {
     const fileContents = readFileSync(filePath, 'utf8');
     const data = yaml.parse(fileContents);
 
-    const tables: Table[] = Object.keys(data.tables).map((tableName) => ({
-      name: tableName,
-      columns: data.tables[tableName].columns,
-      ifNotExists: data.tables[tableName].ifNotExists,
-    }));
+    if (data.tables) {
+      const tables: Table[] = Object.keys(data.tables).map((tableName) => ({
+        name: tableName,
+        columns: data.tables[tableName].columns,
+        ifNotExists: data.tables[tableName].ifNotExists,
+      }));
 
-    return tables;
+      return tables;
+    }
+
+    return [];
   }
 
   private async updateParentModule(modulePath: string, newModuleName: string) {
