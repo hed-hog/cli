@@ -40,7 +40,6 @@ type RouteObject = {
   content?: string;
 };
 
-
 export class AddAction extends AbstractAction {
   private packagesAdded: string[] = [];
   private showWarning = false;
@@ -189,6 +188,8 @@ export class AddAction extends AbstractAction {
     this.debug = options.some(
       (option) => option.name === 'debug' && option.value === true,
     );
+
+    this.debug = true;
 
     await this.initPaths();
     await this.initNames();
@@ -673,11 +674,7 @@ export class AddAction extends AbstractAction {
       await this.createModuleRoutesFile(hedhogPath, frontendDestPath);
 
       const routesMainPath = join(frontendDestPath, 'routes', 'main.yaml');
-      const routesModulesPath = join(
-        frontendDestPath,
-        'routes',
-        'modules',
-      );
+      const routesModulesPath = join(frontendDestPath, 'routes', 'modules');
       const routePaths = [routesMainPath];
 
       for (const file of await readdir(routesModulesPath)) {
