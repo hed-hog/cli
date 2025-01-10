@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { HedhogFile, Route } from '../classes/HedHogFile';
 import { Menu } from '../types/menu';
 import { Screen } from '../types/screen';
+import { existsSync } from 'node:fs';
 
 /**
  * Adds routes, menus, and screens to the `hedhog.yaml` file for a specific table.
@@ -23,9 +24,13 @@ export const addRoutesToYaml = async (
 ): Promise<void> => {
   try {
     const filePath = join(libraryPath, '..', 'hedhog.yaml');
+
+    console.log({ exists: existsSync(filePath) });
+
     const hedhogFile = await new HedhogFile().load(filePath);
 
     const table = hedhogFile.getTable(tableName);
+    console.log({ filePath, hedhogFile, table });
     const { data } = hedhogFile;
 
     const primaryKeys = table.columns.filter(
@@ -50,51 +55,51 @@ export const addRoutesToYaml = async (
 
     const newRoutes: Route[] = hasRelationsWith
       ? [
-        {
-          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
-          method: 'GET',
-          relations,
-        },
-        {
-          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
-          method: 'GET',
-          relations,
-        },
-        {
-          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
-          method: 'POST',
-          relations,
-        },
-        {
-          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
-          method: 'PATCH',
-          relations,
-        },
-        {
-          url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
-          method: 'DELETE',
-          relations,
-        },
-      ]
+          {
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
+            method: 'GET',
+            relations,
+          },
+          {
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
+            method: 'GET',
+            relations,
+          },
+          {
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
+            method: 'POST',
+            relations,
+          },
+          {
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}/:${primaryKey}`,
+            method: 'PATCH',
+            relations,
+          },
+          {
+            url: `/${hasRelationsWith.toKebabCase()}/:${hasRelationsWith.toCamelCase()}Id/${tableName.toKebabCase()}`,
+            method: 'DELETE',
+            relations,
+          },
+        ]
       : [
-        { url: `/${tableName.toKebabCase()}`, method: 'GET', relations },
-        { url: `/${tableName.toKebabCase()}`, method: 'POST', relations },
-        {
-          url: `/${tableName.toKebabCase()}/:${primaryKey}`,
-          method: 'GET',
-          relations,
-        },
-        {
-          url: `/${tableName.toKebabCase()}/:${primaryKey}`,
-          method: 'PATCH',
-          relations,
-        },
-        {
-          url: `/${tableName.toKebabCase()}`,
-          method: 'DELETE',
-          relations,
-        },
-      ];
+          { url: `/${tableName.toKebabCase()}`, method: 'GET', relations },
+          { url: `/${tableName.toKebabCase()}`, method: 'POST', relations },
+          {
+            url: `/${tableName.toKebabCase()}/:${primaryKey}`,
+            method: 'GET',
+            relations,
+          },
+          {
+            url: `/${tableName.toKebabCase()}/:${primaryKey}`,
+            method: 'PATCH',
+            relations,
+          },
+          {
+            url: `/${tableName.toKebabCase()}`,
+            method: 'DELETE',
+            relations,
+          },
+        ];
 
     for (const route of newRoutes) {
       if (

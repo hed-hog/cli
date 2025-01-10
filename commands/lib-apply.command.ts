@@ -3,21 +3,19 @@ import { throwError } from '../lib/utils/throw-error';
 import { AbstractCommand } from './abstract.command';
 import { Input } from './command.input';
 
-export class ApplyCommand extends AbstractCommand {
+export class LibApplyCommand extends AbstractCommand {
   public load(program: Command): void {
     program
-      .command('apply')
+      .command('lib-apply')
       .description(
         'Transform the Hedhog YAML file into inserts on database and init the new Hedhog library.',
       )
       .option('--debug', 'Show debug information.', false)
-      .argument('<string>', 'backend or admin')
+      .argument('<string>', 'library name')
       .action(async (name, command) => {
         try {
-          if (!name || (name !== 'backend' && name !== 'admin')) {
-            throw new Error(
-              'Environment type is required and must be a valid one. (backend/admin)',
-            );
+          if (!name) {
+            throw new Error('Library name is required');
           }
 
           const options: Input[] = [];

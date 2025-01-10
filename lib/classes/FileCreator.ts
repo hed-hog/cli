@@ -33,7 +33,7 @@ type FileType = 'controller' | 'service' | 'module' | 'screen';
 
 export class FileCreator {
   private libraryPath: string;
-  private libraryName: string;
+  private libraryName?: string;
   private table: TableApply;
   private fileType: 'controller' | 'service' | 'module' | 'screen';
   private options: IOption;
@@ -41,7 +41,7 @@ export class FileCreator {
 
   constructor(
     libraryPath: string,
-    libraryName: string,
+    libraryName?: string,
     table?: TableApply,
     fileType?: 'controller' | 'service' | 'module' | 'screen',
     options: IOption = {
@@ -273,14 +273,14 @@ export class FileCreator {
       fkNameCase: this.table.fkName,
       pkNameCase: this.table.pkName,
       hasLocale: this.table.hasLocale,
-      libraryName: this.libraryName,
+      libraryName: this.libraryName ?? '',
       fkNameLocaleCase: getLocaleYaml(this.libraryPath, this.table.name),
       module: {
         imports: this.options.importServices
           ? [
-            `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
-            `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
-          ]
+              `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
+              `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
+            ]
           : [],
         controllers: this.options.importServices
           ? [`${this.table.name.toPascalCase()}Controller`]

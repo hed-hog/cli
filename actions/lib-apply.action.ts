@@ -1,34 +1,34 @@
 import chalk = require('chalk');
-import * as ora from 'ora';
-import { AbstractAction } from '.';
-import { HedhogFile } from '../lib/classes/HedHogFile';
-import { Input } from '../commands';
-import { getRootPath } from '../lib/utils/get-root-path';
+import { render } from 'ejs';
+import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { TableFactory } from '../lib/classes/TableFactory';
+import OpenAI from 'openai';
+import * as ora from 'ora';
+import * as yaml from 'yaml';
+import { AbstractAction } from '.';
+import { Input } from '../commands';
 import { DTOCreator } from '../lib/classes/DtoCreator';
 import { FileCreator } from '../lib/classes/FileCreator';
-import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
-import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
-import { render } from 'ejs';
-import { toObjectCase } from '../lib/utils/convert-string-cases';
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
-import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { Table } from '../lib/types/table';
-import { formatWithPrettier } from '../lib/utils/format-with-prettier';
-import { EMOJIS } from '../lib/ui';
-import { Column } from '../lib/types/column';
-import * as yaml from 'yaml';
-import { getConfig } from '../lib/utils/get-config';
-import { mkdirRecursive } from '../lib/utils/checkVersion';
-import OpenAI from 'openai';
-import { homedir } from 'node:os';
-import { createHash } from 'node:crypto';
+import { HedhogFile } from '../lib/classes/HedHogFile';
+import { TableFactory } from '../lib/classes/TableFactory';
 import TemplateProcessor from '../lib/classes/TemplateProcessor';
+import { Column } from '../lib/types/column';
+import { Table } from '../lib/types/table';
+import { EMOJIS } from '../lib/ui';
+import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
+import { mkdirRecursive } from '../lib/utils/checkVersion';
+import { toObjectCase } from '../lib/utils/convert-string-cases';
+import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
+import { formatWithPrettier } from '../lib/utils/format-with-prettier';
+import { getConfig } from '../lib/utils/get-config';
+import { getRootPath } from '../lib/utils/get-root-path';
+import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
 
-export class ApplyAction extends AbstractAction {
-  private environment = '';
+export class LibApplyAction extends AbstractAction {
+  private libraryName = '';
   private rootPath = '';
   private hedhogFilePath = '';
   private libraryPath = '';
@@ -40,18 +40,44 @@ export class ApplyAction extends AbstractAction {
       (option) => option.name === 'debug' && option.value === true,
     );
 
-    this.environment = String(
+    this.libraryName = String(
       inputs.find(({ name }) => name === 'name')?.value,
     ).toLowerCase();
 
     this.rootPath = await getRootPath();
-    this.hedhogFilePath = join(this.rootPath, 'hedhog.yaml');
 
+    this.hedhogFilePath = join(
+      this.rootPath,
+      'lib',
+      'libs',
+      this.libraryName.toKebabCase(),
+      'hedhog.yaml',
+    );
+
+    this.libraryPath = join(
+      this.rootPath,
+      'lib',
+      'libs',
+      this.libraryName.toKebabCase(),
+    );
+
+    if (!this.libraryName.length) {
+      console.error(chalk.red('You must tell a name for the module.'));
+      process.exit(1);
+    }
+
+    if (/\s/.test(this.libraryName)) {
+      console.error(
+        chalk.red('Error: The library name should not contain spaces.'),
+      );
+      process.exit(1);
+    }
+
+    this.librarySrcPath = join(this.libraryPath, 'src');
     const tables = this.parseYamlFile(this.hedhogFilePath);
     this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
     const localeTables: any[] = [];
-
     for (const table of this.hedhogFile.getTables()) {
       if (table.name.endsWith('_locale')) {
         localeTables.push(table);
@@ -87,22 +113,40 @@ export class ApplyAction extends AbstractAction {
         .createDTOs()
         .then(() => console.log('DTOs criados com sucesso!'));
 
-      new FileCreator(this.librarySrcPath, '', tableApply, 'service', {
-        useLibraryNamePath: true,
-        hasRelationsWith: screenWithRelations,
-      }).createFile();
+      new FileCreator(
+        this.librarySrcPath,
+        this.libraryName,
+        tableApply,
+        'service',
+        {
+          useLibraryNamePath: true,
+          hasRelationsWith: screenWithRelations,
+        },
+      ).createFile();
 
-      new FileCreator(this.librarySrcPath, '', tableApply, 'controller', {
-        useLibraryNamePath: true,
-        hasRelationsWith: screenWithRelations,
-      }).createFile();
+      new FileCreator(
+        this.librarySrcPath,
+        this.libraryName,
+        tableApply,
+        'controller',
+        {
+          useLibraryNamePath: true,
+          hasRelationsWith: screenWithRelations,
+        },
+      ).createFile();
 
-      new FileCreator(this.librarySrcPath, '', tableApply, 'module', {
-        useLibraryNamePath: true,
-        importServices: true,
-        hasRelationsWith: screenWithRelations,
-        tablesWithRelations,
-      }).createFile();
+      new FileCreator(
+        this.librarySrcPath,
+        this.libraryName,
+        tableApply,
+        'module',
+        {
+          useLibraryNamePath: true,
+          importServices: true,
+          hasRelationsWith: screenWithRelations,
+          tablesWithRelations,
+        },
+      ).createFile();
 
       await this.generateTranslations(
         this.hedhogFile.screens,
@@ -143,19 +187,24 @@ export class ApplyAction extends AbstractAction {
         },
       );
 
-      new FileCreator(this.librarySrcPath, '', tableApply, 'screen', {
-        localeTables,
-      }).createFile();
+      new FileCreator(
+        this.librarySrcPath,
+        this.libraryName,
+        tableApply,
+        'screen',
+        {
+          localeTables,
+        },
+      ).createFile();
 
-      addRoutesToYaml(
-        join(this.librarySrcPath, 'hedhog.yaml'),
-        table.name,
-        screenWithRelations,
-      );
+      addRoutesToYaml(this.librarySrcPath, table.name, screenWithRelations);
 
       if (!screenWithRelations) {
         await this.updateParentModule(
-          join(this.librarySrcPath, 'backend', 'src', `app.module.ts`),
+          join(
+            this.librarySrcPath,
+            `${this.libraryName.toKebabCase()}.module.ts`,
+          ),
           table.name,
         );
       }
@@ -168,7 +217,7 @@ export class ApplyAction extends AbstractAction {
     }
 
     const dependencyTables = await this.checkRelationsTable(tables);
-    await addPackageJsonPeerDependencies('', dependencyTables);
+    await addPackageJsonPeerDependencies(this.libraryName, dependencyTables);
     await this.installDependencies(
       this.libraryPath,
       [{ name: '', value: '' }],
@@ -206,17 +255,19 @@ export class ApplyAction extends AbstractAction {
       yamlData.routes = [];
     }
 
-    let moduleRoute = yamlData.routes.find((route: any) => route.path === '');
+    let moduleRoute = yamlData.routes.find(
+      (route: any) => route.path === this.libraryName,
+    );
 
     if (!moduleRoute) {
-      moduleRoute = { path: '', children: [] };
+      moduleRoute = { path: `${this.libraryName}`, children: [] };
       yamlData.routes.push(moduleRoute);
     }
 
     moduleRoute.children.push({
       path: screen.toKebabCase(),
       lazy: {
-        component: `./pages/${screen.toKebabCase()}/index.tsx`,
+        component: `./pages/${this.libraryName.toKebabCase()}/${screen.toKebabCase()}/index.tsx`,
       },
     });
 
@@ -317,7 +368,13 @@ export class ApplyAction extends AbstractAction {
   async createTranslationFiles(tableName: string) {
     const spinner = ora(`Create translation files...`).start();
     const localesAdminFolder = join(this.rootPath, 'admin', 'src', 'locales');
-    const localesFolder = join(this.rootPath, 'lib', 'libs', '', 'frontend');
+    const localesFolder = join(
+      this.rootPath,
+      'lib',
+      'libs',
+      this.libraryName,
+      'frontend',
+    );
     const folders = await readdir(localesAdminFolder, { withFileTypes: true });
 
     for (const folder of folders) {
@@ -335,7 +392,7 @@ export class ApplyAction extends AbstractAction {
 
         const filePath = join(
           folderPath,
-          `${''}.${tableName.toKebabCase()}.json`,
+          `${this.libraryName}.${tableName.toKebabCase()}.json`,
         );
         const templatePath = join(
           __dirname,
@@ -346,7 +403,7 @@ export class ApplyAction extends AbstractAction {
         );
         let fileContent = render(await readFile(templatePath, 'utf-8'), {
           tableName,
-          libraryName: '',
+          libraryName: this.libraryName,
         });
 
         const token = await this.getOpenIAToken();
@@ -510,7 +567,7 @@ export class ApplyAction extends AbstractAction {
         .map((item: any) => item.relations)
         .flat();
 
-      const processor = new TemplateProcessor(relationTables, '');
+      const processor = new TemplateProcessor(relationTables, this.libraryName);
       const { extraVars, extraImports } = await processor.processAllTables();
       extraVariables.push(...extraVars);
       extraImportStatements.push(...extraImports);
@@ -569,6 +626,7 @@ export class ApplyAction extends AbstractAction {
           fkNameCase: toObjectCase(tableApply.fkName),
           pkNameCase: toObjectCase(tableApply.pkName),
           hasLocale: tableApply.hasLocale,
+          libraryName: this.libraryName,
           fields,
           hasRelations,
         },
@@ -589,7 +647,7 @@ export class ApplyAction extends AbstractAction {
           fkNameCase: toObjectCase(tableApply.fkName),
           pkNameCase: toObjectCase(tableApply.pkName),
           hasLocale: tableApply.hasLocale,
-          libraryName: '',
+          libraryName: this.libraryName,
           fields,
           hasRelations,
           extraTabs,
