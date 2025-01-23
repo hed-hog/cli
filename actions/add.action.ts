@@ -200,7 +200,7 @@ export class AddAction extends AbstractAction {
 
     console.log({
       packageName: this.packageName,
-      alreadyInstall: this.isAlreadyInstalled,
+      alreadyInstalled: this.isAlreadyInstalled,
     });
 
     if (!this.isAlreadyInstalled) {
