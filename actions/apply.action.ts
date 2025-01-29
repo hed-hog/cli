@@ -722,14 +722,6 @@ export class ApplyAction extends AbstractAction {
     modulePath: string,
     newModuleName: string,
   ) {
-    console.log('======================================');
-    console.log({
-      librayName,
-      modulePath,
-      newModuleName,
-    });
-    console.log('======================================');
-
     const sameNameModule = librayName === newModuleName;
 
     if (!modulePath) {
