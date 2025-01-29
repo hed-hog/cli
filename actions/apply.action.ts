@@ -87,9 +87,10 @@ export class ApplyAction extends AbstractAction {
     for (const table of this.hedhogFile.getTables()) {
       const tableApply = await TableFactory.create(table, this.hedhogFilePath);
       const screenWithRelations = tableApply.findTableWithRelation();
+
       const dtoFilePath = join(
         this.librarySrcPath,
-        screenWithRelations ?? '',
+        screenWithRelations ? screenWithRelations.toKebabCase() : '',
         table.name.toKebabCase(),
       );
 
@@ -201,6 +202,7 @@ export class ApplyAction extends AbstractAction {
 
       if (!screenWithRelations) {
         await this.updateParentModule(
+          this.libraryName,
           join(
             this.librarySrcPath,
             `${this.libraryName.toKebabCase()}.module.ts`,
@@ -715,7 +717,21 @@ export class ApplyAction extends AbstractAction {
     return [];
   }
 
-  private async updateParentModule(modulePath: string, newModuleName: string) {
+  private async updateParentModule(
+    librayName: string,
+    modulePath: string,
+    newModuleName: string,
+  ) {
+    console.log('======================================');
+    console.log({
+      librayName,
+      modulePath,
+      newModuleName,
+    });
+    console.log('======================================');
+
+    const sameNameModule = librayName === newModuleName;
+
     if (!modulePath) {
       console.error(chalk.red(`Parent module file not found.`));
       return;
@@ -734,7 +750,10 @@ export class ApplyAction extends AbstractAction {
         semi: true,
       });
 
-      const importStatement = this.createImportStatement(newModuleName);
+      const importStatement = this.createImportStatement(
+        newModuleName,
+        sameNameModule,
+      );
       if (moduleContent.includes(importStatement)) {
         return false;
       }
@@ -753,9 +772,16 @@ export class ApplyAction extends AbstractAction {
       }
 
       const importsList = this.parseImportsList(importsMatch);
-      importsList.push(
-        `forwardRef(() => ${newModuleName.toPascalCase()}Module)`,
-      );
+
+      if (sameNameModule) {
+        importsList.push(
+          `forwardRef(() => ${newModuleName.toPascalCase()}Module2)`,
+        );
+      } else {
+        importsList.push(
+          `forwardRef(() => ${newModuleName.toPascalCase()}Module)`,
+        );
+      }
 
       const startFileContent = moduleContent.substring(0, startImportsIndex);
       const endFileContent = moduleContent.substring(endImportsIndex - 1);
@@ -777,8 +803,15 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
-  private createImportStatement(newModuleName: string): string {
-    return `import { ${newModuleName.toPascalCase()}Module } from './${newModuleName.toKebabCase()}/${newModuleName.toKebabCase()}.module';`;
+  private createImportStatement(
+    newModuleName: string,
+    sameNameModule = false,
+  ): string {
+    if (sameNameModule) {
+      return `import { ${newModuleName.toPascalCase()}Module as ${newModuleName.toPascalCase()}Module2 } from './${newModuleName.toKebabCase()}/${newModuleName.toKebabCase()}.module';`;
+    } else {
+      return `import { ${newModuleName.toPascalCase()}Module } from './${newModuleName.toKebabCase()}/${newModuleName.toKebabCase()}.module';`;
+    }
   }
 
   private extractImportsSection(moduleContent: string) {

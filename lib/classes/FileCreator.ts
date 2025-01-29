@@ -4,7 +4,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { AbstractTable } from '../tables/abstract.table';
 import { Column } from '../types/column';
-import { toObjectCase } from '../utils/convert-string-cases';
+import { toKebabCase, toObjectCase } from '../utils/convert-string-cases';
 import { filterScreenCreation } from '../utils/filter-screen-creation';
 import { formatTypeScriptCode } from '../utils/format-typescript-code';
 import { formatWithPrettier } from '../utils/format-with-prettier';
@@ -108,7 +108,9 @@ export class FileCreator {
 
     return join(
       this.libraryPath,
-      this.options.hasRelationsWith ?? '',
+      this.options.hasRelationsWith
+        ? toKebabCase(this.options.hasRelationsWith)
+        : '',
       this.options.useLibraryNamePath ? this.table.name.toKebabCase() : 'src',
     );
   }
@@ -121,6 +123,7 @@ export class FileCreator {
     }
 
     const filePath = this.getFilePath();
+
     await mkdir(filePath, { recursive: true });
     const tablesWithRelations = (this.options.tablesWithRelations ?? [])
       .map((t) => t.relations)
@@ -192,9 +195,11 @@ export class FileCreator {
   private async createParentModuleFile(tablesWithRelations: string[]) {
     const parentModulePath = join(
       this.libraryPath,
-      this.options.tablesWithRelations![0].name,
-      `${this.options.tablesWithRelations![0].name}.module.ts`,
+      toKebabCase(this.options.tablesWithRelations![0].name),
+      `${toKebabCase(this.options.tablesWithRelations![0].name)}.module.ts`,
     );
+
+    console.log('Creating parent module file:', parentModulePath);
 
     const templatePath = join(
       __dirname,
@@ -278,9 +283,9 @@ export class FileCreator {
       module: {
         imports: this.options.importServices
           ? [
-            `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
-            `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
-          ]
+              `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
+              `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
+            ]
           : [],
         controllers: this.options.importServices
           ? [`${this.table.name.toPascalCase()}Controller`]
