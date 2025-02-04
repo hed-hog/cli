@@ -1,0 +1,5 @@
+export enum <%= enumName %>Enum {
+<% values.forEach(function(item) { %>
+    <%= item.key %> = <%= item.value %>,
+<% }); %>
+}  

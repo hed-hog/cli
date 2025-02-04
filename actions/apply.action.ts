@@ -74,6 +74,7 @@ export class ApplyAction extends AbstractAction {
     }
 
     this.librarySrcPath = join(this.libraryPath, 'src');
+    this.showDebug(`Library name: ${this.libraryName} (${this.libraryPath})`);
     const tables = this.parseYamlFile(this.hedhogFilePath);
     this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
@@ -110,11 +111,11 @@ export class ApplyAction extends AbstractAction {
         )
         .filter((field) => field.name !== tableApply.fkName);
 
-      new DTOCreator(dtoFilePath, fields, hasLocale)
-        .createDTOs()
-        .then(() => console.log('DTOs criados com sucesso!'));
+      await new DTOCreator(dtoFilePath, fields, hasLocale).createDTOs();
 
-      new FileCreator(
+      console.log('DTOs criados com sucesso!');
+
+      await new FileCreator(
         this.librarySrcPath,
         this.libraryName,
         tableApply,
@@ -125,7 +126,7 @@ export class ApplyAction extends AbstractAction {
         },
       ).createFile();
 
-      new FileCreator(
+      await new FileCreator(
         this.librarySrcPath,
         this.libraryName,
         tableApply,
@@ -136,7 +137,7 @@ export class ApplyAction extends AbstractAction {
         },
       ).createFile();
 
-      new FileCreator(
+      await new FileCreator(
         this.librarySrcPath,
         this.libraryName,
         tableApply,
@@ -166,6 +167,7 @@ export class ApplyAction extends AbstractAction {
           }
         },
       );
+
       await this.generateTranslations(
         this.hedhogFile.tables,
         join(this.libraryPath, 'frontend', 'translation', 'fields'),
@@ -188,7 +190,7 @@ export class ApplyAction extends AbstractAction {
         },
       );
 
-      new FileCreator(
+      await new FileCreator(
         this.librarySrcPath,
         this.libraryName,
         tableApply,
@@ -198,9 +200,16 @@ export class ApplyAction extends AbstractAction {
         },
       ).createFile();
 
-      addRoutesToYaml(this.librarySrcPath, table.name, screenWithRelations);
+      await addRoutesToYaml(
+        this.librarySrcPath,
+        table.name,
+        screenWithRelations,
+      );
+
+      console.log('Arquivos de rotas criados com sucesso!');
 
       if (!screenWithRelations) {
+        console.log('Updating parent module...');
         await this.updateParentModule(
           this.libraryName,
           join(
@@ -209,13 +218,19 @@ export class ApplyAction extends AbstractAction {
           ),
           table.name,
         );
+        console.log('Parent module updated successfully!');
       }
+
+      console.log('Criando arquivos de frontend...');
+
       await this.createFrontendFiles(
         table.name,
         table.columns,
         tables,
         tablesWithRelations as any[],
       );
+
+      console.log('Arquivos de frontend criados com sucesso!');
     }
 
     const dependencyTables = await this.checkRelationsTable(tables);
@@ -246,6 +261,95 @@ export class ApplyAction extends AbstractAction {
       for (const screen of screensArray) {
         await this.createScreenRouterFile(screen);
       }
+    }
+
+    //table-enum.ejs
+
+    console.log('============================================');
+    if (hedhogFile2.enums) {
+      const enumsArray = Object.keys(hedhogFile2.enums);
+      for (const enumName of enumsArray) {
+        console.log('Criando enum...', enumName);
+        await this.createEnumFile(
+          this.libraryPath,
+          enumName,
+          hedhogFile2.enums[enumName].key,
+          hedhogFile2.enums[enumName].value,
+          hedhogFile2.data[enumName.toSnakeCase()],
+        );
+      }
+    }
+    console.log('============================================');
+  }
+
+  async createEnumFile(
+    path: string,
+    enumName: string,
+    enumKey: string,
+    enumValue: string,
+    items: any[],
+  ) {
+    if (!items || !(items instanceof Array)) return;
+    const templatePath = join(
+      __dirname,
+      '..',
+      'templates',
+      'enum',
+      'table-enum.ejs',
+    );
+
+    const destinationPath = join(
+      path,
+      'src',
+      enumName.toKebabCase(),
+      `${enumName.toKebabCase()}.enum.ts`,
+    );
+
+    const values = [];
+
+    let index = 0;
+    for (const item of items) {
+      values.push({
+        key: item[enumKey].toSnakeCase().toUpperCase(),
+        value: item[enumValue] ?? ++index,
+      });
+    }
+
+    let fileContent = render(await readFile(templatePath, 'utf-8'), {
+      enumName: enumName.toPascalCase(),
+      values,
+    });
+
+    fileContent = await formatWithPrettier(fileContent, {
+      parser: 'typescript',
+      printWidth: 100000,
+      singleQuote: true,
+      trailingComma: 'all',
+      semi: true,
+      endOfLine: 'lf',
+    });
+
+    await writeFile(
+      destinationPath,
+      await formatTypeScriptCode(fileContent),
+      'utf-8',
+    );
+
+    await this.addExportInIndexFile(path, destinationPath);
+  }
+
+  async addExportInIndexFile(path: string, destinationPath: string) {
+    const indexFilePath = join(path, 'src', 'index.ts');
+    const fileContent = await readFile(indexFilePath, 'utf-8');
+
+    const exportStatement = `export * from './${destinationPath.replaceAll('\\', '/').replace(path.replaceAll('\\', '/'), '').replace('/src/', '').replace('.ts', '')}';`;
+
+    if (!fileContent.includes(exportStatement)) {
+      await writeFile(
+        indexFilePath,
+        await formatTypeScriptCode(`${fileContent}\n${exportStatement}`),
+        'utf-8',
+      );
     }
   }
 
@@ -354,6 +458,7 @@ export class ApplyAction extends AbstractAction {
   }
 
   async getTablesFromLibs() {
+    this.showDebug('Getting tables from libs...');
     const tables = {} as any;
     const hedhogLibsPath = join(this.rootPath, 'lib', 'libs');
 
@@ -701,10 +806,19 @@ export class ApplyAction extends AbstractAction {
   }
 
   private parseYamlFile(filePath: string) {
+    console.log('parseYamlFile', filePath);
+
+    if (!existsSync(filePath)) {
+      console.warn(chalk.yellow(`File not found: ${filePath}`));
+      return [];
+    }
+
     const fileContents = readFileSync(filePath, 'utf8');
     const data = yaml.parse(fileContents);
 
-    if (data.tables) {
+    this.showDebug(`YAML file parsed: ${filePath}`, data);
+
+    if (data && data.tables) {
       const tables: Table[] = Object.keys(data.tables).map((tableName) => ({
         name: tableName,
         columns: data.tables[tableName].columns,
