@@ -11,6 +11,7 @@ import { ApplyAction } from '../actions/apply.action';
 import { RefreshAction } from '../actions/refresh.action';
 import { ResetAction } from '../actions/reset.action';
 import { StartAction } from '../actions/start.action';
+import { ValidateAction } from '../actions/validate.action';
 import { ERROR_PREFIX } from '../lib/ui';
 import { AddCommand } from './add.command';
 import { ApplyCommand } from './apply.command';
@@ -21,6 +22,7 @@ import { NewCommand } from './new.command';
 import { RefreshCommand } from './refresh.command';
 import { ResetCommand } from './reset.command';
 import { StartCommand } from './start.command';
+import { ValidateCommand } from './validate.command';
 
 export class CommandLoader {
   public static async load(program: Command): Promise<void> {
@@ -33,6 +35,7 @@ export class CommandLoader {
     new ResetCommand(new ResetAction()).load(program);
     new ApplyCommand(new ApplyAction()).load(program);
     new ConfigureCommand(new ConfigureAction()).load(program);
+    new ValidateCommand(new ValidateAction()).load(program);
 
     this.handleInvalidCommand(program);
   }
