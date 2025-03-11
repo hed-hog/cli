@@ -23,6 +23,10 @@ async function loadYamlFromDirectory(dirPath: string) {
 }
 
 export async function loadHedhogFile(basePath: string): Promise<HedhogFile> {
+  if (basename(basePath) === 'hedhog.yaml') {
+    basePath = join(basePath, '..');
+  }
+
   const hedgehogYaml = join(basePath, 'hedhog.yaml');
   const config: HedhogFile = {
     tables: {},

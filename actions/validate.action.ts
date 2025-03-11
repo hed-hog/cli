@@ -40,12 +40,33 @@ export class ValidateAction extends AbstractAction {
 
     this.showDebug('HedhogFile', hedhogFile);
 
-    this.showDebug('-----------------------------------------');
+    console.info(chalk.gray('-----------------------------------------'));
 
     Object.keys(hedhogFile.tables ?? {}).forEach((table) => {
-      this.showDebug('Table', table);
-      this.showDebug('Content', (hedhogFile.tables ?? {})[table]);
-      this.showDebug('-----------------------------------------');
+      console.info('Table:', chalk.yellow(table));
+      console.info('Content', (hedhogFile.tables ?? {})[table]);
+      console.info(chalk.gray('-----------------------------------------'));
+    });
+
+    Object.keys(hedhogFile.data ?? {}).forEach((data) => {
+      console.info('Data:', chalk.yellow(data));
+      console.info('Content', (hedhogFile.data ?? {})[data]);
+      console.info(chalk.gray('-----------------------------------------'));
+    });
+
+    Object.keys(hedhogFile.screens ?? {}).forEach((screen) => {
+      console.info('Screen:', chalk.yellow(screen));
+      console.info('Content', (hedhogFile.screens ?? {})[screen]);
+      console.info(chalk.gray('-----------------------------------------'));
+    });
+
+    console.info('Routes:', hedhogFile.routes);
+    console.info(chalk.gray('-----------------------------------------'));
+
+    Object.keys(hedhogFile.enums ?? {}).forEach((enumName) => {
+      console.info('Enum:', chalk.yellow(enumName));
+      console.info('Content', (hedhogFile.enums ?? {})[enumName]);
+      console.info(chalk.gray('-----------------------------------------'));
     });
   }
 }

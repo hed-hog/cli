@@ -28,6 +28,7 @@ import { getConfig } from '../lib/utils/get-config';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { loadHedhogFile } from '../lib/utils/load-hedhog-file';
 import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
+import { writeHedhogFile } from '../lib/utils/write-hedhog-file';
 
 export class ApplyAction extends AbstractAction {
   private libraryName = '';
@@ -243,22 +244,21 @@ export class ApplyAction extends AbstractAction {
       dependencyTables,
     );
 
-    const hedhogFile2 = yaml.parse(
-      await readFile(this.hedhogFilePath, 'utf-8'),
-    );
+    const hedhogFile2 = await loadHedhogFile(this.hedhogFilePath);
 
     if (hedhogFile2.screens) {
       const screensArray = Object.keys(hedhogFile2.screens);
-      const YAMLContent = await readFile(this.hedhogFilePath, 'utf-8');
-      const yamlData = yaml.parse(YAMLContent);
+
+      const yamlData = await loadHedhogFile(this.hedhogFilePath);
 
       yamlData.routes = [];
 
-      const updatedYAML = yaml.stringify({
+      const updatedYAML = {
         ...yamlData,
         routes: yamlData.routes,
-      });
-      await writeFile(this.hedhogFilePath, updatedYAML, 'utf-8');
+      } as HedhogFile;
+
+      await writeHedhogFile(this.hedhogFilePath, updatedYAML);
 
       for (const screen of screensArray) {
         await this.createScreenRouterFile(screen);
@@ -277,7 +277,7 @@ export class ApplyAction extends AbstractAction {
           enumName,
           hedhogFile2.enums[enumName].key,
           hedhogFile2.enums[enumName].value,
-          hedhogFile2.data[enumName.toSnakeCase()],
+          hedhogFile2.data?.[enumName.toSnakeCase()] ?? [],
         );
       }
     }
