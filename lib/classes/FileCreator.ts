@@ -279,7 +279,7 @@ export class FileCreator {
       pkNameCase: this.table.pkName,
       hasLocale: this.table.hasLocale,
       libraryName: this.libraryName,
-      fkNameLocaleCase: getLocaleYaml(this.libraryPath, this.table.name),
+      fkNameLocaleCase: await getLocaleYaml(this.libraryPath, this.table.name),
       module: {
         imports: this.options.importServices
           ? [

@@ -1,5 +1,4 @@
-import { readFile } from 'fs/promises';
-import * as yaml from 'yaml';
+import { loadHedhogFile } from './load-hedhog-file';
 import path = require('node:path');
 
 /**
@@ -18,7 +17,7 @@ export const filterScreenCreation = async (
   task?: any,
 ): Promise<boolean> => {
   const hedhogFilePath = path.join(libraryPath, '..', 'hedhog.yaml');
-  const hedhogFile = yaml.parse(await readFile(hedhogFilePath, 'utf-8'));
+  const hedhogFile = await loadHedhogFile(hedhogFilePath);
   const taskCondition = !task ? false : task.subPath === 'react-query';
   return (
     (hedhogFile.screens &&

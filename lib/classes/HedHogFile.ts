@@ -1,8 +1,9 @@
-import { readFile, writeFile } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import { existsSync } from 'node:fs';
-import { parse, stringify } from 'yaml';
+import { stringify } from 'yaml';
 import { Menu } from '../types/menu';
 import { Table } from '../types/table';
+import { loadHedhogFile } from '../utils/load-hedhog-file';
 
 export interface Route {
   url: string;
@@ -44,7 +45,7 @@ export class HedhogFile {
 
   private async init() {
     if (existsSync(this._path)) {
-      this._content = parse(await readFile(this._path, 'utf-8'));
+      this._content = await loadHedhogFile(this._path);
     }
   }
 

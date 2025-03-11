@@ -16,6 +16,7 @@ import { HedhogFile } from '../lib/classes/HedHogFile';
 import { TableFactory } from '../lib/classes/TableFactory';
 import TemplateProcessor from '../lib/classes/TemplateProcessor';
 import { Column } from '../lib/types/column';
+import { HedhogTable } from '../lib/types/hedhog-file';
 import { Table } from '../lib/types/table';
 import { EMOJIS } from '../lib/ui';
 import { addRoutesToYaml } from '../lib/utils/add-routes-yaml';
@@ -25,6 +26,7 @@ import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { formatWithPrettier } from '../lib/utils/format-with-prettier';
 import { getConfig } from '../lib/utils/get-config';
 import { getRootPath } from '../lib/utils/get-root-path';
+import { loadHedhogFile } from '../lib/utils/load-hedhog-file';
 import { addPackageJsonPeerDependencies } from '../lib/utils/update-files';
 
 export class ApplyAction extends AbstractAction {
@@ -75,7 +77,7 @@ export class ApplyAction extends AbstractAction {
 
     this.librarySrcPath = join(this.libraryPath, 'src');
     this.showDebug(`Library name: ${this.libraryName} (${this.libraryPath})`);
-    const tables = this.parseYamlFile(this.hedhogFilePath);
+    const tables = await this.parseYamlFile(this.hedhogFilePath);
     this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
     const localeTables: any[] = [];
@@ -465,7 +467,7 @@ export class ApplyAction extends AbstractAction {
     for (const folder of await readdir(hedhogLibsPath)) {
       const hedhogFilePath = join(hedhogLibsPath, folder, 'hedhog.yaml');
       if (existsSync(hedhogFilePath)) {
-        const hedhogFile = this.parseYamlFile(hedhogFilePath);
+        const hedhogFile = await this.parseYamlFile(hedhogFilePath);
         tables[folder] = hedhogFile;
       }
     }
@@ -805,7 +807,7 @@ export class ApplyAction extends AbstractAction {
     }
   }
 
-  private parseYamlFile(filePath: string) {
+  private async parseYamlFile(filePath: string) {
     console.log('parseYamlFile', filePath);
 
     if (!existsSync(filePath)) {
@@ -813,17 +815,18 @@ export class ApplyAction extends AbstractAction {
       return [];
     }
 
-    const fileContents = readFileSync(filePath, 'utf8');
-    const data = yaml.parse(fileContents);
+    const data = await loadHedhogFile(filePath);
 
     this.showDebug(`YAML file parsed: ${filePath}`, data);
 
     if (data && data.tables) {
-      const tables: Table[] = Object.keys(data.tables).map((tableName) => ({
-        name: tableName,
-        columns: data.tables[tableName].columns,
-        ifNotExists: data.tables[tableName].ifNotExists,
-      }));
+      const tables: HedhogTable[] = Object.keys(data.tables).map(
+        (tableName) => ({
+          name: tableName,
+          columns: data.tables?.[tableName]?.columns || [],
+          ifNotExists: data.tables?.[tableName].ifNotExists || false,
+        }),
+      );
 
       return tables;
     }

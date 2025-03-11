@@ -1,8 +1,8 @@
 import * as fs from 'node:fs';
-import * as yaml from 'yaml';
+import { loadHedhogFile } from './load-hedhog-file';
 import path = require('node:path');
 
-function getLocaleYaml(libraryPath: string, name: string) {
+async function getLocaleYaml(libraryPath: string, name: string) {
   try {
     const filePath = path.join(libraryPath, '..', 'hedhog.yaml');
 
@@ -10,13 +10,17 @@ function getLocaleYaml(libraryPath: string, name: string) {
       return '';
     }
 
-    const fileContents = fs.readFileSync(filePath, 'utf8');
-    const data = yaml.parse(fileContents) as Record<string, any>;
+    const data = await loadHedhogFile(filePath);
+
     const key = `${name}_locale`;
 
-    if (data.tables[key]) {
+    if (data.tables?.[key]) {
       for (const column of data.tables[key].columns) {
-        if (column.references && column.references.table === name) {
+        if (
+          column &&
+          'references' in column &&
+          column.references.table === name
+        ) {
           return column.name;
         }
       }

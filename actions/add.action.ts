@@ -20,6 +20,7 @@ import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getDbTypeFromConnectionString } from '../lib/utils/get-db-type-from-connection-string';
 import { getNpmPackage } from '../lib/utils/get-npm-package';
 import { getRootPath } from '../lib/utils/get-root-path';
+import { loadHedhogFile } from '../lib/utils/load-hedhog-file';
 import { runScript } from '../lib/utils/run-script';
 import { AbstractAction } from './abstract.action';
 
@@ -451,7 +452,7 @@ export class AddAction extends AbstractAction {
   }
 
   async createModuleRoutesFile(hedhogPath: string, frontendDestPath: string) {
-    const hedHogFile = YAML.parse(await readFile(hedhogPath, 'utf-8'));
+    const hedHogFile = await loadHedhogFile(hedhogPath);
 
     if (hedHogFile.routes) {
       await writeFile(
@@ -687,7 +688,8 @@ export class AddAction extends AbstractAction {
       const routeObjects = [];
 
       for (const path of routePaths) {
-        routeObjects.push(...YAML.parse(await readFile(path, 'utf-8'))?.routes);
+        const headhogFile = await loadHedhogFile(path);
+        routeObjects.push(...(headhogFile?.routes ?? []));
       }
 
       await this.extractPathsFromRoutes('', routeObjects);
@@ -782,7 +784,8 @@ export class AddAction extends AbstractAction {
     );
 
     if (existsSync(hedhogFilePath)) {
-      const YAMLContent = YAML.parse(await readFile(hedhogFilePath, 'utf-8'));
+      const YAMLContent = await loadHedhogFile(hedhogFilePath);
+
       if (YAMLContent.routes) {
         await writeFile(
           routesYAMLPath,

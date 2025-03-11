@@ -25,70 +25,70 @@ export type HedhogTableColumnFkOnDelete =
 
 export type HedhogTableColumnFkOnUpdate = HedhogTableColumnFkOnDelete;
 
-export type HedhogTableColumn = HedhogTableColumnBase &
-  (
-    | {
-        type: 'pk';
-      }
-    | {
-        type: 'fk';
-        references: {
-          table: string;
-          column: string;
-          onDelete?: HedhogTableColumnFkOnDelete;
-          onUpdate?: HedhogTableColumnFkOnUpdate;
-        };
-      }
-    | {
-        type: 'slug';
-      }
-    | {
-        type: 'enum';
-        enum: string[];
-      }
-    | {
-        type: 'created_at';
-      }
-    | {
-        type: 'updated_at';
-      }
-    | {
-        type: 'varchar';
-      }
-    | {
-        type: 'datetime';
-      }
-    | {
-        type: 'array';
-        of: 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'time';
-      }
-    | {
-        type: 'order';
-      }
-    | {
-        type: 'int';
-      }
-    | {
-        type: 'text';
-      }
-    | {
-        type: 'boolean';
-      }
-    | {
-        type: 'char';
-      }
-    | {
-        type: 'decimal';
-        precision: number;
-        scale: number;
-      }
-    | {
-        type: 'tinyint';
-      }
-    | {
-        type: 'json';
-      }
-  );
+export type HedhogTableColumn = (
+  | {
+      type: 'pk';
+    }
+  | {
+      type: 'fk';
+      references: {
+        table: string;
+        column: string;
+        onDelete?: HedhogTableColumnFkOnDelete;
+        onUpdate?: HedhogTableColumnFkOnUpdate;
+      };
+    }
+  | {
+      type: 'slug';
+    }
+  | {
+      type: 'enum';
+      enum: string[];
+    }
+  | {
+      type: 'created_at';
+    }
+  | {
+      type: 'updated_at';
+    }
+  | {
+      type: 'varchar';
+    }
+  | {
+      type: 'datetime';
+    }
+  | {
+      type: 'array';
+      of: 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'time';
+    }
+  | {
+      type: 'order';
+    }
+  | {
+      type: 'int';
+    }
+  | {
+      type: 'text';
+    }
+  | {
+      type: 'boolean';
+    }
+  | {
+      type: 'char';
+    }
+  | {
+      type: 'decimal';
+      precision: number;
+      scale: number;
+    }
+  | {
+      type: 'tinyint';
+    }
+  | {
+      type: 'json';
+    }
+) &
+  HedhogTableColumnBase;
 
 export type HedhogTable = {
   columns: HedhogTableColumn[];
