@@ -818,7 +818,7 @@ export class AddAction extends AbstractAction {
         return require(path);
       case 'yaml':
       case 'yml':
-        return YAML.parse(await readFile(path, 'utf-8'));
+        return await loadHedhogFile(path);
       default:
         throw new Error('Invalid hedhog file extension.');
     }

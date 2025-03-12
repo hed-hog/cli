@@ -3,9 +3,12 @@ import { readdir, readFile, stat } from 'fs/promises';
 import { basename, join } from 'path';
 import { parse } from 'yaml';
 import { HedhogFile } from '../types/hedhog-file';
+import chalk = require('chalk');
 
 async function loadYaml(path: string) {
-  if (!existsSync(path)) return null;
+  if (!existsSync(path)) {
+    return null;
+  }
   const content = await readFile(path, 'utf8');
   return parse(content);
 }

@@ -1,5 +1,4 @@
 import { writeFile } from 'fs/promises';
-import { existsSync } from 'node:fs';
 import { stringify } from 'yaml';
 import { Menu } from '../types/menu';
 import { Table } from '../types/table';
@@ -44,9 +43,7 @@ export class HedhogFile {
   }
 
   private async init() {
-    if (existsSync(this._path)) {
-      this._content = await loadHedhogFile(this._path);
-    }
+    this._content = await loadHedhogFile(this._path);
   }
 
   get tables() {

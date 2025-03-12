@@ -126,9 +126,14 @@ export type HedhogMenu = {
   relations?: HedhogDataMenuRelations;
 };
 
+export type HedhogScreenRelation = {
+  title: HedhogLocaleField;
+};
+
 export type HedhogScreen = {
   title: HedhogLocaleField;
   menu?: HedhogMenu;
+  relations?: Record<HedhogTableName, HedhogScreenRelation>;
 };
 
 export type HedhogRoute = {

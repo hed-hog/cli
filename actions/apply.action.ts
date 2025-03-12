@@ -81,6 +81,8 @@ export class ApplyAction extends AbstractAction {
     const tables = await this.parseYamlFile(this.hedhogFilePath);
     this.hedhogFile = await new HedhogFile().load(this.hedhogFilePath);
 
+    this.showDebug(`Tables: `, this.hedhogFile);
+
     const localeTables: any[] = [];
     for (const table of this.hedhogFile.getTables()) {
       if (table.name.endsWith('_locale')) {
@@ -89,6 +91,8 @@ export class ApplyAction extends AbstractAction {
     }
 
     for (const table of this.hedhogFile.getTables()) {
+      this.showDebug(`Processing table: ${table.name}`);
+
       const tableApply = await TableFactory.create(table, this.hedhogFilePath);
       const screenWithRelations = tableApply.findTableWithRelation();
 
@@ -356,8 +360,7 @@ export class ApplyAction extends AbstractAction {
   }
 
   async createScreenRouterFile(screen: string) {
-    const YAMLContent = await readFile(this.hedhogFilePath, 'utf-8');
-    const yamlData = yaml.parse(YAMLContent);
+    const yamlData = await loadHedhogFile(this.hedhogFilePath);
 
     if (!yamlData.routes) {
       yamlData.routes = [];
@@ -372,6 +375,9 @@ export class ApplyAction extends AbstractAction {
       yamlData.routes.push(moduleRoute);
     }
 
+    if (!moduleRoute.children) {
+      moduleRoute.children = [];
+    }
     moduleRoute.children.push({
       path: screen.toKebabCase(),
       lazy: {
@@ -421,13 +427,16 @@ export class ApplyAction extends AbstractAction {
       return;
     }
 
-    const hedhogFile = yaml.parse(await readFile(this.hedhogFilePath, 'utf-8'));
+    const hedhogFile = await loadHedhogFile(this.hedhogFilePath);
+
     const screens = hedhogFile.screens || {};
     return Object.keys(screens)
-      .filter((screen) => screens[screen].relations)
+      .filter((screen) => screens[screen]?.relations)
       .map((screen) => ({
         name: screen,
-        relations: Object.keys(screens[screen].relations),
+        relations: screens[screen]?.relations
+          ? Object.keys(screens[screen].relations)
+          : [],
       }));
   }
 
@@ -808,13 +817,6 @@ export class ApplyAction extends AbstractAction {
   }
 
   private async parseYamlFile(filePath: string) {
-    console.log('parseYamlFile', filePath);
-
-    if (!existsSync(filePath)) {
-      console.warn(chalk.yellow(`File not found: ${filePath}`));
-      return [];
-    }
-
     const data = await loadHedhogFile(filePath);
 
     this.showDebug(`YAML file parsed: ${filePath}`, data);
