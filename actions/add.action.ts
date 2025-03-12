@@ -197,7 +197,7 @@ export class AddAction extends AbstractAction {
     this.packagesAdded = packagesAdded;
     this.isAlreadyInstalled = await this.alreadyInstalled();
 
-    console.log({
+    this.showDebug({
       packageName: this.packageName,
       alreadyInstalled: this.isAlreadyInstalled,
     });
@@ -358,11 +358,6 @@ export class AddAction extends AbstractAction {
     parentPath: string,
     routeObjects: RouteObject[],
   ) {
-    console.log('extractPathsFromRoutes', {
-      parentPath,
-      routeObjects,
-    });
-
     for (const routeObject of routeObjects) {
       const fullPath = [parentPath, routeObject.path]
         .join('/')
@@ -677,11 +672,8 @@ export class AddAction extends AbstractAction {
       const routePaths = [routesMainPath];
 
       for (const file of await readdir(routesModulesPath)) {
-        console.log('route file', file);
         routePaths.push(join(routesModulesPath, file));
       }
-
-      console.log({ routePaths });
 
       const routeObjects = [];
 
