@@ -190,8 +190,6 @@ export class AddAction extends AbstractAction {
       (option) => option.name === 'debug' && option.value === true,
     );
 
-    this.debug = true;
-
     await this.initPaths();
     await this.initNames();
     await this.initDb();
