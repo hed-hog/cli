@@ -1,14 +1,9 @@
-import * as fs from 'node:fs';
 import { loadHedhogFile } from './load-hedhog-file';
 import path = require('node:path');
 
 async function getLocaleYaml(libraryPath: string, name: string) {
   try {
     const filePath = path.join(libraryPath, '..', 'hedhog.yaml');
-
-    if (!fs.existsSync(filePath)) {
-      return '';
-    }
 
     const data = await loadHedhogFile(filePath);
 

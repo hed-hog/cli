@@ -418,13 +418,6 @@ export class ApplyAction extends AbstractAction {
   }
 
   async screensWithRelations() {
-    if (!existsSync(this.hedhogFilePath)) {
-      console.error(
-        chalk.red(`hedhog.yaml file not found at ${this.hedhogFilePath}`),
-      );
-      return;
-    }
-
     const hedhogFile = await loadHedhogFile(this.hedhogFilePath);
 
     const screens = hedhogFile.screens || {};
