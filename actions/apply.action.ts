@@ -119,7 +119,7 @@ export class ApplyAction extends AbstractAction {
 
       await new DTOCreator(dtoFilePath, fields, hasLocale).createDTOs();
 
-      console.log('DTOs criados com sucesso!');
+      this.showDebug('DTOs criados com sucesso!');
 
       await new FileCreator(
         this.librarySrcPath,
@@ -212,10 +212,10 @@ export class ApplyAction extends AbstractAction {
         screenWithRelations,
       );
 
-      console.log('Arquivos de rotas criados com sucesso!');
+      this.showDebug('Arquivos de rotas criados com sucesso!');
 
       if (!screenWithRelations) {
-        console.log('Updating parent module...');
+        this.showDebug('Updating parent module...');
         await this.updateParentModule(
           this.libraryName,
           join(
@@ -224,10 +224,10 @@ export class ApplyAction extends AbstractAction {
           ),
           table.name,
         );
-        console.log('Parent module updated successfully!');
+        this.showDebug('Parent module updated successfully!');
       }
 
-      console.log('Criando arquivos de frontend...');
+      this.showDebug('Criando arquivos de frontend...');
 
       await this.createFrontendFiles(
         table.name,
@@ -236,7 +236,7 @@ export class ApplyAction extends AbstractAction {
         tablesWithRelations as any[],
       );
 
-      console.log('Arquivos de frontend criados com sucesso!');
+      this.showDebug('Arquivos de frontend criados com sucesso!');
     }
 
     const dependencyTables = await this.checkRelationsTable(tables);
@@ -270,11 +270,11 @@ export class ApplyAction extends AbstractAction {
 
     //table-enum.ejs
 
-    console.log('============================================');
+    this.showDebug('============================================');
     if (hedhogFile2.enums) {
       const enumsArray = Object.keys(hedhogFile2.enums);
       for (const enumName of enumsArray) {
-        console.log('Criando enum...', enumName);
+        this.showDebug('Criando enum...', enumName);
         await this.createEnumFile(
           this.libraryPath,
           enumName,
@@ -284,7 +284,7 @@ export class ApplyAction extends AbstractAction {
         );
       }
     }
-    console.log('============================================');
+    this.showDebug('============================================');
   }
 
   async createEnumFile(
@@ -414,7 +414,7 @@ export class ApplyAction extends AbstractAction {
     writeFileSync(join(basePath, 'en.json'), enContent, 'utf8');
     writeFileSync(join(basePath, 'pt.json'), ptContent, 'utf8');
 
-    console.log(`Translations generated successfully at: ${basePath}`);
+    this.showDebug(`Translations generated successfully at: ${basePath}`);
   }
 
   async screensWithRelations() {

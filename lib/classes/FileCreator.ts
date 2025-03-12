@@ -177,7 +177,7 @@ export class FileCreator {
 
     const fileContent = await this.generateFileContent();
     const fileFullPath = this.getFileFullPath();
-    console.log(`Creating file: ${fileFullPath}`);
+
     await writeFile(
       fileFullPath,
       await formatWithPrettier(fileContent, {
@@ -198,8 +198,6 @@ export class FileCreator {
       toKebabCase(this.options.tablesWithRelations![0].name),
       `${toKebabCase(this.options.tablesWithRelations![0].name)}.module.ts`,
     );
-
-    console.log('Creating parent module file:', parentModulePath);
 
     const templatePath = join(
       __dirname,
