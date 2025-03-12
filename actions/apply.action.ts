@@ -7,7 +7,6 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import OpenAI from 'openai';
 import * as ora from 'ora';
-import * as yaml from 'yaml';
 import { AbstractAction } from '.';
 import { Input } from '../commands';
 import { DTOCreator } from '../lib/classes/DtoCreator';
@@ -385,11 +384,10 @@ export class ApplyAction extends AbstractAction {
       },
     });
 
-    const updatedYAML = yaml.stringify({
+    await writeHedhogFile(this.hedhogFilePath, {
       ...yamlData,
       routes: yamlData.routes,
     });
-    await writeFile(this.hedhogFilePath, updatedYAML, 'utf-8');
   }
 
   async generateTranslations(
