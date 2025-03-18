@@ -58,11 +58,6 @@ export async function loadHedhogFile(basePath: string): Promise<HedhogFile> {
   if (routes?.routes) config.routes?.push(...routes.routes);
   if (hedhog?.routes) config.routes?.push(...hedhog?.routes);
 
-  console.log({ basePath });
-  console.log({ hedhog });
-  console.log({ routesOnLoad: hedhog?.routes });
-  console.log({ routesOnConfig: config.routes });
-
   // Pastas com múltiplos arquivos
   const [tablesDir, dataDir, screensDir, routesDir] = await Promise.all([
     loadYamlFromDirectory(join(basePath, 'hedhog', 'tables')),
