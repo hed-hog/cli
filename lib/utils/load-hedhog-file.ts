@@ -3,7 +3,6 @@ import { readdir, readFile, stat } from 'fs/promises';
 import { basename, join } from 'path';
 import { parse } from 'yaml';
 import { HedhogFile } from '../types/hedhog-file';
-import chalk = require('chalk');
 
 async function loadYaml(path: string) {
   if (!existsSync(path)) {
@@ -30,7 +29,10 @@ export async function loadHedhogFile(basePath: string): Promise<HedhogFile> {
     basePath = join(basePath, '..');
   }
 
-  const hedgehogYaml = join(basePath, 'hedhog.yaml');
+  const hedgehogYaml = !basePath.includes('routes')
+    ? join(basePath, 'hedhog.yaml')
+    : basePath;
+
   const config: HedhogFile = {
     tables: {},
     data: {},
@@ -54,6 +56,12 @@ export async function loadHedhogFile(basePath: string): Promise<HedhogFile> {
   if (data?.data) Object.assign({}, config.data, data.data);
   if (screens?.screens) Object.assign({}, config.screens, screens.screens);
   if (routes?.routes) config.routes?.push(...routes.routes);
+  if (hedhog?.routes) config.routes?.push(...hedhog?.routes);
+
+  console.log({ basePath });
+  console.log({ hedhog });
+  console.log({ routesOnLoad: hedhog?.routes });
+  console.log({ routesOnConfig: config.routes });
 
   // Pastas com múltiplos arquivos
   const [tablesDir, dataDir, screensDir, routesDir] = await Promise.all([
