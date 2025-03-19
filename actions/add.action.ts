@@ -120,7 +120,7 @@ export class AddAction extends AbstractAction {
    * @returns {void}
    */
   private async initNames(): Promise<void> {
-    this.addModuleName = `${this.capitalizeFirstLetter(this.module)}Module`;
+    this.addModuleName = `${this.capitalizeFirstLetter(this.module).toPascalCase()}Module`;
     this.packageName = `@hedhog/${this.module}`;
   }
 
