@@ -683,8 +683,6 @@ export class AddAction extends AbstractAction {
         routeObjects.push(...(headhogFile?.routes ?? []));
       }
 
-      console.log('routeObjects', routeObjects);
-
       await this.extractPathsFromRoutes('', routeObjects);
 
       this.routes = this.sortRoutes(this.routes);
@@ -696,8 +694,6 @@ export class AddAction extends AbstractAction {
       const varTemplate = `${this.convertToString(this.routesRecursive)
         .map((route) => route.content)
         .join(',')}`;
-
-      console.log('varTemplate', varTemplate);
 
       const routerTemplatePath = join(
         __dirname,

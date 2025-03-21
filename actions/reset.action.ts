@@ -43,8 +43,6 @@ export class ResetAction extends AbstractAction {
   }
 
   async resetAdminRoutes(path: string) {
-    console.log('resetAdminRoutes', { path });
-
     const spinner = ora('Reset Admin Routes...').start();
 
     const routerTemplatePath = join(
@@ -55,10 +53,6 @@ export class ResetAction extends AbstractAction {
       'router.tsx.ejs',
     );
 
-    console.log({
-      routerTemplatePath,
-    });
-
     if (!routerTemplatePath) {
       spinner.fail('No Admin Routes found.');
       return;
@@ -66,10 +60,6 @@ export class ResetAction extends AbstractAction {
 
     const templateContent = await readFile(routerTemplatePath, 'utf-8');
     const routerDestPath = join(path, 'admin', 'src', 'router.tsx');
-
-    console.log({
-      routerDestPath,
-    });
 
     if (!existsSync(routerDestPath)) {
       spinner.fail('No Admin Routes found.');
