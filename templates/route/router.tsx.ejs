@@ -54,7 +54,7 @@ const routes = [
       {
         index: true,
         lazy: async () => ({
-          Component: (await import('./pages/dashboard/index.tsx')).default,
+          Component: (await import('./pages/index.tsx')).default,
         }),
       },
       <%- routes %>

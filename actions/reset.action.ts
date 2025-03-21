@@ -1,41 +1,90 @@
 import chalk = require('chalk');
+import { render, renderFile } from 'ejs';
 import { lstat, mkdir, readdir, rmdir, unlink, writeFile } from 'fs/promises';
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as ora from 'ora';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
 import { getEnvFileTemplate } from '../lib/utils/env-file-template';
+import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
 import { getFileContent } from '../lib/utils/get-file-content';
 import { getRootPath } from '../lib/utils/get-root-path';
 import { recreateDatabase } from '../lib/utils/recreate-database';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { AbstractAction } from './abstract.action';
-import { render, renderFile } from 'ejs';
 
 export class ResetAction extends AbstractAction {
   public async handle() {
     console.info(chalk.yellow('Resetting the project...'));
     let directoryPath = '';
     let libPath = '';
+    let backendPath = '';
 
     try {
       directoryPath = await getRootPath();
       libPath = join(directoryPath, 'lib');
-      directoryPath = join(directoryPath, 'backend');
+      backendPath = join(directoryPath, 'backend');
     } catch (error) {
       return console.error(chalk.red('Directory is not a hedhog project.'));
     }
 
-    await this.removeMigrations(directoryPath);
-    await this.removeDependencies(directoryPath);
-    await this.recreateAppModule(directoryPath);
-    await this.recreatePrismaSchema(directoryPath);
-    await this.checkEnvFile(directoryPath);
-    await this.recreateDatabase(directoryPath);
-    await this.resetAdminFrontEnd(directoryPath);
+    await this.removeMigrations(backendPath);
+    await this.removeDependencies(backendPath);
+    await this.recreateAppModule(backendPath);
+    await this.recreatePrismaSchema(backendPath);
+    await this.checkEnvFile(backendPath);
+    await this.recreateDatabase(backendPath);
+    await this.resetAdminFrontEnd(backendPath);
     await this.resetLocalStorageFiles(libPath);
+    await this.resetAdminRoutes(directoryPath);
 
     console.info(chalk.green('Project reset successfully.'));
+  }
+
+  async resetAdminRoutes(path: string) {
+    console.log('resetAdminRoutes', { path });
+
+    const spinner = ora('Reset Admin Routes...').start();
+
+    const routerTemplatePath = join(
+      __dirname,
+      '..',
+      'templates',
+      'route',
+      'router.tsx.ejs',
+    );
+
+    console.log({
+      routerTemplatePath,
+    });
+
+    if (!routerTemplatePath) {
+      spinner.fail('No Admin Routes found.');
+      return;
+    }
+
+    const templateContent = await readFile(routerTemplatePath, 'utf-8');
+    const routerDestPath = join(path, 'admin', 'src', 'router.tsx');
+
+    console.log({
+      routerDestPath,
+    });
+
+    if (!existsSync(routerDestPath)) {
+      spinner.fail('No Admin Routes found.');
+      return;
+    }
+
+    const renderedContent = await formatTypeScriptCode(
+      render(templateContent, {
+        routes: [],
+      }),
+    );
+
+    await writeFile(routerDestPath, renderedContent, 'utf-8');
+
+    spinner.succeed('Admin Routes reseted.');
   }
 
   async resetAdminFrontEnd(path: string) {
