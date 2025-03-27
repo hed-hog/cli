@@ -8,15 +8,9 @@ export const writeHedhogFile = async (
   basePath: string,
   content: HedhogFile,
 ) => {
-  console.log('writeHedhogFile', {
-    basePath,
-  });
-
   if (basename(basePath) === 'hedhog.yaml') {
     basePath = join(basePath, '..');
   }
-
-  console.log({ basePath });
 
   const props: (keyof HedhogFile)[] = ['tables', 'data', 'screens', 'enums'];
 
@@ -78,8 +72,6 @@ export const writeHedhogFile = async (
   if ((content.routes ?? []).length === 0) {
     delete content.routes;
   }
-
-  console.log({ content });
 
   if (
     Object.keys(content.data ?? {}).length > 0 ||

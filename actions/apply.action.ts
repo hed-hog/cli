@@ -639,11 +639,11 @@ export class ApplyAction extends AbstractAction {
       .getTables()
       .find((t) => t.name === tableName) as Table;
     const tableApply = await TableFactory.create(table, this.hedhogFilePath);
+
     fields = fields
       .filter(
         (field) => !['pk', 'created_at', 'updated_at'].includes(field.type),
       )
-      .filter((field) => field.locale)
       .filter((field) => field.name || field.type === 'slug')
       .map((f) => {
         if (f.type === 'slug') {
