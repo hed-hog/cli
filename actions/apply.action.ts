@@ -104,12 +104,13 @@ export class ApplyAction extends AbstractAction {
       const hasLocale = tableApply.hasLocale;
       const baseTableName = tableApply.baseName;
       const tablesWithRelations = tableApply.hedhogFile.screensWithRelations;
-      await this.createTranslationFiles(baseTableName);
 
       if (table.name.endsWith('_locale')) {
         localeTables.push(table);
         continue;
       }
+
+      await this.createTranslationFiles(baseTableName);
 
       const fields = table.columns
         .filter(
