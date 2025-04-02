@@ -9,7 +9,7 @@
     "start": "node bin/hedhog.js",
     "dev": "tsc --watch",
     "prod": "ts-node ./scripts/deploy.ts",
-    "postprod": "npm run clean && npm i -g @hedhog/cli@latest && hedhog --version",
+    "postprod": "npm run clean && node -p \"require('./package.json').version\" > .version && node -e \"const fs = require('fs'); const version = fs.readFileSync('.version', 'utf8').trim(); require('child_process').execSync(`npm i -g @hedhog/cli@${version}`); fs.unlinkSync('.version');\" && hedhog --version",
     "clean": "gulp clean:bundle",
     "diff": "git diff --output diff.md",
     "project": "npm run clean && sh scripts/get_all_ts.sh . > project.md"
