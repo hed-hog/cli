@@ -231,6 +231,8 @@ export class AddAction extends AbstractAction {
       await this.copyFrontEndFiles();
     }
 
+    await this.checkDashboardComponents();
+
     if (!this.silentComplete) {
       await this.updateLibsPrisma();
       await this.complete();
@@ -246,6 +248,84 @@ export class AddAction extends AbstractAction {
     return {
       packagesAdded,
     };
+  }
+
+  async checkDashboardComponents() {
+    const path = join(
+      this.directoryPath,
+      'backend',
+      'node_modules',
+      '@hedhog',
+      this.module,
+      'hedhog',
+    );
+    const extensions = ['json', 'yaml', 'yml'];
+
+    const extension = extensions.find((ext) => {
+      return existsSync(`${path}.${ext}`);
+    });
+    const filePath = `${path}.${extension}`;
+
+    const hedhogFile = await this.parseHedhogFile(filePath);
+
+    const data = hedhogFile?.data ?? {};
+    const components = data?.dashboard_component ?? [];
+
+    this.showDebug({
+      path,
+      components,
+    });
+
+    if (components.length) {
+      const dashboardSourcePath = join(
+        this.directoryPath,
+        'backend',
+        'node_modules',
+        '@hedhog',
+        this.module,
+        'frontend',
+        'dashboard',
+        'components',
+      );
+      const dashboardDestPath = join(
+        this.directoryPath,
+        'admin',
+        'src',
+        'components',
+        'dashboard',
+      );
+
+      this.showDebug({
+        dashboardSourcePath,
+        dashboardDestPath,
+      });
+
+      await mkdirRecursive(dashboardDestPath);
+
+      for (const component of components) {
+        const componentPath = join(
+          dashboardSourcePath,
+          `${component.slug}.tsx.ejs`.toPascalCase(),
+        );
+
+        this.showDebug({
+          component,
+          dashboardSourcePath,
+        });
+
+        if (existsSync(componentPath)) {
+          const content = await readFile(componentPath, 'utf-8');
+
+          const renderedContent = await formatTypeScriptCode(
+            render(content, {
+              component,
+            }),
+          );
+
+          await writeFile(componentPath, renderedContent, 'utf-8');
+        }
+      }
+    }
   }
 
   async alreadyInstalled(): Promise<boolean> {
