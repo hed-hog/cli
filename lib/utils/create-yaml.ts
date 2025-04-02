@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { HedhogFile } from '../types/hedhog-file';
 import { formatWithPrettier } from './format-with-prettier';
 import { writeHedhogFile } from './write-hedhog-file';
@@ -95,10 +95,10 @@ tables: # Definitions for database tables
 
   const yamlFilePath = path.join(libraryPath, `hedhog.yaml`);
 
-  await writeHedhogFile(
+  await writeFile(
     yamlFilePath,
-    (await formatWithPrettier(yamlContent, {
+    await formatWithPrettier(yamlContent, {
       parser: 'yaml',
-    })) as HedhogFile,
+    }),
   );
 }
