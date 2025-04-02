@@ -38,8 +38,34 @@ export class ResetAction extends AbstractAction {
     await this.resetAdminFrontEnd(backendPath);
     await this.resetLocalStorageFiles(libPath);
     await this.resetAdminRoutes(directoryPath);
+    await this.resetDashboardComponents(directoryPath);
 
     console.info(chalk.green('Project reset successfully.'));
+  }
+
+  async resetDashboardComponents(path: string) {
+    const spinner = ora('Reset Dashboard Components...').start();
+
+    const componentsPath = join(
+      path,
+      'admin',
+      'src',
+      'components',
+      'dashboard',
+    );
+
+    for (const file of await readdir(componentsPath)) {
+      const filePath = join(componentsPath, file);
+      if (existsSync(filePath)) {
+        try {
+          await unlink(filePath);
+          spinner.info(`Deleted ${file}...`);
+        } catch (error) {
+          spinner.fail(`Failed to delete ${file}.`);
+          console.error(error);
+        }
+      }
+    }
   }
 
   async resetAdminRoutes(path: string) {
