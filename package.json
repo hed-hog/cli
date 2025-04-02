@@ -9,7 +9,7 @@
     "start": "node bin/hedhog.js",
     "dev": "tsc --watch",
     "prod": "ts-node ./scripts/deploy.ts",
-    "postprod": "npm run clean && npm i -g @hedhog/cli@latest",
+    "postprod": "npm run clean && npm i -g @hedhog/cli@latest && hedhog --version",
     "clean": "gulp clean:bundle",
     "diff": "git diff --output diff.md",
     "project": "npm run clean && sh scripts/get_all_ts.sh . > project.md"
