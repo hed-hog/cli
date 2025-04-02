@@ -62,10 +62,11 @@ export class ResetAction extends AbstractAction {
           spinner.info(`Deleted ${file}...`);
         } catch (error) {
           spinner.fail(`Failed to delete ${file}.`);
-          console.error(error);
         }
       }
     }
+
+    spinner.succeed('Dashboard components reseted.');
   }
 
   async resetAdminRoutes(path: string) {
