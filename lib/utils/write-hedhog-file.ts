@@ -18,15 +18,12 @@ export const writeHedhogFile = async (
     if (content?.[prop]) {
       for (const itemName of Object.keys(content[prop]!)) {
         if (existsSync(join(basePath, 'hedhog', prop, `${itemName}.yaml`))) {
-          console.log(`Writing ${itemName}.yaml`);
-
           await writeFile(
             join(basePath, 'hedhog', prop, `${itemName}.yaml`),
             stringify((content[prop] as Record<string, any>)[itemName] ?? ''),
             'utf8',
           );
 
-          console.log(`Deleting ${itemName} from ${prop}`);
           delete (content[prop] as Record<string, any>)[itemName];
         }
       }
@@ -35,30 +32,22 @@ export const writeHedhogFile = async (
 
   for (const prop of props) {
     if (existsSync(join(basePath, 'hedhog', `${prop}.yaml`)) && content[prop]) {
-      console.log(`Writing ${prop}.yaml`);
-
       await writeFile(
         join(basePath, 'hedhog', `${prop}.yaml`),
         stringify(content[prop]),
         'utf8',
       );
 
-      console.log(`Deleting ${prop}`);
-
       delete content[prop];
     }
   }
 
   if (existsSync(join(basePath, 'hedhog', `routes.yaml`)) && content.routes) {
-    console.log(`Writing routes.yaml`);
-
     await writeFile(
       join(basePath, 'hedhog', 'routes.yaml'),
       stringify(content.routes),
       'utf8',
     );
-
-    console.log(`Deleting routes`);
 
     delete content.routes;
   }
@@ -80,8 +69,6 @@ export const writeHedhogFile = async (
     Object.keys(content.enums ?? {}).length > 0 ||
     (content.routes ?? []).length > 0
   ) {
-    console.log(`Writing hedhog.yaml`);
-
     await writeFile(join(basePath, 'hedhog.yaml'), stringify(content), 'utf8');
   }
 

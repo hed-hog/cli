@@ -82,7 +82,7 @@ function main() {
     runCommand('git push origin production');
     runCommand('git checkout master');
 
-    console.log('✅ Deploy realizado com sucesso!');
+    console.info('✅ Deploy realizado com sucesso!');
   } catch (error) {
     console.error('An error occurred during deployment:', error);
     process.exit(1);
