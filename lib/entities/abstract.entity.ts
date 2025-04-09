@@ -14,7 +14,7 @@ export class AbstractEntity {
     protected db: AbstractDatabase,
     protected name: string,
     protected data: DataType[],
-  ) { }
+  ) {}
 
   on(event: string, listener: (...args: any[]) => void) {
     return this.eventEmitter.on(event, listener);
@@ -263,6 +263,11 @@ export class AbstractEntity {
       const mainFields: string[] = [];
       const mainValues: any[] = [];
 
+      this.eventEmitter.emit(
+        'debug',
+        `Insert ${mainTableName} with data ${JSON.stringify(item)}`,
+      );
+
       /** Insert items */
       for (const key of Object.keys(item)) {
         if (
@@ -317,6 +322,7 @@ export class AbstractEntity {
         );
 
         const valueIndex = mainFields.indexOf(columnName);
+
         const lastOrderResult = await this.db.query(
           `SELECT ${this.db.getColumnNameWithScaping(columnNameOrder)} FROM ${mainTableName} WHERE ${this.db.getColumnNameWithScaping(columnName)} ${mainValues[valueIndex] === undefined ? 'IS NULL' : `= ?`} ORDER BY ${this.db.getColumnNameWithScaping(columnNameOrder)} DESC LIMIT 1`,
           mainValues[valueIndex] === undefined ? [] : [mainValues[valueIndex]],

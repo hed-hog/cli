@@ -27,7 +27,7 @@ export class AbstractDatabase {
     protected password: string,
     protected database: string,
     protected port: number,
-  ) { }
+  ) {}
 
   getDataSource() {
     return new DataSource({
@@ -127,7 +127,7 @@ export class AbstractDatabase {
           if (
             columnsPg[i].data_type === 'USER-DEFINED' &&
             columnsPg[i].type.split('_')[
-            columnsPg[i].type.split('_').length - 1
+              columnsPg[i].type.split('_').length - 1
             ] === 'enum'
           ) {
             columnsPg[i].enum = await this.query(
@@ -206,9 +206,9 @@ export class AbstractDatabase {
           default: row.default !== null && row.default !== undefined,
           enum: row.column_type.includes('enum(')
             ? row.column_type
-              .match(/enum\((.*?)\)/)[1]
-              .split(',')
-              .map((e: any) => e.replace(/'/g, ''))
+                .match(/enum\((.*?)\)/)[1]
+                .split(',')
+                .map((e: any) => e.replace(/'/g, ''))
             : [],
         }));
     }
@@ -251,7 +251,7 @@ export class AbstractDatabase {
 
         return resultPg.length > 0
           ? (this.columnComment[`${tableName}.${columnName}`] =
-            resultPg[0].column_comment)
+              resultPg[0].column_comment)
           : '';
 
       case Database.MYSQL:
@@ -265,7 +265,7 @@ export class AbstractDatabase {
 
         return resultMysql.length > 0
           ? (this.columnComment[`${tableName}.${columnName}`] =
-            resultMysql[0].COLUMN_COMMENT)
+              resultMysql[0].COLUMN_COMMENT)
           : '';
     }
   }
@@ -732,12 +732,12 @@ export class AbstractDatabase {
         }
 
         return (this.relationN2N[`${tableNameOrigin}.${tableNameDestination}`] =
-        {
-          tableNameIntermediate,
-          columnNameOrigin,
-          columnNameDestination,
-          primaryKeyDestination,
-        });
+          {
+            tableNameIntermediate,
+            columnNameOrigin,
+            columnNameDestination,
+            primaryKeyDestination,
+          });
 
       case Database.MYSQL:
         const resultMysql1 = await this.query(
@@ -782,12 +782,12 @@ export class AbstractDatabase {
         }
 
         return (this.relationN2N[`${tableNameOrigin}.${tableNameDestination}`] =
-        {
-          tableNameIntermediate,
-          columnNameOrigin,
-          columnNameDestination,
-          primaryKeyDestination,
-        });
+          {
+            tableNameIntermediate,
+            columnNameOrigin,
+            columnNameDestination,
+            primaryKeyDestination,
+          });
 
       default:
         throw new Error(`Unsupported database type: ${this.type}`);

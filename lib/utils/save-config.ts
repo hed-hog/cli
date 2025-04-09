@@ -14,8 +14,6 @@ export const saveConfig = async (config: any) => {
 
   const data = Object.assign({}, currentConfig, config);
 
-  console.log('saveConfig', data);
-
   await writeFile(dirPath, stringify(data, { indent: 2 }), 'utf-8');
 
   return data;

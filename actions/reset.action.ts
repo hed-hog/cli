@@ -29,7 +29,6 @@ export class ResetAction extends AbstractAction {
       return console.error(chalk.red('Directory is not a hedhog project.'));
     }
 
-    await this.removeMigrations(backendPath);
     await this.removeDependencies(backendPath);
     await this.recreateAppModule(backendPath);
     await this.recreatePrismaSchema(backendPath);

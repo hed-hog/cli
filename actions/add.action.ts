@@ -251,8 +251,6 @@ export class AddAction extends AbstractAction {
   }
 
   async checkDashboardComponents() {
-    console.log('checkDashboardComponents');
-
     const path = join(
       this.directoryPath,
       'backend',
@@ -262,8 +260,6 @@ export class AddAction extends AbstractAction {
       'hedhog',
     );
     const extensions = ['json', 'yaml', 'yml'];
-
-    console.log({ path });
 
     let extension = extensions.find((ext) => {
       return existsSync(`${path}.${ext}`);
@@ -279,16 +275,10 @@ export class AddAction extends AbstractAction {
 
     const filePath = `${path}.${extension}`;
 
-    console.log({ filePath });
-
     const hedhogFile = await this.parseHedhogFile(filePath);
-
-    console.log({ hedhogFile });
 
     const data = hedhogFile?.data ?? {};
     const components = data?.dashboard_component ?? [];
-
-    console.log({ components });
 
     this.showDebug({
       path,
@@ -314,11 +304,6 @@ export class AddAction extends AbstractAction {
         'dashboard',
       );
 
-      console.log({
-        dashboardSourcePath,
-        dashboardDestPath,
-      });
-
       this.showDebug({
         dashboardSourcePath,
         dashboardDestPath,
@@ -332,12 +317,6 @@ export class AddAction extends AbstractAction {
           `${component.slug}.tsx.ejs`,
         );
 
-        console.log({
-          component,
-          dashboardSourcePath,
-          componentPath,
-        });
-
         this.showDebug({
           component,
           dashboardSourcePath,
@@ -345,7 +324,6 @@ export class AddAction extends AbstractAction {
         });
 
         if (existsSync(componentPath)) {
-          console.log(`Component ${component.slug} found.`);
           const content = await readFile(componentPath, 'utf-8');
 
           const renderedContent = await formatTypeScriptCode(
@@ -356,11 +334,9 @@ export class AddAction extends AbstractAction {
 
           const destFilePath = join(dashboardDestPath, `${component.slug}.tsx`);
 
-          console.log({ destFilePath });
-
           await writeFile(destFilePath, renderedContent, 'utf-8');
         } else {
-          console.log(`Component ${component.slug} not found.`);
+          console.warn(`Component ${component.slug} not found.`);
         }
       }
     }
@@ -1093,6 +1069,8 @@ export class AddAction extends AbstractAction {
             hedhogFile?.data,
           )) {
             const { tableName } = data;
+
+            this.showDebug('tableName', tableName);
 
             const entity = EntityFactory.create(
               this.db,
