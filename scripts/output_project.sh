@@ -1,21 +1,23 @@
 #!/bin/bash
+# Sair imediatamente se ocorrer algum erro
+set -e
 
-# Check if the directory was passed as an argument
+# Verifica se o diretório foi passado como argumento
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <project-directory>"
+    echo "Uso: $0 <project-directory>"
     exit 1
 fi
 
-# Define the base directory
+# Define o diretório base
 DIR="$1"
 
-# Check if the directory exists
+# Verifica se o diretório existe
 if [ ! -d "$DIR" ]; then
-    echo "Error: The directory '$DIR' does not exist."
+    echo "Erro: O diretório '$DIR' não existe."
     exit 1
 fi
 
-# Get the project title from package.json using native Bash
+# Obtém o nome do projeto a partir do package.json, se existir
 PACKAGE_JSON="$DIR/package.json"
 if [ -f "$PACKAGE_JSON" ]; then
     PROJECT_NAME=$(grep -oP '"name"\s*:\s*"\K[^"]+' "$PACKAGE_JSON")
@@ -23,15 +25,28 @@ else
     PROJECT_NAME="Unknown Project"
 fi
 
-# File title
-echo "# Listing of \`.ts\` files in the project \`$PROJECT_NAME\`"
+# Exibe o cabeçalho com o título do projeto
+echo "# Listagem de arquivos \`.ts\` e \`.ejs\` do projeto \`$PROJECT_NAME\`"
+echo
 
-# List all .ts files in the directory and subdirectories, ignoring node_modules
-find "$DIR" \( -type d -name "node_modules" -prune \) -o \( -type f -name "*.ts" \) -print | grep -v "/node_modules/" | while read -r FILE; do
-    echo -e "\n## \`$FILE\`\n"
-    echo '```ts'
+# Encontra arquivos .ts e .ejs ignorando o diretório node_modules
+find "$DIR" \( -type d -name "node_modules" -prune \) -o \( -type f \( -name "*.ts" -o -name "*.ejs" \) -print \) | grep -v "/node_modules/" | while read -r FILE; do
+    echo "## \`$FILE\`"
+    echo
+    
+    # Detecta a extensão e define a sintaxe adequada para a highlighting
+    FILE_EXT="${FILE##*.}"
+    if [ "$FILE_EXT" == "ts" ]; then
+        echo '```ts'
+        elif [ "$FILE_EXT" == "ejs" ]; then
+        echo '```ejs'
+    else
+        echo '```'
+    fi
+    
     cat "$FILE"
     echo '```'
+    echo
 done
 
 exit 0

@@ -1,4 +1,4 @@
-# Listing of `.ts` files in the project `@hedhog/cli`
+# Listagem de arquivos `.ts` e `.ejs` do projeto `@hedhog/cli`
 
 ## `./actions/abstract.action.ts`
 
@@ -11510,6 +11510,1501 @@ function main() {
 main();
 ```
 
+## `./templates/async/handlers-related.ts.ejs`
+
+```ejs
+import { useDefaultMutation } from '@/hooks/use-default-mutation'
+import { useQuery } from '@tanstack/react-query'
+import { requests } from './requests'
+
+const scope = '<%= tableNameCase.kebab %>'
+
+export function use<%= tableNameCase.pascal %>Create() {
+  const { <%= tableNameCase.camel %>Create } = requests()
+  return useDefaultMutation(scope, 'create', <%= tableNameCase.camel %>Create)
+}
+
+export function use<%= tableNameCase.pascal %>Delete() {
+  const { <%= tableNameCase.camel %>Delete } = requests()
+  return useDefaultMutation(scope, 'delete', <%= tableNameCase.camel %>Delete)
+}
+
+export function use<%= tableNameCase.pascal %>Update() {
+  const { <%= tableNameCase.camel %>Update } = requests()
+  return useDefaultMutation(scope, 'update', <%= tableNameCase.camel %>Update)
+}
+
+export function use<%= tableNameCase.pascal %>Get(<%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number) {
+  const { <%= tableNameCase.camel %>Get } = requests()
+  return useQuery({
+    queryKey: [scope, 'get'],
+    queryFn: () => <%= tableNameCase.camel %>Get({<%= fkNameCase.camel %>, <%= pkNameCase.camel %>}),
+  })
+}
+```
+
+## `./templates/async/handlers.ts.ejs`
+
+```ejs
+import { useDefaultMutation } from '@/hooks/use-default-mutation'
+import { useQuery } from '@tanstack/react-query'
+import { requests } from './requests'
+
+const scope = '<%= tableNameCase.kebab %>'
+
+export function use<%= tableNameCase.pascal %>Create() {
+  const { <%= tableNameCase.camel %>Create } = requests()
+  return useDefaultMutation(scope, 'create', <%= tableNameCase.camel %>Create)
+}
+
+export function use<%= tableNameCase.pascal %>Delete() {
+  const { <%= tableNameCase.camel %>Delete } = requests()
+  return useDefaultMutation(scope, 'delete', <%= tableNameCase.camel %>Delete)
+}
+
+export function use<%= tableNameCase.pascal %>Update() {
+  const { <%= tableNameCase.camel %>Update } = requests()
+  return useDefaultMutation(scope, 'update', <%= tableNameCase.camel %>Update)
+}
+
+export function use<%= tableNameCase.pascal %>Get(id: number) {
+  const { <%= tableNameCase.camel %>Get } = requests()
+  return useQuery({
+    queryKey: [scope, 'get'],
+    queryFn: () => <%= tableNameCase.camel %>Get(id),
+  })
+}```
+
+## `./templates/async/requests-related.ts.ejs`
+
+```ejs
+import { useApp } from "@/hooks/use-app";
+import { Delete, PaginationParams, PaginationResult } from "@/types";
+import { <%= tableNameCase.pascal %>Type } from "@/types/models";
+import { HttpMethod } from "@/types/http-method";
+<%- hasLocale ? "import { formatDataWithLocale } from '@hedhog/utils'" : "" %>	
+
+export function requests() {
+  const { request } = useApp();
+
+  const <%= tableNameCase.camel %>List = async (
+    <%= fkNameCase.camel %>: number,
+    params: PaginationParams & { <%= pkNameCase.camel %>?: number }
+  ) => {
+    return request<PaginationResult<<%= tableNameCase.pascal %>Type>>({
+      url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>`,
+      params,
+    }).then((res) => res.data);
+  };
+
+  const <%= tableNameCase.camel %>Create = async (params: { <%= fkNameCase.camel %>: number, data: <%= tableNameCase.pascal %>Type }) => {
+    const { <%= fkNameCase.camel %>, data } = params 
+    
+    return request<<%= tableNameCase.pascal %>Type>({
+      url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>`,
+      method: HttpMethod.POST,
+      data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>,
+    }).then((res) => res.data);
+  };
+
+  const <%= tableNameCase.camel %>Update = async (params: {
+    <%= fkNameCase.camel %>: number,
+    <%= pkNameCase.camel %>: number,
+    data: <%= tableNameCase.pascal %>Type
+  }) => {
+    const { <%= fkNameCase.camel %>, <%= pkNameCase.camel %>, data } = params
+
+    return request<<%= tableNameCase.pascal %>Type>({
+      url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>/${<%= pkNameCase.camel %>}`,
+      method: HttpMethod.PATCH,
+      data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>,
+    }).then((res) => res.data);
+  };
+
+  const <%= tableNameCase.camel %>Delete = async (params: { id: number, ids: number[] }) => {
+    const { id, ids } = params
+    
+    return request<Delete>({
+      url: `/<%= tableNameRelatedCase.kebab %>/${id}/<%= tableNameCase.kebab %>`,
+      method: HttpMethod.DELETE,
+      data: { ids },
+    }).then((res) => res.data);
+  };
+
+  const <%= tableNameCase.camel %>Get = async (params: { <%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number }) => {
+    const { <%= fkNameCase.camel %>, <%= pkNameCase.camel %> } = params
+    
+    return request<<%= tableNameCase.pascal %>Type>({
+      url: `/<%= tableNameRelatedCase.kebab %>/${<%= fkNameCase.camel %>}/<%= tableNameCase.kebab %>/${<%= pkNameCase.camel %>}`,
+    }).then((res) => res.data);
+  }
+
+  return {
+    <%= tableNameCase.camel %>Create,
+    <%= tableNameCase.camel %>Update,
+    <%= tableNameCase.camel %>Delete,
+    <%= tableNameCase.camel %>List,
+    <%= tableNameCase.camel %>Get
+  };
+}
+```
+
+## `./templates/async/requests.ts.ejs`
+
+```ejs
+import { useApp } from '@/hooks/use-app'
+import { Delete, PaginationParams, PaginationResult } from '@/types'
+import { <%= tableNameCase.pascal %> } from '@/types/models'
+import { HttpMethod } from '@/types/http-method'
+<%- hasLocale ? "import { formatDataWithLocale } from '@hedhog/utils'" : "" %>	
+
+export function requests() {
+  const { request } = useApp()
+
+  const <%= tableNameCase.camel %>List = async (params: PaginationParams) => {
+    return request<PaginationResult<<%= tableNameCase.pascal %>>>(
+      {
+        url: '/<%= tableNameCase.kebab %>',
+        params
+      }
+    ).then((res) => res.data)
+  }
+
+  const <%= tableNameCase.camel %>Get = async (id: number) => {
+    return request<<%= tableNameCase.pascal %>>(
+      {
+        url: `/<%= tableNameCase.kebab %>/${id}`
+      }
+    ).then((res) => res.data)
+  }
+
+  const <%= tableNameCase.camel %>Create = async (params: { data: <%= tableNameCase.pascal %> }) => {
+    const { data } = params
+    return request<<%= tableNameCase.pascal %>>(
+     { 
+        url: '/<%= tableNameCase.kebab %>',
+        method: HttpMethod.POST,
+        data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>
+      }
+    ).then((res) => res.data)
+  }
+
+  const <%= tableNameCase.camel %>Delete = async (ids: number[]) => {
+    return request<Delete>(
+      {
+        url: '/<%= tableNameCase.kebab %>',
+        data: { ids },
+        method: HttpMethod.DELETE
+      }
+    ).then((res) => res.data)
+  }
+
+  const <%= tableNameCase.camel %>Update = async (params: {id: number; data: <%= tableNameCase.pascal %>}) => {
+    const { id, data } = params
+    return request<<%= tableNameCase.pascal %>>(
+      {
+        url: `/<%= tableNameCase.kebab %>/${id}`,
+        method: HttpMethod.PATCH,
+        data: <%= hasLocale ? 'formatDataWithLocale(data)' : 'data' %>
+      }
+    ).then((res) => res.data)
+  }
+
+  return {
+    <%= tableNameCase.camel %>Create,
+    <%= tableNameCase.camel %>Update,
+    <%= tableNameCase.camel %>Delete,
+    <%= tableNameCase.camel %>List,
+    <%= tableNameCase.camel %>Get,
+  }
+}
+```
+
+## `./templates/controller/controller-locale.ts.ejs`
+
+```ejs
+import { Pagination } from '@hedhog/pagination';
+import { Locale } from '@hedhog/locale';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  forwardRef,
+} from '@nestjs/common';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+import { <%= tableNameCase.pascal %>Service } from './<%= tableNameCase.kebab %>.service';
+import { Role, DeleteDTO } from '@hedhog/core';
+
+@Role()
+@Controller('<%= tableNameCase.kebab %>')
+export class <%= tableNameCase.pascal %>Controller {
+  constructor(
+    @Inject(forwardRef(() => <%= tableNameCase.pascal %>Service))
+    private readonly <%= tableNameCase.camel %>Service: <%= tableNameCase.pascal %>Service,
+  ) {}
+
+  @Get()
+  async list(@Locale() locale, @Pagination() paginationParams) {
+    return this.<%= tableNameCase.camel %>Service.list(locale, paginationParams);
+  }
+
+  @Get(':<%= pkNameCase.camel %>')
+  async get(@Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number) {
+    return this.<%= tableNameCase.camel %>Service.get(<%= pkNameCase.camel %>);
+  }
+
+  @Post()
+  async create(@Body() data: CreateDTO) {
+    return this.<%= tableNameCase.camel %>Service.create(data);
+  }
+
+  @Patch(':<%= pkNameCase.camel %>')
+  async update(
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
+    @Body() data: UpdateDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.update({
+      <%= pkNameCase.camel %>,
+      data,
+    });
+  }
+
+  @Delete()
+  async delete(@Body() data: DeleteDTO) {
+    return this.<%= tableNameCase.camel %>Service.delete(data);
+  }
+}```
+
+## `./templates/controller/controller-related-locale.ts.ejs`
+
+```ejs
+import { Pagination } from '@hedhog/pagination';
+import { Role } from '@hedhog/core';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Inject,
+  forwardRef
+} from '@nestjs/common';
+import { <%= tableNameCase.pascal %>Service } from './<%= tableNameCase.kebab %>.service';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+import { DeleteDTO } from '@hedhog/core';
+import { Locale } from '@hedhog/locale';	
+
+@Role()
+@Controller('<%= relatedTableNameCase.kebab %>/:<%= fkNameCase.camel %>/<%= tableNameCase.kebab %>')
+export class <%= tableNameCase.pascal %>Controller {
+
+  constructor(
+    @Inject(forwardRef(() => <%= tableNameCase.pascal %>Service))
+    private readonly <%= tableNameCase.camel %>Service: <%= tableNameCase.pascal %>Service
+  ) {}
+
+  @Post()
+  create(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Body() data: CreateDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.create(<%= fkNameCase.camel %>, data);
+  }
+
+  @Get()
+  list(
+    @Locale() locale,
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Pagination() paginationParams,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.list(locale, <%= fkNameCase.camel %>, paginationParams);
+  }
+
+  @Patch(':<%= pkNameCase.camel %>')
+  update(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
+    @Body() data: UpdateDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.update(
+      <%= fkNameCase.camel %>,
+      <%= pkNameCase.camel %>,
+      data,
+    );
+  }
+
+  @Delete()
+  delete(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Body() { ids }: DeleteDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.delete(<%= fkNameCase.camel %>, { ids });
+  }
+}
+```
+
+## `./templates/controller/controller-related.ts.ejs`
+
+```ejs
+import { Pagination } from '@hedhog/pagination';
+import { Role } from '@hedhog/core';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Inject,
+  forwardRef
+} from '@nestjs/common';
+import { <%= tableNameCase.pascal %>Service } from './<%= tableNameCase.kebab %>.service';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+import { DeleteDTO } from '@hedhog/core';
+
+@Role()
+@Controller('<%= relatedTableNameCase.kebab %>/:<%= fkNameCase.camel %>/<%= tableNameCase.kebab %>')
+export class <%= tableNameCase.pascal %>Controller {
+
+  constructor(
+    @Inject(forwardRef(() => <%= tableNameCase.pascal %>Service))
+    private readonly <%= tableNameCase.camel %>Service: <%= tableNameCase.pascal %>Service
+  ) {}
+
+  @Post()
+  create(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Body() data: CreateDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.create(<%= fkNameCase.camel %>, data);
+  }
+
+  @Get()
+  list(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Pagination() paginationParams,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.list(paginationParams, <%= fkNameCase.camel %>);
+  }
+
+  @Get(':<%= pkNameCase.camel %>')
+  get(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
+  ){
+    return this.<%= tableNameCase.camel %>Service.get(<%= fkNameCase.camel %>, <%= pkNameCase.camel %>);
+  }
+
+  @Patch(':<%= pkNameCase.camel %>')
+  update(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
+    @Body() data: UpdateDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.update(
+      <%= fkNameCase.camel %>,
+      <%= pkNameCase.camel %>,
+      data,
+    );
+  }
+
+  @Delete()
+  delete(
+    @Param('<%= fkNameCase.camel %>', ParseIntPipe) <%= fkNameCase.camel %>: number,
+    @Body() { ids }: DeleteDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.delete(<%= fkNameCase.camel %>, { ids });
+  }
+}
+```
+
+## `./templates/controller/controller.ts.ejs`
+
+```ejs
+import { Pagination } from '@hedhog/pagination';
+import { Locale } from '@hedhog/locale';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  forwardRef,
+} from '@nestjs/common';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+import { <%= tableNameCase.pascal %>Service } from './<%= tableNameCase.kebab %>.service';
+import { Role, DeleteDTO } from '@hedhog/core';
+
+@Role()
+@Controller('<%= tableNameCase.kebab %>')
+export class <%= tableNameCase.pascal %>Controller {
+  constructor(
+    @Inject(forwardRef(() => <%= tableNameCase.pascal %>Service))
+    private readonly <%= tableNameCase.camel %>Service: <%= tableNameCase.pascal %>Service,
+  ) {}
+
+  @Get()
+  async list(@Pagination() paginationParams) {
+    return this.<%= tableNameCase.camel %>Service.list(paginationParams);
+  }
+
+  @Get(':<%= pkNameCase.camel %>')
+  async get(@Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number) {
+    return this.<%= tableNameCase.camel %>Service.get(<%= pkNameCase.camel %>);
+  }
+
+  @Post()
+  async create(@Body() data: CreateDTO) {
+    return this.<%= tableNameCase.camel %>Service.create(data);
+  }
+
+  @Patch(':<%= pkNameCase.camel %>')
+  async update(
+    @Param('<%= pkNameCase.camel %>', ParseIntPipe) <%= pkNameCase.camel %>: number,
+    @Body() data: UpdateDTO,
+  ) {
+    return this.<%= tableNameCase.camel %>Service.update({
+      <%= pkNameCase.camel %>,
+      data,
+    });
+  }
+
+  @Delete()
+  async delete(@Body() data: DeleteDTO) {
+    return this.<%= tableNameCase.camel %>Service.delete(data);
+  }
+}```
+
+## `./templates/custom/assistent.ejs`
+
+```ejs
+traduza para o idioma que foi pedido os valores das propriedades do arquivo JSON abaixo e antes de traduzir troque a parte <thing> pelo nome da coisa informada junto com o idioma:
+
+    {
+      "create": "Create <thing>",
+      "createText": "Fill the <thing> informations.",
+      "createTooltip": "Create new <thing>",
+      "delete": "Delete <thing>",
+      "deleteText": "Are you sure to delete these <thing>?",
+      "deleteTooltip": "Delete the selected <thing>",
+      "edit": "Edit <thing>",
+      "editText": "View and edit <thing> information.",
+      "editTooltip": "Edit the selected <thing>"
+    }
+    
+    Responda sempre seguindo o template abaixo:
+    
+    {
+      "create": "",
+      "createText": "",
+      "createTooltip": "",
+      "delete": "",
+      "deleteText": "",
+      "deleteTooltip": ",
+      "edit": "",
+      "editText": "",
+      "editTooltip": ""
+    }```
+
+## `./templates/custom/static-imports.ts.ejs`
+
+```ejs
+import { useApp } from '@/hooks/use-app'
+import { isPlural } from '@/lib/utils'```
+
+## `./templates/custom/static-vars.ts.ejs`
+
+```ejs
+const { openDialog, confirm, closeDialog } = useApp()
+const [selectedItems, setSelectedItems] = useState<any[]>([])```
+
+## `./templates/dto/boolean.dto.ts.ejs`
+
+```ejs
+<% if (isOptional) { %>@IsOptional()<%} %>
+@IsBoolean()
+<%- fieldName %><%= optionalSignal %>: boolean;```
+
+## `./templates/dto/create.dto.ts.ejs`
+
+```ejs
+<%- imports %>
+<%- hasLocale ? 'import { WithLocaleDTO } from "@hedhog/locale"' : '' %>
+
+export class CreateDTO <%- hasLocale ? 'extends WithLocaleDTO' : '' %> {
+    <%- fields %>
+}```
+
+## `./templates/dto/import.dto.ts.ejs`
+
+```ejs
+import { <%- types %> } from 'class-validator'```
+
+## `./templates/dto/number.dto.ts.ejs`
+
+```ejs
+<% if (isOptional) { %>@IsOptional()<%} %>
+@IsNumber()
+<%- fieldName %><%= optionalSignal %>: number;```
+
+## `./templates/dto/string.dto.ts.ejs`
+
+```ejs
+<% if (isOptional) { %>@IsOptional()<%} %>
+@IsString()
+<%- fieldName %><%= optionalSignal %>: string;```
+
+## `./templates/dto/update.dto.ts.ejs`
+
+```ejs
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateDTO } from './create.dto';
+    
+export class UpdateDTO extends PartialType(CreateDTO) {}```
+
+## `./templates/enum/table-enum.ejs`
+
+```ejs
+export enum <%= enumName %>Enum {
+<% values.forEach(function(item) { %>
+    <%= item.key %> = <%= item.value %>,
+<% }); %>
+}  ```
+
+## `./templates/function/open-create.ts.ejs`
+
+```ejs
+const openCreate<%= tableNameRelatedCase.pascal %> = () => {
+    const id = openDialog({
+      title: t('create', { ns: '<%= libraryNameCase.kebab %>.<%= tableNameRelatedCase.kebab %>' }),
+      description: t('createText', { ns: '<%= libraryNameCase.kebab %>.<%= tableNameRelatedCase.kebab %>' }),
+      children: () => (
+        <<%= tableNameRelatedCase.pascal %>CreatePanel id={Number(data.id)} onCreated={() => closeDialog(id)} />
+      ),
+    })
+
+    return id
+}```
+
+## `./templates/function/open-delete.ts.ejs`
+
+```ejs
+const openDelete<%= tableNameRelatedCase.pascal %> = (items: <%= tableNameRelatedCase.pascal %>[]) => {
+    return confirm({
+      title: `${t('delete', { ns: 'actions' })} ${items.length} ${isPlural(items.length) ? t('items', { ns: 'actions' }) : t('item', { ns: 'actions' })}`,
+      description: t('deleteText', { ns: '<%= libraryNameCase.snake %>.<%= tableNameRelatedCase.kebab %>' })
+    })
+      .then(() =>
+      <%= tableNameRelatedCase.camel %>Delete({
+          id: Number(data.id),
+          ids: items.map((item) => item.id).filter((id) => id !== undefined)
+        })
+      )
+      .catch(() => setSelectedItems(items));
+};```
+
+## `./templates/function/open-update.ts.ejs`
+
+```ejs
+const openUpdate<%= tableNameRelatedCase.pascal %> = (item<%= tableNameRelatedCase.pascal %>: <%= tableNameRelatedCase.pascal %>) => {
+    const id = openDialog({
+      children: () => (
+        <<%= tableNameRelatedCase.pascal %>UpdatePanel id={Number(item?.id)} data={item<%= tableNameRelatedCase.pascal %>} onUpdated={() => closeDialog(id)} />
+      ),
+      title: t('edit', { ns: '<%= libraryNameCase.kebab %>.<%= tableNameRelatedCase.kebab %>' }),
+      description: t('editText', { ns: '<%= libraryNameCase.kebab %>.<%= tableNameRelatedCase.kebab %>' }),
+    })
+
+    return id
+}```
+
+## `./templates/module/module-related.ts.ejs`
+
+```ejs
+<% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
+<% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
+<%
+const moduleImports = `
+import { AdminModule } from '@hedhog/admin';
+import { PaginationModule } from '@hedhog/pagination';
+import { PrismaModule } from '@hedhog/prisma';
+import { forwardRef, Module } from '@nestjs/common';`;
+
+let additionalImports = '';
+let controllersList = '';
+let providersList = '';
+
+for (const relation of options.tablesWithRelations) {
+    const pascalCaseRelation = toPascalCase(relation);
+    const kebabCaseRelation = toKebabCase(relation);
+    additionalImports += `
+import { ${pascalCaseRelation}Controller } from './${kebabCaseRelation}/${kebabCaseRelation}.controller';
+import { ${pascalCaseRelation}Service } from './${kebabCaseRelation}/${kebabCaseRelation}.service';`;
+    controllersList += `${pascalCaseRelation}Controller, `;
+    providersList += `${pascalCaseRelation}Service, `;
+}
+
+const ownProviderImport = `
+import { ${tableNameCase.pascal}Controller } from './${tableNameCase.kebab}.controller';
+import { ${tableNameCase.pascal}Service } from './${tableNameCase.kebab}.service';`;
+additionalImports += ownProviderImport;
+
+controllersList += `${tableNameCase.pascal}Controller`;
+providersList += `${tableNameCase.pascal}Service`;
+%>
+<%- moduleImports %><%- additionalImports %>
+@Module({
+  imports: [
+    forwardRef(() => AdminModule),
+    forwardRef(() => PrismaModule),
+    forwardRef(() => PaginationModule),
+  ],
+  controllers: [
+    <%= controllersList %>
+  ],
+  providers: [
+    <%= providersList %>
+  ],
+  exports: [forwardRef(() => <%= tableNameCase.pascal %>Service)],
+})
+export class <%= tableNameCase.pascal %>Module {}
+```
+
+## `./templates/module/module.ts.ejs`
+
+```ejs
+import { AdminModule } from '@hedhog/admin';
+import { PaginationModule } from '@hedhog/pagination';
+import { PrismaModule } from '@hedhog/prisma';
+import { forwardRef, Module } from '@nestjs/common';
+<%- module.imports.join('\n') %>
+
+@Module({
+    imports: [
+        forwardRef(() => AdminModule),
+        forwardRef(() => PrismaModule),
+        forwardRef(() => PaginationModule),
+    ],
+    controllers: [<%- module.controllers.join(',') %>],
+    providers: [<%- module.providers.join(',') %>],
+    exports:  [<%- module.exports.join(',') %>]
+})
+export class <%- tableNameCase.pascal %>Module {}```
+
+## `./templates/panel/create-panel.ts.ejs`
+
+```ejs
+import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
+<% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
+import { use<%= tableNameCase.pascal %>Create } from '@/features/<%= libraryName %>/<%= tableNameCase.kebab %>'
+import { <%= tableNameCase.pascal %> } from '@/types/models'
+import { forwardRef, useImperativeHandle, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
+
+export type <%= tableNameCase.pascal %>CreatePanelRef = {
+    submit: () => void
+}
+
+export type <%= tableNameCase.pascal %>CreatePanelProps = {
+    <% if (hasRelations) { %> id: number <% } %>
+    onCreated?: (data: <%= tableNameCase.pascal %>) => void
+}
+
+const <%= tableNameCase.pascal %>CreatePanel = forwardRef(
+    ({  <% if (hasRelations) { %> id, <% } %> onCreated }: <%= tableNameCase.pascal %>CreatePanelProps, ref) => {
+        const formRef = useRef<FormPanelRef>(null)
+        const { t } = useTranslation(['actions', 'fields', 'translations'])
+        const { mutateAsync: create<%= tableNameCase.pascal %> } = use<%= tableNameCase.pascal %>Create()
+
+        useImperativeHandle(
+            ref,
+            () => ({
+                submit: () => {
+                formRef.current?.submit()
+            },
+        }),
+        [formRef])
+
+        return (
+            <FormPanel
+                ref={formRef}
+                fields={[
+                    <% fields.forEach((field, index, array) => { %>
+                    {
+                        name: '<%= field.name %>',
+                        label: { text: t('<%= tableNameCase.snake %>.<%= field.name %>', { ns: 'fields' }) },
+                        type: <%- field.inputType %>,
+                        required: true,
+                        <% if (field.url) { %>url: '<%= field.url %>',<% } %>
+                        <% if (field.displayName) { %>displayName: '<%= field.displayName %>',<% } %>
+                        <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
+                    }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
+                    <% }) %>
+                    <%- hasLocale ? '...getFieldsLocale([{ name: "name" }])' : '' %>
+                ]}
+                button={{ text: t('create', { ns: 'actions' }) }}
+                onSubmit={async (data) => {
+                    const createdData = await create<%= tableNameCase.pascal %>({
+                        <% if (hasRelations) { %> <%= fkNameCase.camel %>: Number(id), <% } %>
+                        data
+                    })
+                    if (typeof onCreated === 'function') {
+                        onCreated(createdData as any)
+                    }
+                }}
+            />
+        )
+    }
+)
+
+<%= tableNameCase.pascal %>CreatePanel.displayName = '<%= tableNameCase.pascal %>CreatePanel'
+
+export default <%= tableNameCase.pascal %>CreatePanel```
+
+## `./templates/panel/tab-panel-imports.ts.ejs`
+
+```ejs
+import { <%- tableNameCase.pascal %> } from '@/types/models/<%= tableNameCase.pascal %>.ts'
+import { use<%- tableNameCase.pascal %>Delete } from '@/features/<%= libraryNameCase.kebab %>/<%- tableNameCase.kebab %>'
+import <%= tableNameCase.pascal %>CreatePanel from '@/pages/<%= libraryNameCase.kebab %>/<%= tableNameCase.kebab%>/components/<%= tableNameCase.kebab %>-create-panel'
+import <%= tableNameCase.pascal %>UpdatePanel from '@/pages/<%= libraryNameCase.kebab %>/<%= tableNameCase.kebab%>/components/<%= tableNameCase.kebab %>-update-panel'```
+
+## `./templates/panel/tab-panel-item.ts.ejs`
+
+```ejs
+{
+  title: t('<%= tableNameRelatedCase.snake %>', { ns: 'modules' }),
+  children: (
+    <DataPanel
+      ref={<%= tableNameRelatedCase.camel %>Ref}
+      selectable
+      multiple
+      layout='list'
+      id={`<%= tableNameCase.kebab %>-${item?.id}`}
+      url={`/<%= tableNameCase.kebab %>/${item?.id}/<%= tableNameRelatedCase.kebab %>`}
+      render={(item: <%= tableNameRelatedCase.pascal %>) => (
+        <div className='flex flex-row gap-2'>
+          <span className='relative px-[0.3rem] py-[0.2rem] text-sm'>
+            {item.<%= mainField %>}
+          </span>
+        </div>
+      )}
+      menuActions={[
+        {
+          icon: <IconEdit className="mr-1 w-8 cursor-pointer" />,
+          label: t('edit', { ns: 'actions' }),
+          tooltip: t('editTooltip', { ns: 'contact.person' }),
+          handler: (items: <%= tableNameRelatedCase.pascal %>[]) => {
+            if (items.length === 1) openUpdate<%= tableNameRelatedCase.pascal %>(items[0]);
+          },
+          show: 'once'
+        },
+        {
+          icon: <IconTrash className="mr-1 w-8 cursor-pointer" />,
+          label: t('delete', { ns: 'actions' }),
+          tooltip: t('deleteTooltip', { ns: 'contact.person' }),
+          variant: 'destructive',
+          handler: (items: <%= tableNameRelatedCase.pascal %>[]) => {
+            openDelete<%= tableNameRelatedCase.pascal %>(items);
+          },
+          show: 'some'
+        },
+        {
+          icon: <IconPlus className="mr-1 w-8 cursor-pointer" />,
+          label: t('create', { ns: 'actions' }),
+          tooltip: t('createTooltip', { ns: 'contact.person' }),
+          variant: 'default',
+          handler: () => {
+            openCreate<%= tableNameRelatedCase.pascal %>();
+          },
+          show: 'none'
+        }
+      ]}
+    />
+  ),
+  buttons: [
+    {
+      text: t('apply', { ns: 'actions' }),
+      variant: 'default',
+      onClick: () => {},
+    },
+  ],
+}```
+
+## `./templates/panel/tab-panel-vars.ts.ejs`
+
+```ejs
+const <%-tableNameCase.camel %>Ref = useRef<any>(null)
+const { mutate: <%-tableNameCase.camel %>Delete } = use<%-tableNameCase.pascal %>Delete()```
+
+## `./templates/panel/update-panel.ts.ejs`
+
+```ejs
+import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
+import { Overlay } from '@/components/custom/overlay'
+import { TabPanel } from '@/components/panels/tab-panel'
+import { use<%= tableNameCase.pascal %>Get, use<%= tableNameCase.pascal %>Update } from '@/features/<%= libraryName %>/<%= tableNameCase.kebab %>'
+import useEffectAfterFirstUpdate from '@/hooks/use-effect-after-first-update'
+import { <%= tableNameCase.pascal %> } from '@/types/models'
+import { useState, forwardRef, useImperativeHandle, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
+import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
+<% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
+<% if (extraTabs.length) { %>
+  import DataPanel from '@/components/panels/data-panel'
+<% } %>
+<%- extraImports %>
+
+export type <%= tableNameCase.pascal %>UpdatePanelProps = {
+  <% if (hasRelations) { %> id: number <% } %>
+  data: <%= tableNameCase.pascal %>
+  onUpdated?: (data: <%= tableNameCase.pascal %>) => void
+}
+
+const <%= tableNameCase.pascal %>UpdatePanel = forwardRef(
+  ({  <% if (hasRelations) { %> id, <% } %> data, onUpdated }: <%= tableNameCase.pascal %>UpdatePanelProps, ref) => {
+    const { t } = useTranslation([
+    'actions', 
+    'fields', 
+    'translations',
+    <% relationTables.forEach((table) => { %>
+      '<%= libraryName %>.<%= table %>',
+    <% }) %>
+  ]);
+    const { data: item, isLoading } = use<%= tableNameCase.pascal %>Get(<% if (hasRelations) { %> id, <% } %>data.id as number)
+    const { mutate: <%= tableNameCase.camel %>Update } = use<%= tableNameCase.pascal %>Update()
+    const formRef = useRef<FormPanelRef>(null)
+      
+    <%- extraVars %>
+
+    useEffectAfterFirstUpdate(() => {
+      if (item && formRef.current) {
+        formRef.current.setValuesFromItem(item)
+      }
+    }, [item])
+
+    useImperativeHandle(ref, () => ({}))
+
+    return (
+      <TabPanel
+        activeTabIndex={0}
+        tabs={[
+          {
+            title: t('details', { ns: 'actions' }),
+            children: (
+              <Overlay loading={isLoading}>
+                <FormPanel
+                  ref={formRef}
+                  fields={[
+                      <% fields.forEach((field, index, array) => { %>
+                      {
+                          name: '<%= field.name %>',
+                          label: { text: t('<%= tableNameCase.snake %>.<%= field.name %>', { ns: 'fields' }) },
+                          type: <%- field.inputType %>,
+                          required: true,
+                          <% if (field.url) { %>url: '<%= field.url %>',<% } %>
+                          <% if (field.displayName) { %>displayName: '<%= field.displayName %>',<% } %>
+                          <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
+                      }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
+                      <% }) %>
+                      <%- hasLocale ? '...getFieldsLocale([{ name: "name" }], item)' : '' %>
+                  ]}
+                  button={{ text: t('save', { ns: 'actions' }) }}
+                  onSubmit={(data) => {
+                    <%= tableNameCase.camel %>Update({ 
+                      <% if (hasRelations) { %>
+                        <%= fkNameCase.camel %>: id,
+                      <% } %>id: data.id, data })
+                    if (typeof onUpdated === 'function') {
+                      onUpdated(data)
+                    }
+                  }}
+                />
+              </Overlay>
+            ),
+          },
+          <%- extraTabs %>
+        ]}
+      />
+    )
+  }
+)
+
+<%= tableNameCase.pascal %>UpdatePanel.displayName = '<%= tableNameCase.pascal %>UpdatePanel'
+
+export default <%= tableNameCase.pascal %>UpdatePanel```
+
+## `./templates/route/router.tsx.ejs`
+
+```ejs
+import { createBrowserRouter, RouteObject } from 'react-router-dom'
+import GeneralError from './pages/errors/general-error.tsx'
+import MaintenanceError from './pages/errors/maintenance-error.tsx'
+import NotFoundError from './pages/errors/not-found-error.tsx'
+import UnauthorisedError from './pages/errors/unauthorised-error.tsx'
+
+const routes = [
+  {
+    path: '/login',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/login.tsx')).default,
+    }),
+  },
+  {
+    path: '/forgot-password',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/forgot-password.tsx')).default,
+    }),
+  },
+  {
+    path: '/email-sent',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/email-sent.tsx')).default,
+    }),
+  },
+  {
+    path: '/password-recovery/:code',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/password-recovery.tsx')).default,
+    }),
+  },
+  {
+    path: '/otp',
+    lazy: async () => ({
+      Component: (await import('./pages/auth/otp.tsx')).default,
+    }),
+  },
+  {
+    path: '/tests',
+    lazy: async () => ({
+      Component: (await import('./components/custom/color-theme.tsx')).default,
+    }),
+  },
+
+  // Main route
+  {
+    path: '/',
+    lazy: async () => {
+      const AppShell = await import('./components/app/app-shell.tsx')
+      return { Component: AppShell.default }
+    },
+    errorElement: <GeneralError />,
+    children: [
+      {
+        index: true,
+        lazy: async () => ({
+          Component: (await import('./pages/index.tsx')).default,
+        }),
+      },
+      <%- routes %>
+    ],
+  },
+
+  // Error route
+  { path: '/500', Component: GeneralError },
+  { path: '/404', Component: NotFoundError },
+  { path: '/503', Component: MaintenanceError },
+  { path: '/401', Component: UnauthorisedError },
+
+  // Fallback 404 route
+  { path: '*', Component: NotFoundError },
+]
+
+const router = createBrowserRouter(routes as RouteObject[])
+
+export default router
+```
+
+## `./templates/screen/screen.ts.ejs`
+
+```ejs
+import { PageTitle } from '@/components/custom/page-title'
+import DataPanel from '@/components/panels/data-panel'
+import { use<%= tableNameCase.pascal %>Delete } from '@/features/<%= libraryName %>/<%= tableNameCase.kebab %>'
+import { useApp } from '@/hooks/use-app'
+import { isPlural } from '@/lib/utils'
+import { <%= tableNameCase.pascal %> } from '@/types/models'
+import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import <%= tableNameCase.pascal %>CreatePanel from './components/<%= tableNameCase.kebab %>-create-panel'
+import <%= tableNameCase.pascal %>UpdatePanel from './components/<%= tableNameCase.kebab %>-update-panel'
+
+export default function Page() {
+  const [selectedItems, setSelectedItems] = useState<<%= tableNameCase.pascal %>[]>([])
+  const { mutate: delete<%= tableNameCase.pascal %> } = use<%= tableNameCase.pascal %>Delete()
+  const { openSheet, confirm, closeSheet } = useApp()
+  const { t } = useTranslation(['<%= libraryName %>.<%= tableNameCase.kebab %>', 'modules', 'actions', 'fields'])
+
+  const openCreate = () => {
+    const id = openSheet({
+      title: t('create', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+      description: t('createText', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+      children: () => (
+        <<%= tableNameCase.pascal %>CreatePanel onCreated={() => closeSheet(id)} />
+      ),
+    })
+
+    return id
+  }
+
+  const openDelete = (items: <%= tableNameCase.pascal %>[]) => {
+    return confirm({
+      title: `${t('delete', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' })} ${items.length} ${isPlural(items.length) ? t('items', { ns: 'actions' }) : t('item', { ns: 'actions' })}`,
+      description: t('deleteText', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+    })
+      .then(() =>
+        delete<%= tableNameCase.pascal %>(
+          items.map((item) => item.id).filter((id) => id !== undefined)
+        )
+      )
+      .catch(() => setSelectedItems(items))
+  }
+
+  const openUpdate = (item: <%= tableNameCase.pascal %>) => {
+    const id = openSheet({
+      children: () => (
+        <<%= tableNameCase.pascal %>UpdatePanel data={item} onUpdated={() => closeSheet(id)} />
+      ),
+      title: t('edit', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+      description: t('editText', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+    })
+
+    return id
+  }
+
+  return (
+    <>
+      <PageTitle title={t('<%= tableNameCase.snake %>', { ns: 'modules' })} />
+      <DataPanel
+        url='/<%= tableNameCase.kebab %>'
+        layout='table'
+        id='<%= tableNameCase.kebab %>'
+        selectable
+        columns={[
+          { key: 'id', header: 'ID', width: 64, isLocale: false },
+          <% fieldsForSearch.forEach((field) => { %>
+            { key: '<%= field.name %>', 
+              header: t('<%= tableNameCase.snake %>.<%= field.name %>', { ns: 'fields' }),
+              isLocale: <%= field.isLocale %>,
+            },
+          <% }) %>
+        ]}
+        selected={selectedItems as <%= tableNameCase.pascal %>[]}
+        multiple
+        hasSearch
+        sortable
+        onItemDoubleClick={(item) => openUpdate(item)}
+        menuActions={[
+          {
+            icon: <IconEdit className='mr-1 w-8 cursor-pointer' />,
+            label: t('edit', { ns: 'actions' }),
+            tooltip: t('editTooltip', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+            handler: (items: <%= tableNameCase.pascal %>[]) => {
+              if (items.length === 1) openUpdate(items[0])
+            },
+            show: 'once',
+          },
+          {
+            icon: <IconTrash className='mr-1 w-8 cursor-pointer' />,
+            label: t('delete', { ns: 'actions' }),
+            tooltip: t('deleteTooltip', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+            variant: 'destructive',
+            handler: (items: <%= tableNameCase.pascal %>[]) => {
+              openDelete(items)
+            },
+            show: 'some',
+          },
+          {
+            icon: <IconPlus className='mr-1 w-8 cursor-pointer' />,
+            label: t('create', { ns: 'actions' }),
+            tooltip: t('createTooltip', { ns: '<%= libraryName %>.<%= tableNameCase.kebab %>' }),
+            variant: 'default',
+            handler: () => {
+              openCreate()
+            },
+            show: 'none',
+          },
+        ]}
+      />
+    </>
+  )
+}
+```
+
+## `./templates/service/service-locale.ts.ejs`
+
+```ejs
+import { PaginationDTO, PaginationService } from '@hedhog/pagination';
+import { PrismaService } from '@hedhog/prisma';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
+import { CreateDTO } from './dto/create.dto';
+import { DeleteDTO } from '@hedhog/core';
+import { UpdateDTO } from './dto/update.dto';
+import { LocaleService } from '@hedhog/locale';
+
+@Injectable()
+export class <%= tableNameCase.pascal %>Service {
+  private readonly modelName = '<%= tableNameCase.value %>';
+  private readonly foreignKey = '<%= fkNameLocaleCase.value %>';
+
+  constructor(
+    @Inject(forwardRef(() => PrismaService))
+    private readonly prismaService: PrismaService,
+    @Inject(forwardRef(() => PaginationService))
+    private readonly paginationService: PaginationService,
+    @Inject(forwardRef(() => LocaleService))
+    private readonly localeService: LocaleService,
+  ) {}
+  
+  async list(locale: string, paginationParams: PaginationDTO) {
+    return this.localeService.listModelWithLocale(locale, this.modelName, paginationParams)
+  }
+
+  async get(<%= pkNameCase.camel %>: number) {
+    return this.localeService.getModelWithLocale(this.modelName, <%= pkNameCase.camel %>);
+  }
+
+  async create(data: CreateDTO) {
+    return this.localeService.createModelWithLocale(
+      this.modelName,
+      this.foreignKey,
+      data,
+    );
+  }
+
+  async update({ <%= pkNameCase.camel %>, data }: { <%= pkNameCase.camel %>: number; data: UpdateDTO }) {
+    return this.localeService.updateModelWithLocale(
+      this.modelName,
+      this.foreignKey,
+      <%= pkNameCase.camel %>,
+      data,
+    );
+  }
+
+  async delete({ ids }: DeleteDTO) {
+    if (ids == undefined || ids == null) {
+      throw new BadRequestException(
+        'You must select at least one item to delete.',
+      );
+    }
+
+    return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
+      where: {
+        <%= pkNameCase.snake %>: {
+          in: ids,
+        },
+      },
+    });
+  }
+}```
+
+## `./templates/service/service-related-locale.ts.ejs`
+
+```ejs
+import { DeleteDTO } from '@hedhog/core';
+import { LocaleService } from '@hedhog/locale';
+import { PaginationDTO, PaginationService } from '@hedhog/pagination';
+import { PrismaService } from '@hedhog/prisma';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+
+@Injectable()
+export class <%= tableNameCase.pascal %>Service {
+  private readonly modelName = '<%= tableNameCase.value %>';
+  private readonly foreignKey = '<%= fkNameLocaleCase.value %>';
+
+  constructor(
+    @Inject(forwardRef(() => PrismaService))
+    private readonly prismaService: PrismaService,
+    @Inject(forwardRef(() => PaginationService))
+    private readonly paginationService: PaginationService,
+    @Inject(forwardRef(() => LocaleService))
+    private readonly localeService: LocaleService,
+  ) {}
+
+  async list(
+    locale: string,
+    <%= fkNameCase.camel %>: number,
+    paginationParams: PaginationDTO,
+  ) {
+    const where: any = {};
+    if (<%= fkNameCase.camel %> !== undefined) where.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
+
+    return this.localeService.listModelWithLocale(
+      locale,
+      this.modelName,
+      paginationParams,
+      {
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+      },
+    );
+  }
+
+  async get(<%= pkNameCase.camel %>: number) {
+    return this.localeService.getModelWithLocale(
+      this.modelName,
+      <%= pkNameCase.camel %>,
+    );
+  }
+
+  async create(<%= fkNameCase.camel %>: number, data: CreateDTO) {
+    (data as any).<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
+
+    return this.localeService.createModelWithLocale(
+      this.modelName,
+      this.foreignKey,
+      data,
+    );
+  }
+
+  async update(<%= pkNameCase.camel %>: number, <%= fkNameCase.camel %>: number, data: UpdateDTO) {
+    return this.localeService.updateModelWithLocale(
+      this.modelName,
+      this.foreignKey,
+      <%= pkNameCase.camel %>,
+      data,
+      {
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+      },
+    );
+  }
+
+  async delete(<%= fkNameCase.camel %>: number, { ids }: DeleteDTO) {
+    if (ids == undefined || ids == null) {
+      throw new BadRequestException(
+        'You must select at least one item to delete.',
+      );
+    }
+
+    return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
+      where: {
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+        <%= pkNameCase.snake %>: {
+          in: ids,
+        },
+      },
+    });
+  }
+}
+```
+
+## `./templates/service/service-related.ts.ejs`
+
+```ejs
+import { PaginationService, PaginationDTO } from '@hedhog/pagination';
+import { PrismaService } from '@hedhog/prisma';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { CreateDTO } from './dto/create.dto';
+import { UpdateDTO } from './dto/update.dto';
+import { DeleteDTO } from '@hedhog/core';
+
+@Injectable()
+export class <%= tableNameCase.pascal %>Service {
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly paginationService: PaginationService,
+  ) {}
+
+  async create(<%= fkNameCase.camel %>: number, data: CreateDTO) {
+    return this.prismaService.<%= tableNameCase.snake %>.create({
+      data: {
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+        ...data,
+      },
+    });
+  }
+
+  async get(<%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number) {
+    return this.prismaService.<%= tableNameCase.snake %>.findFirst({
+      where: {
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+        <%= pkNameCase.camel %>:<%= pkNameCase.camel %>,
+      },
+    });
+  }
+  
+  async list(paginationParams: PaginationDTO, <%= fkNameCase.camel %>?: number) {
+    const where: any = {};
+    if (<%= fkNameCase.camel %> !== undefined) where.<%= fkNameCase.snake %> = <%= fkNameCase.camel %>;
+
+    return this.paginationService.paginate(
+      this.prismaService.<%= tableNameCase.snake %>,
+      {
+        fields: '<%= fieldsForSearch.join(',') %>',
+        ...paginationParams,
+      },
+      {
+        where
+      },
+    );
+  }
+
+  async update(<%= fkNameCase.camel %>: number, <%= pkNameCase.camel %>: number, data: UpdateDTO) {
+    return this.prismaService.<%= tableNameCase.snake %>.updateMany({
+      where: { 
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+        <%= pkNameCase.snake %>: <%= pkNameCase.camel %>
+      },
+      data,
+    });
+  }
+
+  async delete(<%= fkNameCase.camel %>: number, { ids }: DeleteDTO) {
+    if (ids == undefined || ids == null) {
+      throw new BadRequestException(
+        'You must select at least one item to delete.',
+      );
+    }
+
+    return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
+      where: {
+        <%= fkNameCase.snake %>: <%= fkNameCase.camel %>,
+        <%= pkNameCase.snake %>: {
+          in: ids,
+        },
+      },
+    });
+  }
+}
+```
+
+## `./templates/service/service.ts.ejs`
+
+```ejs
+import { PaginationDTO, PaginationService } from '@hedhog/pagination';
+import { PrismaService } from '@hedhog/prisma';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
+import { CreateDTO } from './dto/create.dto';
+import { DeleteDTO } from '@hedhog/core';
+import { UpdateDTO } from './dto/update.dto';
+
+@Injectable()
+export class <%= tableNameCase.pascal %>Service {
+
+  constructor(
+    @Inject(forwardRef(() => PrismaService))
+    private readonly prismaService: PrismaService,
+    @Inject(forwardRef(() => PaginationService))
+    private readonly paginationService: PaginationService,
+  ) {}
+  
+  async list(paginationParams: PaginationDTO) {
+    const fields = <%- JSON.stringify(fieldsForSearch) %>;
+    const OR: any[] = this.prismaService.createInsensitiveSearch(
+      fields,
+      paginationParams,
+    );
+
+    if (paginationParams.search && !isNaN(+paginationParams.search)) {
+      OR.push({ <%= pkNameCase.snake %>: { equals: +paginationParams.search } });
+    }
+
+    return this.paginationService.paginate(
+      this.prismaService.<%= tableNameCase.snake %>,
+      paginationParams,
+      {
+        where: {
+          OR,
+        },
+      },
+    );
+  }
+
+  async get(<%= pkNameCase.camel %>: number) {
+    return this.prismaService.<%= tableNameCase.snake %>.findUnique({
+      where: { <%= pkNameCase.snake %>: <%= pkNameCase.camel %> },
+    });
+  }
+
+  async create(data: CreateDTO) {
+    return this.prismaService.<%= tableNameCase.snake %>.create({
+      data,
+    });
+  }
+
+  async update({ <%= pkNameCase.camel %>, data }: { <%= pkNameCase.camel %>: number; data: UpdateDTO }) {
+    return this.prismaService.<%= tableNameCase.snake %>.update({
+      where: { <%= pkNameCase.snake %>: <%- pkNameCase.camel %> },
+      data,
+    });
+  }
+
+  async delete({ ids }: DeleteDTO) {
+    if (ids == undefined || ids == null) {
+      throw new BadRequestException(
+        'You must select at least one item to delete.',
+      );
+    }
+
+    return this.prismaService.<%= tableNameCase.snake %>.deleteMany({
+      where: {
+        <%= pkNameCase.snake %>: {
+          in: ids,
+        },
+      },
+    });
+  }
+}```
+
+## `./templates/translation/translation.json.ejs`
+
+```ejs
+<% const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1) %>
+<% const spacing = (s) => s.replace(/[_-]/g, ' ') %>
+<% const pluralize = (s) => {
+    if (s.endsWith("y")) {
+        return s.slice(0, -1) + "ies";
+    }
+    return s + "s";
+}
+%>{
+    "create": "Create <%= capitalize(spacing(tableName)) %>",
+    "createText": "Fill the <%= spacing(tableName) %> informations.",
+    "createTooltip": "Create new <%= spacing(tableName) %>",
+    "delete": "Delete <%= capitalize(spacing(tableName)) %>",
+    "deleteText": "Are you sure to delete these <%= pluralize(spacing(tableName)) %>?",
+    "deleteTooltip": "Delete the selected <%= pluralize(spacing(tableName)) %>",
+    "edit": "Edit <%= capitalize(spacing(tableName)) %>",
+    "editText": "View and edit <%= spacing(tableName) %> information.",
+    "editTooltip": "Edit the selected <%= pluralize(spacing(tableName)) %>"
+}```
+
 ## `./tools/gulp/config.ts`
 
 ```ts
@@ -11598,3 +13093,4 @@ export function getDirs(base: string) {
   return getFolders(base).map((path) => `${base}/${path}`);
 }
 ```
+
