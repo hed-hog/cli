@@ -136,8 +136,6 @@ export class ApplyAction extends AbstractAction {
         required: !column.isNullable || false,
       }));
 
-      console.log(localeFields)
-
       await new DTOCreator(dtoFilePath, fields, hasLocale).createDTOs();
 
       this.showDebug("DTO's criados com sucesso!");
@@ -224,7 +222,6 @@ export class ApplyAction extends AbstractAction {
         'screen',
         {
           localeTables,
-          localeFields
         },
       ).createFile();
 
@@ -254,6 +251,7 @@ export class ApplyAction extends AbstractAction {
       await this.createFrontendFiles(
         table.name,
         table.columns,
+        localeFields,
         tables,
         tablesWithRelations as any[],
       );
@@ -654,6 +652,7 @@ export class ApplyAction extends AbstractAction {
   async createFrontendFiles(
     tableName: string,
     fields: Column[],
+    localeFields: Column[],
     tables: any,
     tablesWithRelations: any[],
   ) {
@@ -781,6 +780,7 @@ export class ApplyAction extends AbstractAction {
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
           fields: fields,
+          localeFields: localeFields,
           hasRelations: hasRelations,
           extraTabs: extraTabs,
           extraVars: extraVariables.join('\n'),

@@ -43,8 +43,16 @@ const <%= tableNameCase.pascal %>CreatePanel = forwardRef(
                         <% if (field.displayName) { %>displayName: '<%= field.displayName %>',<% } %>
                         <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
                     }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
-                    <% }) %>
-                    <%- hasLocale ? '...getFieldsLocale([{ name: "name" }])' : '' %>
+                    <% }) %> <% if (hasLocale) { %>...getFieldsLocale([
+                        <% localeFields.forEach((localeField, index) => { %>{
+                            name: '<%= localeField.name %>',
+                            label: { text: t('<%= tableNameCase.snake %>.<%= localeField.name %>', { ns: 'fields' }) },
+                            type: <%= localeField.type %>,
+                            required: <%= localeField.required %>,
+                        }<%= index < localeFields.length - 1 ? ',' : '' %>
+                        <% }) %>
+                    ])
+                    <% } %>
                 ]}
                 button={{ text: t('create', { ns: 'actions' }) }}
                 onSubmit={async (data) => {

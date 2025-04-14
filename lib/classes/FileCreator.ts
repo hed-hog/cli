@@ -17,7 +17,6 @@ interface IOption {
   hasRelationsWith?: string;
   tablesWithRelations?: IRelation[];
   localeTables?: any[];
-  localeFields?: any[];
 }
 
 interface IRelation {
@@ -51,7 +50,6 @@ export class FileCreator {
       hasRelationsWith: '',
       tablesWithRelations: [],
       localeTables: [],
-      localeFields: []
     },
   ) {
     this.libraryPath = libraryPath;
@@ -283,9 +281,9 @@ export class FileCreator {
       module: {
         imports: this.options.importServices
           ? [
-            `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
-            `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
-          ]
+              `import { ${this.table.name.toPascalCase()}Service } from './${this.table.name.toKebabCase()}.service'`,
+              `import { ${this.table.name.toPascalCase()}Controller } from './${this.table.name.toKebabCase()}.controller';`,
+            ]
           : [],
         controllers: this.options.importServices
           ? [`${this.table.name.toPascalCase()}Controller`]
