@@ -159,6 +159,7 @@ export class CreateAction extends AbstractAction {
         'src/entities/**/*.ts',
         'src/migrations/**/*.ts',
         'src/**/*.ejs',
+        'hedhog/**/*.yaml',
         'hedhog.yaml',
       ],
       keywords: [],
