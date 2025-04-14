@@ -82,7 +82,7 @@ export class ApplyAction extends AbstractAction {
 
     this.showDebug(`Tables: `, this.hedhogFile);
 
-    const localeTables: any[] = [];
+    const localeTables: Table[] = [];
     for (const table of this.hedhogFile.getTables()) {
       if (table.name.endsWith('_locale')) {
         localeTables.push(table);
@@ -117,6 +117,26 @@ export class ApplyAction extends AbstractAction {
           ({ type }) => !['pk', 'created_at', 'updated_at'].includes(type),
         )
         .filter((field) => field.name !== tableApply.fkName);
+
+      let localeFields: any = [];
+
+      if (hasLocale) {
+        const table = localeTables.find((table) => {
+          return table.name === `${baseTableName}_locale`;
+        }) as Table;
+
+        table.columns.forEach((column: Column) => {
+          if (column.locale) localeFields.push(column);
+        });
+      }
+
+      localeFields = localeFields.map((column: Column) => ({
+        name: column.name,
+        type: this.mapFieldTypeToInputType(column),
+        required: !column.isNullable || false,
+      }));
+
+      console.log(localeFields);
 
       await new DTOCreator(dtoFilePath, fields, hasLocale).createDTOs();
 
@@ -691,9 +711,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-          name: 'id',
-          ...table.columns.find((f) => f.type === 'pk'),
-        };
+            name: 'id',
+            ...table.columns.find((f) => f.type === 'pk'),
+          };
 
         const vars: any = {
           tableNameCase: tableApply.name,
@@ -704,6 +724,7 @@ export class ApplyAction extends AbstractAction {
           mainField: mainField?.name,
           tableName: relatedTable,
         };
+
         for (const field in vars) {
           if (typeof vars[field] === 'string' && field.endsWith('Case')) {
             vars[field] = toObjectCase(vars[field]);
