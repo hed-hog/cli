@@ -1,6 +1,6 @@
 {
   "name": "@hedhog/cli",
-  "version": "0.0.200",
+  "version": "0.0.203",
   "bin": {
     "hedhog": "bin/hedhog.js"
   },
@@ -10,8 +10,7 @@
     "dev": "tsc --watch",
     "prod": "ts-node ./scripts/deploy.ts",
     "clean": "gulp clean:bundle",
-    "diff": "git diff --output diff.md",
-    "project": "npm run clean && sh scripts/get_all_ts.sh . > project.md"
+    "output": "npm run clean && sh scripts/output_project.sh . > project.md"
   },
   "keywords": [
     "hedhog",

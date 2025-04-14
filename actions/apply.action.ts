@@ -82,7 +82,7 @@ export class ApplyAction extends AbstractAction {
 
     this.showDebug(`Tables: `, this.hedhogFile);
 
-    const localeTables: any[] = [];
+    const localeTables: Table[] = [];
     for (const table of this.hedhogFile.getTables()) {
       if (table.name.endsWith('_locale')) {
         localeTables.push(table);
@@ -118,9 +118,29 @@ export class ApplyAction extends AbstractAction {
         )
         .filter((field) => field.name !== tableApply.fkName);
 
+      let localeFields: any = [];
+
+      if (hasLocale) {
+        const table = localeTables.find((table) => {
+          return table.name === `${baseTableName}_locale`;
+        }) as Table;
+
+        table.columns.forEach((column: Column) => {
+          if (column.locale) localeFields.push(column);
+        });
+      }
+
+      localeFields = localeFields.map((column: Column) => ({
+        name: column.name,
+        type: this.mapFieldTypeToInputType(column),
+        required: !column.isNullable || false,
+      }));
+
+      console.log(localeFields);
+
       await new DTOCreator(dtoFilePath, fields, hasLocale).createDTOs();
 
-      this.showDebug('DTOs criados com sucesso!');
+      this.showDebug("DTO's criados com sucesso!");
 
       await new FileCreator(
         this.librarySrcPath,
@@ -658,6 +678,8 @@ export class ApplyAction extends AbstractAction {
         ...this.getComboboxProperties(field),
       }));
 
+    console.log({ fields })
+
     const frontendPath = join(this.librarySrcPath, '..', 'frontend');
     const extraTabs: any[] = [];
     const extraVariables: any[] = [];
@@ -691,9 +713,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-            name: 'id',
-            ...table.columns.find((f) => f.type === 'pk'),
-          };
+          name: 'id',
+          ...table.columns.find((f) => f.type === 'pk'),
+        };
 
         const vars: any = {
           tableNameCase: tableApply.name,
@@ -704,6 +726,7 @@ export class ApplyAction extends AbstractAction {
           mainField: mainField?.name,
           tableName: relatedTable,
         };
+
         for (const field in vars) {
           if (typeof vars[field] === 'string' && field.endsWith('Case')) {
             vars[field] = toObjectCase(vars[field]);
@@ -730,15 +753,15 @@ export class ApplyAction extends AbstractAction {
           'handlers-related.ts.ejs',
         ],
         data: {
-          tableName,
+          tableName: tableName,
           tableNameCase: toObjectCase(tableApply.name),
           tableNameRelatedCase: toObjectCase(tableApply.tableNameRelation),
           fkNameCase: toObjectCase(tableApply.fkName),
           pkNameCase: toObjectCase(tableApply.pkName),
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
-          fields,
-          hasRelations,
+          fields: fields,
+          hasRelations: hasRelations,
         },
       },
       {
@@ -758,9 +781,9 @@ export class ApplyAction extends AbstractAction {
           pkNameCase: toObjectCase(tableApply.pkName),
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
-          fields,
-          hasRelations,
-          extraTabs,
+          fields: fields,
+          hasRelations: hasRelations,
+          extraTabs: extraTabs,
           extraVars: extraVariables.join('\n'),
           extraImports: extraImportStatements.join('\n'),
         },

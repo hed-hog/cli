@@ -336,7 +336,7 @@ export class AddAction extends AbstractAction {
 
           await writeFile(destFilePath, renderedContent, 'utf-8');
         } else {
-          console.info(`Component ${component.slug} not found.`);
+          console.warn(`Component ${component.slug} not found.`);
         }
       }
     }
@@ -1069,6 +1069,8 @@ export class AddAction extends AbstractAction {
             hedhogFile?.data,
           )) {
             const { tableName } = data;
+
+            this.showDebug('tableName', tableName);
 
             const entity = EntityFactory.create(
               this.db,
