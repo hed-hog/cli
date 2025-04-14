@@ -1985,8 +1985,6 @@ export class ApplyAction extends AbstractAction {
         required: !column.isNullable || false,
       }));
 
-      console.log(localeFields);
-
       await new DTOCreator(dtoFilePath, fields, hasLocale).createDTOs();
 
       this.showDebug("DTO's criados com sucesso!");
@@ -2102,6 +2100,7 @@ export class ApplyAction extends AbstractAction {
       await this.createFrontendFiles(
         table.name,
         table.columns,
+        localeFields,
         tables,
         tablesWithRelations as any[],
       );
@@ -2502,6 +2501,7 @@ export class ApplyAction extends AbstractAction {
   async createFrontendFiles(
     tableName: string,
     fields: Column[],
+    localeFields: Column[],
     tables: any,
     tablesWithRelations: any[],
   ) {
@@ -2560,9 +2560,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-            name: 'id',
-            ...table.columns.find((f) => f.type === 'pk'),
-          };
+          name: 'id',
+          ...table.columns.find((f) => f.type === 'pk'),
+        };
 
         const vars: any = {
           tableNameCase: tableApply.name,
@@ -2600,15 +2600,15 @@ export class ApplyAction extends AbstractAction {
           'handlers-related.ts.ejs',
         ],
         data: {
-          tableName,
+          tableName: tableName,
           tableNameCase: toObjectCase(tableApply.name),
           tableNameRelatedCase: toObjectCase(tableApply.tableNameRelation),
           fkNameCase: toObjectCase(tableApply.fkName),
           pkNameCase: toObjectCase(tableApply.pkName),
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
-          fields,
-          hasRelations,
+          fields: fields,
+          hasRelations: hasRelations,
         },
       },
       {
@@ -2628,9 +2628,10 @@ export class ApplyAction extends AbstractAction {
           pkNameCase: toObjectCase(tableApply.pkName),
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
-          fields,
-          hasRelations,
-          extraTabs,
+          fields: fields,
+          localeFields: localeFields,
+          hasRelations: hasRelations,
+          extraTabs: extraTabs,
           extraVars: extraVariables.join('\n'),
           extraImports: extraImportStatements.join('\n'),
         },
@@ -3181,6 +3182,7 @@ export class CreateAction extends AbstractAction {
         'src/entities/**/*.ts',
         'src/migrations/**/*.ts',
         'src/**/*.ejs',
+        'hedhog/**/*.yaml',
         'hedhog.yaml',
       ],
       keywords: [],
@@ -8015,6 +8017,32 @@ export class EntityFactory {
 }
 ```
 
+## `./lib/enums/EnumFieldType.ts`
+
+```ts
+export enum EnumFieldType {
+  RICHTEXT = 'richtext',
+  TEXTAREA = 'textarea',
+  COLOR = 'color',
+  TEXT = 'text',
+  FILE = 'file',
+  PASSWORD = 'password',
+  RADIO = 'radio',
+  CHECKBOX = 'checkbox',
+  RANGE = 'range',
+  SELECT = 'select',
+  COMBOBOX = 'combobox',
+  MULTISELECT = 'multiselect',
+  DATEPICKER = 'datepicker',
+  SHEETPICKER = 'sheetpicker',
+  SWITCH = 'switch',
+  SWITCH_LIST = 'switchlist',
+  NUMBER = 'number',
+  PICKER = 'picker',
+  HTML = 'html',
+}
+```
+
 ## `./lib/package-managers/abstract.package-manager.ts`
 
 ```ts
@@ -12280,7 +12308,17 @@ const <%= tableNameCase.pascal %>CreatePanel = forwardRef(
                         <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
                     }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
                     <% }) %>
-                    <%- hasLocale ? '...getFieldsLocale([{ name: "name" }])' : '' %>
+                    
+                    <% if (hasLocale) { %>...getFieldsLocale([
+                        <% localeFields.forEach((localeField, index) => { %>{
+                            name: '<%= localeField.name %>',
+                            label: { text: t('<%= tableNameCase.snake %>.<%= localeField.name %>', { ns: 'fields' }) },
+                            type: <%= localeField.type %>,
+                            required: <%= localeField.required %>,
+                        }<%= index < localeFields.length - 1 ? ',' : '' %>
+                        <% }) %>
+                    ])
+                    <% } %>
                 ]}
                 button={{ text: t('create', { ns: 'actions' }) }}
                 onSubmit={async (data) => {
@@ -12447,7 +12485,17 @@ const <%= tableNameCase.pascal %>UpdatePanel = forwardRef(
                           <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
                       }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
                       <% }) %>
-                      <%- hasLocale ? '...getFieldsLocale([{ name: "name" }], item)' : '' %>
+                      
+                       <% if (hasLocale) { %>...getFieldsLocale([
+                        <% localeFields.forEach((localeField, index) => { %>{
+                            name: '<%= localeField.name %>',
+                            label: { text: t('<%= tableNameCase.snake %>.<%= localeField.name %>', { ns: 'fields' }) },
+                            type: <%= localeField.type %>,
+                            required: <%= localeField.required %>,
+                        }<%= index < localeFields.length - 1 ? ',' : '' %>
+                        <% }) %>
+                    ], item)
+                    <% } %>
                   ]}
                   button={{ text: t('save', { ns: 'actions' }) }}
                   onSubmit={(data) => {
