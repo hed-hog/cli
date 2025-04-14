@@ -43,7 +43,9 @@ const <%= tableNameCase.pascal %>CreatePanel = forwardRef(
                         <% if (field.displayName) { %>displayName: '<%= field.displayName %>',<% } %>
                         <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
                     }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
-                    <% }) %> <% if (hasLocale) { %>...getFieldsLocale([
+                    <% }) %>
+                    
+                    <% if (hasLocale) { %>...getFieldsLocale([
                         <% localeFields.forEach((localeField, index) => { %>{
                             name: '<%= localeField.name %>',
                             label: { text: t('<%= tableNameCase.snake %>.<%= localeField.name %>', { ns: 'fields' }) },

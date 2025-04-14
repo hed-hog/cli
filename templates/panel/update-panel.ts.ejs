@@ -65,7 +65,17 @@ const <%= tableNameCase.pascal %>UpdatePanel = forwardRef(
                           <% if (field.valueName) { %>valueName: '<%= field.valueName %>',<% } %>
                       }<%= index < array.length - 1 || hasLocale ? ',' : '' %>
                       <% }) %>
-                      <%- hasLocale ? '...getFieldsLocale([{ name: "name" }], item)' : '' %>
+                      
+                       <% if (hasLocale) { %>...getFieldsLocale([
+                        <% localeFields.forEach((localeField, index) => { %>{
+                            name: '<%= localeField.name %>',
+                            label: { text: t('<%= tableNameCase.snake %>.<%= localeField.name %>', { ns: 'fields' }) },
+                            type: <%= localeField.type %>,
+                            required: <%= localeField.required %>,
+                        }<%= index < localeFields.length - 1 ? ',' : '' %>
+                        <% }) %>
+                    ], item)
+                    <% } %>
                   ]}
                   button={{ text: t('save', { ns: 'actions' }) }}
                   onSubmit={(data) => {
