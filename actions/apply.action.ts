@@ -136,7 +136,7 @@ export class ApplyAction extends AbstractAction {
         required: !column.isNullable || false,
       }));
 
-      console.log(localeFields);
+      console.log(localeFields)
 
       await new DTOCreator(dtoFilePath, fields, hasLocale).createDTOs();
 
@@ -224,6 +224,7 @@ export class ApplyAction extends AbstractAction {
         'screen',
         {
           localeTables,
+          localeFields
         },
       ).createFile();
 
@@ -677,8 +678,6 @@ export class ApplyAction extends AbstractAction {
         inputType: this.mapFieldTypeToInputType(field),
         ...this.getComboboxProperties(field),
       }));
-
-    console.log({ fields })
 
     const frontendPath = join(this.librarySrcPath, '..', 'frontend');
     const extraTabs: any[] = [];
