@@ -678,6 +678,8 @@ export class ApplyAction extends AbstractAction {
         ...this.getComboboxProperties(field),
       }));
 
+    console.log({ fields })
+
     const frontendPath = join(this.librarySrcPath, '..', 'frontend');
     const extraTabs: any[] = [];
     const extraVariables: any[] = [];
@@ -711,9 +713,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-            name: 'id',
-            ...table.columns.find((f) => f.type === 'pk'),
-          };
+          name: 'id',
+          ...table.columns.find((f) => f.type === 'pk'),
+        };
 
         const vars: any = {
           tableNameCase: tableApply.name,
@@ -751,15 +753,15 @@ export class ApplyAction extends AbstractAction {
           'handlers-related.ts.ejs',
         ],
         data: {
-          tableName,
+          tableName: tableName,
           tableNameCase: toObjectCase(tableApply.name),
           tableNameRelatedCase: toObjectCase(tableApply.tableNameRelation),
           fkNameCase: toObjectCase(tableApply.fkName),
           pkNameCase: toObjectCase(tableApply.pkName),
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
-          fields,
-          hasRelations,
+          fields: fields,
+          hasRelations: hasRelations,
         },
       },
       {
@@ -779,9 +781,9 @@ export class ApplyAction extends AbstractAction {
           pkNameCase: toObjectCase(tableApply.pkName),
           hasLocale: tableApply.hasLocale,
           libraryName: this.libraryName,
-          fields,
-          hasRelations,
-          extraTabs,
+          fields: fields,
+          hasRelations: hasRelations,
+          extraTabs: extraTabs,
           extraVars: extraVariables.join('\n'),
           extraImports: extraImportStatements.join('\n'),
         },
