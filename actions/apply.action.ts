@@ -120,7 +120,7 @@ export class ApplyAction extends AbstractAction {
 
       await new DTOCreator(dtoFilePath, fields, hasLocale).createDTOs();
 
-      this.showDebug('DTOs criados com sucesso!');
+      this.showDebug("DTO's criados com sucesso!");
 
       await new FileCreator(
         this.librarySrcPath,
@@ -691,9 +691,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-            name: 'id',
-            ...table.columns.find((f) => f.type === 'pk'),
-          };
+          name: 'id',
+          ...table.columns.find((f) => f.type === 'pk'),
+        };
 
         const vars: any = {
           tableNameCase: tableApply.name,
