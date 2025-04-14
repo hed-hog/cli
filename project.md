@@ -11533,7 +11533,7 @@ main();
 
 ## `./templates/async/handlers-related.ts.ejs`
 
-```ejs
+```tsx
 import { useDefaultMutation } from '@/hooks/use-default-mutation'
 import { useQuery } from '@tanstack/react-query'
 import { requests } from './requests'
@@ -11566,7 +11566,7 @@ export function use<%= tableNameCase.pascal %>Get(<%= fkNameCase.camel %>: numbe
 
 ## `./templates/async/handlers.ts.ejs`
 
-```ejs
+```tsx
 import { useDefaultMutation } from '@/hooks/use-default-mutation'
 import { useQuery } from '@tanstack/react-query'
 import { requests } from './requests'
@@ -11598,7 +11598,7 @@ export function use<%= tableNameCase.pascal %>Get(id: number) {
 
 ## `./templates/async/requests-related.ts.ejs`
 
-```ejs
+```tsx
 import { useApp } from "@/hooks/use-app";
 import { Delete, PaginationParams, PaginationResult } from "@/types";
 import { <%= tableNameCase.pascal %>Type } from "@/types/models";
@@ -11672,7 +11672,7 @@ export function requests() {
 
 ## `./templates/async/requests.ts.ejs`
 
-```ejs
+```tsx
 import { useApp } from '@/hooks/use-app'
 import { Delete, PaginationParams, PaginationResult } from '@/types'
 import { <%= tableNameCase.pascal %> } from '@/types/models'
@@ -11743,7 +11743,7 @@ export function requests() {
 
 ## `./templates/controller/controller-locale.ts.ejs`
 
-```ejs
+```tsx
 import { Pagination } from '@hedhog/pagination';
 import { Locale } from '@hedhog/locale';
 import {
@@ -11805,7 +11805,7 @@ export class <%= tableNameCase.pascal %>Controller {
 
 ## `./templates/controller/controller-related-locale.ts.ejs`
 
-```ejs
+```tsx
 import { Pagination } from '@hedhog/pagination';
 import { Role } from '@hedhog/core';
 import {
@@ -11877,7 +11877,7 @@ export class <%= tableNameCase.pascal %>Controller {
 
 ## `./templates/controller/controller-related.ts.ejs`
 
-```ejs
+```tsx
 import { Pagination } from '@hedhog/pagination';
 import { Role } from '@hedhog/core';
 import {
@@ -11955,7 +11955,7 @@ export class <%= tableNameCase.pascal %>Controller {
 
 ## `./templates/controller/controller.ts.ejs`
 
-```ejs
+```tsx
 import { Pagination } from '@hedhog/pagination';
 import { Locale } from '@hedhog/locale';
 import {
@@ -12017,7 +12017,7 @@ export class <%= tableNameCase.pascal %>Controller {
 
 ## `./templates/custom/assistent.ejs`
 
-```ejs
+```tsx
 traduza para o idioma que foi pedido os valores das propriedades do arquivo JSON abaixo e antes de traduzir troque a parte <thing> pelo nome da coisa informada junto com o idioma:
 
     {
@@ -12048,26 +12048,26 @@ traduza para o idioma que foi pedido os valores das propriedades do arquivo JSON
 
 ## `./templates/custom/static-imports.ts.ejs`
 
-```ejs
+```tsx
 import { useApp } from '@/hooks/use-app'
 import { isPlural } from '@/lib/utils'```
 
 ## `./templates/custom/static-vars.ts.ejs`
 
-```ejs
+```tsx
 const { openDialog, confirm, closeDialog } = useApp()
 const [selectedItems, setSelectedItems] = useState<any[]>([])```
 
 ## `./templates/dto/boolean.dto.ts.ejs`
 
-```ejs
+```tsx
 <% if (isOptional) { %>@IsOptional()<%} %>
 @IsBoolean()
 <%- fieldName %><%= optionalSignal %>: boolean;```
 
 ## `./templates/dto/create.dto.ts.ejs`
 
-```ejs
+```tsx
 <%- imports %>
 <%- hasLocale ? 'import { WithLocaleDTO } from "@hedhog/locale"' : '' %>
 
@@ -12077,26 +12077,26 @@ export class CreateDTO <%- hasLocale ? 'extends WithLocaleDTO' : '' %> {
 
 ## `./templates/dto/import.dto.ts.ejs`
 
-```ejs
+```tsx
 import { <%- types %> } from 'class-validator'```
 
 ## `./templates/dto/number.dto.ts.ejs`
 
-```ejs
+```tsx
 <% if (isOptional) { %>@IsOptional()<%} %>
 @IsNumber()
 <%- fieldName %><%= optionalSignal %>: number;```
 
 ## `./templates/dto/string.dto.ts.ejs`
 
-```ejs
+```tsx
 <% if (isOptional) { %>@IsOptional()<%} %>
 @IsString()
 <%- fieldName %><%= optionalSignal %>: string;```
 
 ## `./templates/dto/update.dto.ts.ejs`
 
-```ejs
+```tsx
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateDTO } from './create.dto';
     
@@ -12104,7 +12104,7 @@ export class UpdateDTO extends PartialType(CreateDTO) {}```
 
 ## `./templates/enum/table-enum.ejs`
 
-```ejs
+```tsx
 export enum <%= enumName %>Enum {
 <% values.forEach(function(item) { %>
     <%= item.key %> = <%= item.value %>,
@@ -12113,7 +12113,7 @@ export enum <%= enumName %>Enum {
 
 ## `./templates/function/open-create.ts.ejs`
 
-```ejs
+```tsx
 const openCreate<%= tableNameRelatedCase.pascal %> = () => {
     const id = openDialog({
       title: t('create', { ns: '<%= libraryNameCase.kebab %>.<%= tableNameRelatedCase.kebab %>' }),
@@ -12128,7 +12128,7 @@ const openCreate<%= tableNameRelatedCase.pascal %> = () => {
 
 ## `./templates/function/open-delete.ts.ejs`
 
-```ejs
+```tsx
 const openDelete<%= tableNameRelatedCase.pascal %> = (items: <%= tableNameRelatedCase.pascal %>[]) => {
     return confirm({
       title: `${t('delete', { ns: 'actions' })} ${items.length} ${isPlural(items.length) ? t('items', { ns: 'actions' }) : t('item', { ns: 'actions' })}`,
@@ -12145,7 +12145,7 @@ const openDelete<%= tableNameRelatedCase.pascal %> = (items: <%= tableNameRelate
 
 ## `./templates/function/open-update.ts.ejs`
 
-```ejs
+```tsx
 const openUpdate<%= tableNameRelatedCase.pascal %> = (item<%= tableNameRelatedCase.pascal %>: <%= tableNameRelatedCase.pascal %>) => {
     const id = openDialog({
       children: () => (
@@ -12160,7 +12160,7 @@ const openUpdate<%= tableNameRelatedCase.pascal %> = (item<%= tableNameRelatedCa
 
 ## `./templates/module/module-related.ts.ejs`
 
-```ejs
+```tsx
 <% const toPascalCase = (str) => str.replace(/(^\w|[-_]\w)/g, (match) => match.replace(/[-_]/, '').toUpperCase()) %>;
 <% const toKebabCase = (str) => str.replace(/_/g, '-'); %>
 <%
@@ -12212,7 +12212,7 @@ export class <%= tableNameCase.pascal %>Module {}
 
 ## `./templates/module/module.ts.ejs`
 
-```ejs
+```tsx
 import { AdminModule } from '@hedhog/admin';
 import { PaginationModule } from '@hedhog/pagination';
 import { PrismaModule } from '@hedhog/prisma';
@@ -12233,7 +12233,7 @@ export class <%- tableNameCase.pascal %>Module {}```
 
 ## `./templates/panel/create-panel.ts.ejs`
 
-```ejs
+```tsx
 import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
 <% if (fields.filter(field => field.name).length) { %>import { EnumFieldType } from '@/enums/EnumFieldType'<% } %>
 import { use<%= tableNameCase.pascal %>Create } from '@/features/<%= libraryName %>/<%= tableNameCase.kebab %>'
@@ -12303,7 +12303,7 @@ export default <%= tableNameCase.pascal %>CreatePanel```
 
 ## `./templates/panel/tab-panel-imports.ts.ejs`
 
-```ejs
+```tsx
 import { <%- tableNameCase.pascal %> } from '@/types/models/<%= tableNameCase.pascal %>.ts'
 import { use<%- tableNameCase.pascal %>Delete } from '@/features/<%= libraryNameCase.kebab %>/<%- tableNameCase.kebab %>'
 import <%= tableNameCase.pascal %>CreatePanel from '@/pages/<%= libraryNameCase.kebab %>/<%= tableNameCase.kebab%>/components/<%= tableNameCase.kebab %>-create-panel'
@@ -12311,7 +12311,7 @@ import <%= tableNameCase.pascal %>UpdatePanel from '@/pages/<%= libraryNameCase.
 
 ## `./templates/panel/tab-panel-item.ts.ejs`
 
-```ejs
+```tsx
 {
   title: t('<%= tableNameRelatedCase.snake %>', { ns: 'modules' }),
   children: (
@@ -12373,13 +12373,13 @@ import <%= tableNameCase.pascal %>UpdatePanel from '@/pages/<%= libraryNameCase.
 
 ## `./templates/panel/tab-panel-vars.ts.ejs`
 
-```ejs
+```tsx
 const <%-tableNameCase.camel %>Ref = useRef<any>(null)
 const { mutate: <%-tableNameCase.camel %>Delete } = use<%-tableNameCase.pascal %>Delete()```
 
 ## `./templates/panel/update-panel.ts.ejs`
 
-```ejs
+```tsx
 import FormPanel, { FormPanelRef, <%- hasLocale ? 'getFieldsLocale,' : '' %> } from '@/components/panels/form-panel'
 import { Overlay } from '@/components/custom/overlay'
 import { TabPanel } from '@/components/panels/tab-panel'
@@ -12476,7 +12476,7 @@ export default <%= tableNameCase.pascal %>UpdatePanel```
 
 ## `./templates/route/router.tsx.ejs`
 
-```ejs
+```tsx
 import { createBrowserRouter, RouteObject } from 'react-router-dom'
 import GeneralError from './pages/errors/general-error.tsx'
 import MaintenanceError from './pages/errors/maintenance-error.tsx'
@@ -12557,7 +12557,7 @@ export default router
 
 ## `./templates/screen/screen.ts.ejs`
 
-```ejs
+```tsx
 import { PageTitle } from '@/components/custom/page-title'
 import DataPanel from '@/components/panels/data-panel'
 import { use<%= tableNameCase.pascal %>Delete } from '@/features/<%= libraryName %>/<%= tableNameCase.kebab %>'
@@ -12674,7 +12674,7 @@ export default function Page() {
 
 ## `./templates/service/service-locale.ts.ejs`
 
-```ejs
+```tsx
 import { PaginationDTO, PaginationService } from '@hedhog/pagination';
 import { PrismaService } from '@hedhog/prisma';
 import {
@@ -12746,7 +12746,7 @@ export class <%= tableNameCase.pascal %>Service {
 
 ## `./templates/service/service-related-locale.ts.ejs`
 
-```ejs
+```tsx
 import { DeleteDTO } from '@hedhog/core';
 import { LocaleService } from '@hedhog/locale';
 import { PaginationDTO, PaginationService } from '@hedhog/pagination';
@@ -12842,7 +12842,7 @@ export class <%= tableNameCase.pascal %>Service {
 
 ## `./templates/service/service-related.ts.ejs`
 
-```ejs
+```tsx
 import { PaginationService, PaginationDTO } from '@hedhog/pagination';
 import { PrismaService } from '@hedhog/prisma';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -12922,7 +12922,7 @@ export class <%= tableNameCase.pascal %>Service {
 
 ## `./templates/service/service.ts.ejs`
 
-```ejs
+```tsx
 import { PaginationDTO, PaginationService } from '@hedhog/pagination';
 import { PrismaService } from '@hedhog/prisma';
 import {
@@ -13005,7 +13005,7 @@ export class <%= tableNameCase.pascal %>Service {
 
 ## `./templates/translation/translation.json.ejs`
 
-```ejs
+```tsx
 <% const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1) %>
 <% const spacing = (s) => s.replace(/[_-]/g, ' ') %>
 <% const pluralize = (s) => {

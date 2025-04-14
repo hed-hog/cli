@@ -39,7 +39,7 @@ find "$DIR" \( -type d -name "node_modules" -prune \) -o \( -type f \( -name "*.
     if [ "$FILE_EXT" == "ts" ]; then
         echo '```ts'
         elif [ "$FILE_EXT" == "ejs" ]; then
-        echo '```ejs'
+        echo '```tsx'
     else
         echo '```'
     fi
