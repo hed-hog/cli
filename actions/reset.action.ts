@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as ora from 'ora';
+import { mkdirRecursive } from '../lib/utils/checkVersion';
 import { createPrismaSchema } from '../lib/utils/create-prisma-schema';
 import { getEnvFileTemplate } from '../lib/utils/env-file-template';
 import { formatTypeScriptCode } from '../lib/utils/format-typescript-code';
@@ -13,6 +14,7 @@ import { getRootPath } from '../lib/utils/get-root-path';
 import { recreateDatabase } from '../lib/utils/recreate-database';
 import { testDatabaseConnection } from '../lib/utils/test-database-connection';
 import { AbstractAction } from './abstract.action';
+import path = require('node:path');
 
 export class ResetAction extends AbstractAction {
   public async handle() {
@@ -52,6 +54,10 @@ export class ResetAction extends AbstractAction {
       'components',
       'dashboard',
     );
+
+    if (!existsSync(componentsPath)) {
+      await mkdirRecursive(componentsPath);
+    }
 
     for (const file of await readdir(componentsPath)) {
       const filePath = join(componentsPath, file);
