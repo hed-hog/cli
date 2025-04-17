@@ -390,19 +390,28 @@ export class ApplyAction extends AbstractAction {
     );
 
     if (!moduleRoute) {
-      moduleRoute = { path: `${this.libraryName}`, children: [] };
+      moduleRoute = { path: `${this.libraryName}` };
       yamlData.routes.push(moduleRoute);
     }
 
-    if (!moduleRoute.children) {
-      moduleRoute.children = [];
-    }
-    moduleRoute.children.push({
-      path: screen.toKebabCase(),
-      lazy: {
+    const validTablesQuantity = Object.keys(yamlData.tables || {}).filter(
+      (n: string) => !n.includes('_locale'),
+    );
+
+    if (validTablesQuantity.length > 1) {
+      if (!moduleRoute.children) moduleRoute.children = [];
+
+      moduleRoute.children.push({
+        path: screen.toKebabCase(),
+        lazy: {
+          component: `./pages/${this.libraryName.toKebabCase()}/${screen.toKebabCase()}/index.tsx`,
+        },
+      });
+    } else {
+      moduleRoute.lazy = {
         component: `./pages/${this.libraryName.toKebabCase()}/${screen.toKebabCase()}/index.tsx`,
-      },
-    });
+      };
+    }
 
     await writeHedhogFile(this.hedhogFilePath, {
       ...yamlData,
@@ -711,9 +720,9 @@ export class ApplyAction extends AbstractAction {
           table.columns.find((f) => f.name === 'title') ||
           table.columns.find((f) => f.type === 'slug') ||
           table.columns.find((f) => f.type === 'varchar') || {
-          name: 'id',
-          ...table.columns.find((f) => f.type === 'pk'),
-        };
+            name: 'id',
+            ...table.columns.find((f) => f.type === 'pk'),
+          };
 
         const vars: any = {
           tableNameCase: tableApply.name,
